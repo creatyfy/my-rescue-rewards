@@ -1,5 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/sonner";
 import {
   User,
   Mail,
@@ -12,7 +13,9 @@ import {
   Bell,
   CreditCard,
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { fetchCurrentUserProfile, logoutCurrentUser } from "@/integrations/supabase/profile";
 
 const menuItems = [
   {
@@ -48,13 +51,59 @@ const menuItems = [
 ];
 
 export default function Profile() {
+  const navigate = useNavigate();
+
   // Mock user data
-  const user = {
+  const [user, setUser] = useState({
     name: "Maria Silva",
     email: "maria.silva@email.com",
     phone: "(11) 99999-9999",
     memberSince: "Janeiro 2024",
     avatarUrl: null,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadProfile = async () => {
+      try {
+        const profile = await fetchCurrentUserProfile();
+
+        if (!profile || !isMounted) {
+          return;
+        }
+
+        const memberSince = formatMemberSince(profile.createdAt);
+
+        setUser((prev) => ({
+          ...prev,
+          name: profile.fullName || prev.name,
+          email: profile.email || prev.email,
+          phone: profile.phone || prev.phone,
+          memberSince: memberSince ?? prev.memberSince,
+          avatarUrl: profile.avatarUrl ?? prev.avatarUrl,
+        }));
+      } catch (error) {
+        console.error("Erro ao carregar perfil:", error);
+        toast.error("Não foi possível carregar seu perfil.");
+      }
+    };
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await logoutCurrentUser();
+      navigate("/auth");
+    } catch (error) {
+      console.error("Erro ao sair:", error);
+      toast.error("Não foi possível sair da conta.");
+    }
   };
 
   return (
@@ -128,6 +177,7 @@ export default function Profile() {
         <Button
           variant="outline"
           className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+          onClick={handleLogout}
         >
           <LogOut className="w-4 h-4 mr-2" />
           Sair da conta
@@ -141,3 +191,19 @@ export default function Profile() {
     </AppLayout>
   );
 }
+
+const formatMemberSince = (dateString: string) => {
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const formatted = new Intl.DateTimeFormat("pt-BR", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+
+  const normalized = formatted.replace(" de ", " ");
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+};
