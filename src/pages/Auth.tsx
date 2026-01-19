@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "@/components/ui/sonner";
+import { supabase } from "@/integrations/supabase/client";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft } from "lucide-react";
 
@@ -24,11 +26,54 @@ export default function Auth() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simular autenticação - será substituído por auth real
-    setTimeout(() => {
+    try {
+      if (mode === "register" && formData.password !== formData.confirmPassword) {
+        toast.error("As senhas não conferem.");
+        return;
+      }
+
+      if (mode === "login") {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (error) {
+          throw error;
+        }
+
+        navigate("/dashboard");
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.name,
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.session) {
+        navigate("/dashboard");
+      } else {
+        toast.success("Conta criada! Verifique seu e-mail para confirmar.");
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível autenticar. Tente novamente.";
+      toast.error(message);
+    } finally {
       setIsLoading(false);
-      navigate("/dashboard");
-    }, 1500);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
