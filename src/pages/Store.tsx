@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProductCard } from "@/components/store/ProductCard";
 import { Search, Filter, Coins } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/sonner";
+import { fetchCurrentUserBalance, fetchProducts, redeemProduct } from "@/integrations/supabase/store";
 
 // Mock data
 const mockProducts = [
@@ -59,15 +61,56 @@ const mockProducts = [
 
 export default function Store() {
   const [searchQuery, setSearchQuery] = useState("");
-  const userPoints = 1250; // Mock
+  const [products, setProducts] = useState(mockProducts);
+  const [userPoints, setUserPoints] = useState(1250);
 
-  const filteredProducts = mockProducts.filter((product) =>
+  useEffect(() => {
+    const loadStoreData = async () => {
+      try {
+        const [productsData, balance] = await Promise.all([
+          fetchProducts(),
+          fetchCurrentUserBalance(),
+        ]);
+
+        if (productsData.length > 0) {
+          setProducts(productsData);
+        }
+        setUserPoints(balance);
+      } catch (error) {
+        console.error("Erro ao carregar loja:", error);
+      }
+    };
+
+    loadStoreData();
+  }, []);
+
+  const filteredProducts = products.filter((product) =>
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleRedeem = (productId: string) => {
-    console.log("Resgatar produto:", productId);
-    // Implementar lógica de resgate
+  const handleRedeem = async (productId: string) => {
+    try {
+      const redemption = await redeemProduct(productId);
+
+      if (!redemption) {
+        toast.error("Não foi possível realizar o resgate.");
+        return;
+      }
+
+      setUserPoints(redemption.remaining_balance);
+      setProducts((prevProducts) =>
+        prevProducts.map((product) =>
+          product.id === redemption.product_id
+            ? { ...product, stock: redemption.stock_remaining }
+            : product
+        )
+      );
+
+      toast.success(`Resgate confirmado: ${redemption.product_name}.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Não foi possível realizar o resgate.";
+      toast.error(message);
+    }
   };
 
   return (
