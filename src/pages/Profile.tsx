@@ -12,46 +12,16 @@ import {
   Shield,
   Bell,
   CreditCard,
+  ShieldCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { fetchCurrentUserProfile, logoutCurrentUser } from "@/integrations/supabase/profile";
-
-const menuItems = [
-  {
-    icon: User,
-    label: "Dados pessoais",
-    path: "/profile/edit",
-  },
-  {
-    icon: Bell,
-    label: "Notificações",
-    path: "/profile/notifications",
-  },
-  {
-    icon: Shield,
-    label: "Segurança",
-    path: "/profile/security",
-  },
-  {
-    icon: CreditCard,
-    label: "Métodos de pagamento",
-    path: "/profile/payments",
-  },
-  {
-    icon: HelpCircle,
-    label: "Ajuda e suporte",
-    path: "/help",
-  },
-  {
-    icon: Settings,
-    label: "Configurações",
-    path: "/settings",
-  },
-];
+import { fetchAdminStatus } from "@/integrations/supabase/admin";
 
 export default function Profile() {
   const navigate = useNavigate();
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Mock user data
   const [user, setUser] = useState({
@@ -67,7 +37,10 @@ export default function Profile() {
 
     const loadProfile = async () => {
       try {
-        const profile = await fetchCurrentUserProfile();
+        const [profile, adminStatus] = await Promise.all([
+          fetchCurrentUserProfile(),
+          fetchAdminStatus().catch(() => false),
+        ]);
 
         if (!profile || !isMounted) {
           return;
@@ -75,6 +48,7 @@ export default function Profile() {
 
         const memberSince = formatMemberSince(profile.createdAt);
 
+        setIsAdmin(adminStatus);
         setUser((prev) => ({
           ...prev,
           name: profile.fullName || prev.name,
@@ -95,6 +69,48 @@ export default function Profile() {
       isMounted = false;
     };
   }, []);
+
+  const menuItems = [
+    {
+      icon: User,
+      label: "Dados pessoais",
+      path: "/profile/edit",
+    },
+    {
+      icon: Bell,
+      label: "Notificações",
+      path: "/profile/notifications",
+    },
+    {
+      icon: Shield,
+      label: "Segurança",
+      path: "/profile/security",
+    },
+    {
+      icon: CreditCard,
+      label: "Métodos de pagamento",
+      path: "/profile/payments",
+    },
+    ...(isAdmin
+      ? [
+          {
+            icon: ShieldCheck,
+            label: "Painel administrativo",
+            path: "/admin",
+          },
+        ]
+      : []),
+    {
+      icon: HelpCircle,
+      label: "Ajuda e suporte",
+      path: "/help",
+    },
+    {
+      icon: Settings,
+      label: "Configurações",
+      path: "/settings",
+    },
+  ];
 
   const handleLogout = async () => {
     try {
