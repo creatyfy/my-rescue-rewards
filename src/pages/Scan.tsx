@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Camera, Upload, Store, CheckCircle, AlertCircle } from "lucide-react";
+import { uploadReceiptForCurrentUser } from "@/integrations/supabase/storage";
 
 type ScanStep = "scan" | "form" | "success";
 
@@ -12,10 +13,12 @@ export default function Scan() {
   const [establishmentName, setEstablishmentName] = useState("");
   const [purchaseValue, setPurchaseValue] = useState("");
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setReceiptFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setReceiptImage(reader.result as string);
@@ -30,10 +33,18 @@ export default function Scan() {
     setStep("form");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aqui será implementado o envio real
-    setStep("success");
+    if (!receiptFile) {
+      return;
+    }
+
+    try {
+      await uploadReceiptForCurrentUser(receiptFile);
+      setStep("success");
+    } catch (error) {
+      console.error("Erro ao enviar comprovante:", error);
+    }
   };
 
   const resetForm = () => {
@@ -41,6 +52,7 @@ export default function Scan() {
     setEstablishmentName("");
     setPurchaseValue("");
     setReceiptImage(null);
+    setReceiptFile(null);
   };
 
   return (
