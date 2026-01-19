@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Camera, Upload, Store, CheckCircle, AlertCircle } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
+import { fetchEstablishmentByQrToken, submitReceiptForCurrentUser } from "@/integrations/supabase/receipts";
 import { uploadReceiptForCurrentUser } from "@/integrations/supabase/storage";
 
 type ScanStep = "scan" | "form" | "success";
@@ -14,6 +16,10 @@ export default function Scan() {
   const [purchaseValue, setPurchaseValue] = useState("");
   const [receiptImage, setReceiptImage] = useState<string | null>(null);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [qrCodeToken, setQrCodeToken] = useState<string | null>(null);
+  const [isValidatingQr, setIsValidatingQr] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => Promise<void> } | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -27,23 +33,95 @@ export default function Scan() {
     }
   };
 
-  const handleScanSuccess = () => {
-    // Simular QR code escaneado
-    setEstablishmentName("Café Central");
-    setStep("form");
+  const extractQrToken = (payload: string) => {
+    try {
+      const url = new URL(payload);
+      return url.searchParams.get("token") || url.searchParams.get("qr") || payload;
+    } catch {
+      return payload;
+    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!receiptFile) {
+  const stopScanner = async () => {
+    if (!scannerRef.current) {
       return;
     }
 
     try {
-      await uploadReceiptForCurrentUser(receiptFile);
+      await scannerRef.current.stop();
+      await scannerRef.current.clear();
+    } catch (error) {
+      console.error("Erro ao parar o scanner:", error);
+    } finally {
+      scannerRef.current = null;
+    }
+  };
+
+  const handleQrDetected = async (payload: string) => {
+    if (isValidatingQr) {
+      return;
+    }
+
+    const token = extractQrToken(payload);
+    setIsValidatingQr(true);
+
+    try {
+      const establishment = await fetchEstablishmentByQrToken(token);
+
+      if (!establishment) {
+        toast.error("QR Code inválido ou estabelecimento inativo.");
+        return;
+      }
+
+      setQrCodeToken(token);
+      setEstablishmentName(establishment.name);
+      await stopScanner();
+      setStep("form");
+    } catch (error) {
+      console.error("Erro ao validar QR Code:", error);
+      toast.error("Não foi possível validar o QR Code.");
+    } finally {
+      setIsValidatingQr(false);
+    }
+  };
+
+  const handleScanSuccess = async () => {
+    const demoToken = import.meta.env.VITE_DEMO_QR_TOKEN as string | undefined;
+
+    if (!demoToken) {
+      toast.error("Token de demonstração não configurado.");
+      return;
+    }
+
+    await handleQrDetected(demoToken);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!receiptFile || !qrCodeToken) {
+      return;
+    }
+
+    try {
+      const parsedValue = Number.parseFloat(purchaseValue);
+      if (Number.isNaN(parsedValue) || parsedValue < 10) {
+        toast.error("Valor mínimo é R$ 10,00.");
+        return;
+      }
+
+      setIsSubmitting(true);
+      const receiptPath = await uploadReceiptForCurrentUser(receiptFile);
+      await submitReceiptForCurrentUser({
+        qrCodeToken,
+        purchaseValue: parsedValue,
+        receiptPath,
+      });
       setStep("success");
     } catch (error) {
       console.error("Erro ao enviar comprovante:", error);
+      toast.error("Não foi possível enviar o comprovante.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -53,7 +131,49 @@ export default function Scan() {
     setPurchaseValue("");
     setReceiptImage(null);
     setReceiptFile(null);
+    setQrCodeToken(null);
   };
+
+  useEffect(() => {
+    if (step !== "scan") {
+      void stopScanner();
+      return;
+    }
+
+    let active = true;
+
+    const startScanner = async () => {
+      if (scannerRef.current || !active) {
+        return;
+      }
+
+      const { Html5Qrcode } = await import("html5-qrcode");
+      const scanner = new Html5Qrcode("qr-reader");
+      scannerRef.current = scanner;
+
+      try {
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 240, height: 240 } },
+          (decodedText) => {
+            void handleQrDetected(decodedText);
+          },
+          () => undefined,
+        );
+      } catch (error) {
+        console.error("Erro ao iniciar o scanner:", error);
+        toast.error("Não foi possível acessar a câmera.");
+        scannerRef.current = null;
+      }
+    };
+
+    void startScanner();
+
+    return () => {
+      active = false;
+      void stopScanner();
+    };
+  }, [step]);
 
   return (
     <AppLayout title="Escanear QR">
@@ -62,6 +182,7 @@ export default function Scan() {
           <div className="flex flex-col items-center">
             {/* Scanner Area */}
             <div className="w-full max-w-sm aspect-square bg-card rounded-3xl border-2 border-dashed border-primary/30 flex flex-col items-center justify-center mb-6 relative overflow-hidden">
+              <div className="absolute inset-0" id="qr-reader" />
               <div className="absolute inset-4 border-2 border-primary/50 rounded-2xl">
                 <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-primary rounded-tl-lg" />
                 <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-primary rounded-tr-lg" />
@@ -190,7 +311,9 @@ export default function Scan() {
                 <Button
                   type="submit"
                   className="flex-1"
-                  disabled={!purchaseValue || parseFloat(purchaseValue) < 10 || !receiptImage}
+                  disabled={
+                    isSubmitting || !purchaseValue || parseFloat(purchaseValue) < 10 || !receiptImage
+                  }
                 >
                   Enviar
                 </Button>
