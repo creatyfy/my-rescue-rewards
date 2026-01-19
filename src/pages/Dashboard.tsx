@@ -1,7 +1,15 @@
+import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { PointsCard } from "@/components/points/PointsCard";
 import { QuickActions } from "@/components/points/QuickActions";
 import { TransactionItem } from "@/components/transactions/TransactionItem";
+import {
+  fetchCurrentUserBalance,
+  fetchCurrentUserId,
+  fetchCurrentUserPendingPoints,
+  fetchCurrentUserProfileName,
+  fetchUserLedger,
+} from "@/integrations/supabase/store";
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -37,7 +45,100 @@ const mockTransactions = [
 ];
 
 export default function Dashboard() {
-  const userName = "Maria"; // Mock - virá do auth
+  const [userName, setUserName] = useState("Maria");
+  const [balance, setBalance] = useState(1250);
+  const [pendingPoints, setPendingPoints] = useState(120);
+  const [transactions, setTransactions] = useState(mockTransactions);
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const userId = await fetchCurrentUserId();
+
+        if (!userId) {
+          return;
+        }
+
+        const [
+          balanceResult,
+          pendingResult,
+          profileName,
+          ledgerEntries,
+        ] = await Promise.all([
+          fetchCurrentUserBalance(),
+          fetchCurrentUserPendingPoints(),
+          fetchCurrentUserProfileName(),
+          fetchUserLedger(userId, 5),
+        ]);
+
+        setBalance(balanceResult);
+        setPendingPoints(pendingResult);
+
+        if (profileName) {
+          setUserName(profileName);
+        }
+
+        if (ledgerEntries.length > 0) {
+          const mapped = ledgerEntries.map((entry) => {
+            const createdAt = new Date(entry.created_at);
+            const isEarn = entry.amount >= 0;
+            const type = isEarn ? ("earn" as const) : ("redeem" as const);
+
+            const title =
+              entry.ledger_type === "earn"
+                ? entry.establishment_name ?? "Estabelecimento"
+                : entry.ledger_type === "redeem"
+                  ? entry.product_name ?? "Produto resgatado"
+                  : entry.ledger_type === "expire"
+                    ? "Pontos expirados"
+                    : "Ajuste de pontos";
+
+            const subtitle =
+              entry.ledger_type === "earn"
+                ? entry.protocol_number
+                  ? `Comprovante ${entry.protocol_number}`
+                  : "Comprovante aprovado"
+                : entry.ledger_type === "redeem"
+                  ? "Produto resgatado"
+                  : entry.ledger_type === "expire"
+                    ? "Expiração automática"
+                    : "Ajuste manual";
+
+            const status =
+              entry.receipt_status ??
+              (entry.redemption_status === "completed"
+                ? ("approved" as const)
+                : entry.redemption_status === "cancelled"
+                  ? ("rejected" as const)
+                  : entry.redemption_status === "pending"
+                    ? ("pending" as const)
+                    : ("approved" as const));
+
+            return {
+              id: entry.ledger_id,
+              type,
+              title,
+              subtitle,
+              points: Math.abs(entry.amount),
+              status,
+              date: createdAt.toLocaleString("pt-BR", {
+                day: "2-digit",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+            };
+          });
+
+          setTransactions(mapped);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados do dashboard:", error);
+      }
+    };
+
+    loadDashboard();
+  }, []);
 
   return (
     <AppLayout>
@@ -53,7 +154,7 @@ export default function Dashboard() {
 
           {/* Points Card */}
           <div className="mb-6 animate-slide-up">
-            <PointsCard balance={1250} pendingPoints={120} />
+            <PointsCard balance={balance} pendingPoints={pendingPoints} />
           </div>
 
           {/* Quick Actions */}
@@ -80,7 +181,7 @@ export default function Dashboard() {
             </div>
 
             <div className="space-y-3">
-              {mockTransactions.map((transaction) => (
+              {transactions.map((transaction) => (
                 <TransactionItem key={transaction.id} {...transaction} />
               ))}
             </div>

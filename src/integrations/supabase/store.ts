@@ -49,6 +49,18 @@ type ReceiptHistory = {
   } | null;
 };
 
+type LedgerEntry = {
+  ledger_id: string;
+  ledger_type: "earn" | "redeem" | "expire" | "adjustment";
+  amount: number;
+  created_at: string;
+  receipt_status: "pending" | "approved" | "rejected" | null;
+  redemption_status: "pending" | "completed" | "cancelled" | null;
+  establishment_name: string | null;
+  product_name: string | null;
+  protocol_number: string | null;
+};
+
 const FALLBACK_PRODUCT_IMAGE =
   "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop";
 
@@ -88,6 +100,28 @@ export const fetchCurrentUserBalance = async () => {
   }
 
   const { data, error } = await supabase.rpc("get_user_balance", {
+    p_user_id: userData.user.id,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return Number(data ?? 0);
+};
+
+export const fetchCurrentUserPendingPoints = async () => {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+
+  if (userError) {
+    throw userError;
+  }
+
+  if (!userData.user) {
+    return 0;
+  }
+
+  const { data, error } = await supabase.rpc("get_pending_points", {
     p_user_id: userData.user.id,
   });
 
@@ -139,6 +173,43 @@ export const fetchReceiptHistory = async (userId: string) => {
   }
 
   return data ?? [];
+};
+
+export const fetchCurrentUserProfileName = async () => {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+
+  if (userError) {
+    throw userError;
+  }
+
+  if (!userData.user) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("full_name")
+    .eq("user_id", userData.user.id)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.full_name ?? null;
+};
+
+export const fetchUserLedger = async (userId: string, limit = 5) => {
+  const { data, error } = await supabase.rpc("get_user_ledger", {
+    p_user_id: userId,
+    p_limit: limit,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []) as LedgerEntry[];
 };
 
 export const fetchCurrentUserId = async () => {
