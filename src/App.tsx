@@ -11,6 +11,10 @@ import Dashboard from "./pages/Dashboard";
 import Store from "./pages/Store";
 import Scan from "./pages/Scan";
 import Profile from "./pages/Profile";
+import ProfileEdit from "./pages/ProfileEdit";
+import ProfileNotifications from "./pages/ProfileNotifications";
+import ProfileSecurity from "./pages/ProfileSecurity";
+import ProfilePayments from "./pages/ProfilePayments";
 import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
@@ -66,6 +70,38 @@ const App = () => (
             element={
               <AuthGuard>
                 <Profile />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/profile/edit"
+            element={
+              <AuthGuard>
+                <ProfileEdit />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/profile/notifications"
+            element={
+              <AuthGuard>
+                <ProfileNotifications />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/profile/security"
+            element={
+              <AuthGuard>
+                <ProfileSecurity />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/profile/payments"
+            element={
+              <AuthGuard>
+                <ProfilePayments />
               </AuthGuard>
             }
           />
