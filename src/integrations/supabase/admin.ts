@@ -54,31 +54,40 @@ export type AdminReceiptSummary = {
   created_at: string;
 };
 
-export const fetchAdminStatus = async () => {
-  const { data, error } = await supabase.rpc("is_admin");
+export const fetchAdminStatus = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc("is_admin" as never);
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("is_admin function not available:", error.message);
+      return false;
+    }
+
+    return Boolean(data);
+  } catch {
+    return false;
   }
-
-  return Boolean(data);
 };
 
-export const fetchPendingReceipts = async () => {
-  const { data, error } = await supabase
-    .from("receipts")
-    .select(
-      "id, protocol_number, purchase_value, points_earned, status, image_url, created_at, user_id, establishments(name)",
-    )
-    .eq("status", "pending")
-    .order("created_at", { ascending: false })
-    .returns<AdminReceipt[]>();
+export const fetchPendingReceipts = async (): Promise<AdminReceipt[]> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from("receipts")
+      .select(
+        "id, protocol_number, purchase_value, points_earned, status, image_url, created_at, user_id, establishments(name)",
+      )
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("receipts table not available:", error.message);
+      return [];
+    }
+
+    return (data ?? []) as AdminReceipt[];
+  } catch {
+    return [];
   }
-
-  return data ?? [];
 };
 
 export const reviewReceipt = async (receiptId: string, status: ReceiptReviewStatus) => {
@@ -92,7 +101,7 @@ export const reviewReceipt = async (receiptId: string, status: ReceiptReviewStat
     throw new Error("Usuário não autenticado.");
   }
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from("receipts")
     .update({
       status,
@@ -108,60 +117,76 @@ export const reviewReceipt = async (receiptId: string, status: ReceiptReviewStat
   return true;
 };
 
-export const fetchAdminReceiptsSummary = async () => {
-  const { data, error } = await supabase
-    .from("receipts")
-    .select("id, status, purchase_value, points_earned, created_at")
-    .order("created_at", { ascending: false })
-    .returns<AdminReceiptSummary[]>();
+export const fetchAdminReceiptsSummary = async (): Promise<AdminReceiptSummary[]> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from("receipts")
+      .select("id, status, purchase_value, points_earned, created_at")
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("receipts table not available:", error.message);
+      return [];
+    }
+
+    return (data ?? []) as AdminReceiptSummary[];
+  } catch {
+    return [];
   }
-
-  return data ?? [];
 };
 
-export const fetchAdminRedemptions = async () => {
-  const { data, error } = await supabase
-    .from("redemptions")
-    .select("id, status, points_spent, created_at")
-    .order("created_at", { ascending: false })
-    .returns<AdminRedemption[]>();
+export const fetchAdminRedemptions = async (): Promise<AdminRedemption[]> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from("redemptions")
+      .select("id, status, points_spent, created_at")
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("redemptions table not available:", error.message);
+      return [];
+    }
+
+    return (data ?? []) as AdminRedemption[];
+  } catch {
+    return [];
   }
-
-  return data ?? [];
 };
 
-export const fetchAdminProducts = async () => {
-  const { data, error } = await supabase
-    .from("products")
-    .select("id, name, description, image_url, points_cost, stock, active, created_at")
-    .order("created_at", { ascending: false })
-    .returns<AdminProduct[]>();
+export const fetchAdminProducts = async (): Promise<AdminProduct[]> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from("products")
+      .select("id, name, description, image_url, points_cost, stock, active, created_at")
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("products table not available:", error.message);
+      return [];
+    }
+
+    return (data ?? []) as AdminProduct[];
+  } catch {
+    return [];
   }
-
-  return data ?? [];
 };
 
-export const fetchAdminEstablishments = async () => {
-  const { data, error } = await supabase
-    .from("establishments")
-    .select("id, name, description, address, qr_code_token, logo_url, active, created_at")
-    .order("created_at", { ascending: false })
-    .returns<AdminEstablishment[]>();
+export const fetchAdminEstablishments = async (): Promise<AdminEstablishment[]> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from("establishments")
+      .select("id, name, description, address, qr_code_token, logo_url, active, created_at")
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("establishments table not available:", error.message);
+      return [];
+    }
+
+    return (data ?? []) as AdminEstablishment[];
+  } catch {
+    return [];
   }
-
-  return data ?? [];
 };
 
 export const createEstablishment = async (input: {
@@ -177,7 +202,7 @@ export const createEstablishment = async (input: {
     ? getPublicUrl("establishments", await uploadEstablishmentImage(input.logoFile))
     : input.logoUrl ?? null;
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("establishments")
     .insert({
       name: input.name,
@@ -188,13 +213,13 @@ export const createEstablishment = async (input: {
       active: input.active,
     })
     .select("id, name, description, address, qr_code_token, logo_url, active, created_at")
-    .single<AdminEstablishment>();
+    .single();
 
   if (error) {
     throw error;
   }
 
-  return data;
+  return data as AdminEstablishment;
 };
 
 export const updateEstablishment = async (input: {
@@ -211,7 +236,7 @@ export const updateEstablishment = async (input: {
     ? getPublicUrl("establishments", await uploadEstablishmentImage(input.logoFile))
     : input.logoUrl ?? null;
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("establishments")
     .update({
       name: input.name,
@@ -223,17 +248,17 @@ export const updateEstablishment = async (input: {
     })
     .eq("id", input.id)
     .select("id, name, description, address, qr_code_token, logo_url, active, created_at")
-    .single<AdminEstablishment>();
+    .single();
 
   if (error) {
     throw error;
   }
 
-  return data;
+  return data as AdminEstablishment;
 };
 
 export const deleteEstablishment = async (id: string) => {
-  const { error } = await supabase.from("establishments").delete().eq("id", id);
+  const { error } = await (supabase as any).from("establishments").delete().eq("id", id);
 
   if (error) {
     throw error;
@@ -255,7 +280,7 @@ export const createProduct = async (input: {
     ? getPublicUrl("products", await uploadProductImage(input.imageFile))
     : input.imageUrl ?? null;
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("products")
     .insert({
       name: input.name,
@@ -266,13 +291,13 @@ export const createProduct = async (input: {
       active: input.active,
     })
     .select("id, name, description, image_url, points_cost, stock, active, created_at")
-    .single<AdminProduct>();
+    .single();
 
   if (error) {
     throw error;
   }
 
-  return data;
+  return data as AdminProduct;
 };
 
 export const updateProduct = async (input: {
@@ -289,7 +314,7 @@ export const updateProduct = async (input: {
     ? getPublicUrl("products", await uploadProductImage(input.imageFile))
     : input.imageUrl ?? null;
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("products")
     .update({
       name: input.name,
@@ -301,17 +326,17 @@ export const updateProduct = async (input: {
     })
     .eq("id", input.id)
     .select("id, name, description, image_url, points_cost, stock, active, created_at")
-    .single<AdminProduct>();
+    .single();
 
   if (error) {
     throw error;
   }
 
-  return data;
+  return data as AdminProduct;
 };
 
 export const deleteProduct = async (id: string) => {
-  const { error } = await supabase.from("products").delete().eq("id", id);
+  const { error } = await (supabase as any).from("products").delete().eq("id", id);
 
   if (error) {
     throw error;

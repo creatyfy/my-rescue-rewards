@@ -13,33 +13,45 @@ import {
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
+type TransactionStatus = "approved" | "pending" | "rejected";
+
+type Transaction = {
+  id: string;
+  type: "earn" | "redeem";
+  title: string;
+  subtitle: string;
+  points: number;
+  status: TransactionStatus;
+  date: string;
+};
+
 // Mock data - será substituído por dados reais do backend
-const mockTransactions = [
+const mockTransactions: Transaction[] = [
   {
     id: "1",
-    type: "earn" as const,
+    type: "earn",
     title: "Café Central",
     subtitle: "Comprovante #1234",
     points: 45,
-    status: "approved" as const,
+    status: "approved",
     date: "Hoje, 14:30",
   },
   {
     id: "2",
-    type: "earn" as const,
+    type: "earn",
     title: "Restaurante Sabor",
     subtitle: "Comprovante #1235",
     points: 120,
-    status: "pending" as const,
+    status: "pending",
     date: "Ontem, 20:15",
   },
   {
     id: "3",
-    type: "redeem" as const,
+    type: "redeem",
     title: "Caneca Premium",
     subtitle: "Produto resgatado",
     points: 500,
-    status: "approved" as const,
+    status: "approved",
     date: "15 Jan, 10:00",
   },
 ];
@@ -48,7 +60,7 @@ export default function Dashboard() {
   const [userName, setUserName] = useState("Maria");
   const [balance, setBalance] = useState(1250);
   const [pendingPoints, setPendingPoints] = useState(120);
-  const [transactions, setTransactions] = useState(mockTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
 
   useEffect(() => {
     const loadDashboard = async () => {

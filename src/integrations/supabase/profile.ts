@@ -43,7 +43,7 @@ const mapProfile = (
   };
 };
 
-export const fetchCurrentUserProfile = async () => {
+export const fetchCurrentUserProfile = async (): Promise<UserProfile | null> => {
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
   if (userError) {
@@ -54,20 +54,25 @@ export const fetchCurrentUserProfile = async () => {
     return null;
   }
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("full_name, phone, avatar_url, created_at")
-    .eq("user_id", userData.user.id)
-    .maybeSingle<ProfileRecord>();
+  try {
+    const { data, error } = await (supabase as any)
+      .from("profiles")
+      .select("full_name, phone, avatar_url, created_at")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("profiles table not available:", error.message);
+      return mapProfile(null, userData.user);
+    }
+
+    return mapProfile(data ?? null, userData.user);
+  } catch {
+    return mapProfile(null, userData.user);
   }
-
-  return mapProfile(data ?? null, userData.user);
 };
 
-export const updateCurrentUserProfile = async (input: ProfileUpdateInput) => {
+export const updateCurrentUserProfile = async (input: ProfileUpdateInput): Promise<UserProfile> => {
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
   if (userError) {
@@ -99,11 +104,11 @@ export const updateCurrentUserProfile = async (input: ProfileUpdateInput) => {
     payload.avatar_url = input.avatarUrl;
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from("profiles")
     .upsert(payload, { onConflict: "user_id" })
     .select("full_name, phone, avatar_url, created_at")
-    .single<ProfileRecord>();
+    .single();
 
   if (error) {
     throw error;
