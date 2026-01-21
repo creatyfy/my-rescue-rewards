@@ -12,6 +12,7 @@ import Profile from "./pages/Profile";
 import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
+import AuthGuard from "./components/auth/AuthGuard";
 
 const queryClient = new QueryClient();
 
@@ -24,12 +25,54 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/store" element={<Store />} />
-          <Route path="/scan" element={<Scan />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/history" element={<History />} />
+          <Route
+            path="/dashboard"
+            element={
+              <AuthGuard>
+                <Dashboard />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AuthGuard>
+                <Admin />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/store"
+            element={
+              <AuthGuard>
+                <Store />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/scan"
+            element={
+              <AuthGuard>
+                <Scan />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <AuthGuard>
+                <Profile />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <AuthGuard>
+                <History />
+              </AuthGuard>
+            }
+          />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
