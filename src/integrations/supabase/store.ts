@@ -73,22 +73,26 @@ const mapProduct = (product: ProductRecord): Product => ({
   stock: product.stock,
 });
 
-export const fetchProducts = async () => {
-  const { data, error } = await supabase
-    .from("products")
-    .select("id, name, description, image_url, points_cost, stock")
-    .eq("active", true)
-    .order("created_at", { ascending: false })
-    .returns<ProductRecord[]>();
+export const fetchProducts = async (): Promise<Product[]> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from("products")
+      .select("id, name, description, image_url, points_cost, stock")
+      .eq("active", true)
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("products table not available:", error.message);
+      return [];
+    }
+
+    return ((data ?? []) as ProductRecord[]).map(mapProduct);
+  } catch {
+    return [];
   }
-
-  return (data ?? []).map(mapProduct);
 };
 
-export const fetchCurrentUserBalance = async () => {
+export const fetchCurrentUserBalance = async (): Promise<number> => {
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
   if (userError) {
@@ -99,18 +103,23 @@ export const fetchCurrentUserBalance = async () => {
     return 0;
   }
 
-  const { data, error } = await supabase.rpc("get_user_balance", {
-    p_user_id: userData.user.id,
-  });
+  try {
+    const { data, error } = await supabase.rpc("get_user_balance" as never, {
+      p_user_id: userData.user.id,
+    } as never);
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("get_user_balance function not available:", error.message);
+      return 0;
+    }
+
+    return Number(data ?? 0);
+  } catch {
+    return 0;
   }
-
-  return Number(data ?? 0);
 };
 
-export const fetchCurrentUserPendingPoints = async () => {
+export const fetchCurrentUserPendingPoints = async (): Promise<number> => {
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
   if (userError) {
@@ -121,61 +130,74 @@ export const fetchCurrentUserPendingPoints = async () => {
     return 0;
   }
 
-  const { data, error } = await supabase.rpc("get_pending_points", {
-    p_user_id: userData.user.id,
-  });
+  try {
+    const { data, error } = await supabase.rpc("get_pending_points" as never, {
+      p_user_id: userData.user.id,
+    } as never);
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("get_pending_points function not available:", error.message);
+      return 0;
+    }
+
+    return Number(data ?? 0);
+  } catch {
+    return 0;
   }
-
-  return Number(data ?? 0);
 };
 
-export const redeemProduct = async (productId: string) => {
-  const { data, error } = await supabase.rpc("redeem_product", {
+export const redeemProduct = async (productId: string): Promise<RedemptionResult | null> => {
+  const { data, error } = await supabase.rpc("redeem_product" as never, {
     p_product_id: productId,
-  });
+  } as never);
 
   if (error) {
     throw error;
   }
 
-  const [result] = (data ?? []) as RedemptionResult[];
-  return result ?? null;
+  const result = data as RedemptionResult[] | null;
+  return result?.[0] ?? null;
 };
 
-export const fetchRedemptionHistory = async (userId: string) => {
-  const { data, error } = await supabase
-    .from("redemptions")
-    .select("id, points_spent, status, created_at, products(name)")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .returns<RedemptionHistory[]>();
+export const fetchRedemptionHistory = async (userId: string): Promise<RedemptionHistory[]> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from("redemptions")
+      .select("id, points_spent, status, created_at, products(name)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("redemptions table not available:", error.message);
+      return [];
+    }
+
+    return (data ?? []) as RedemptionHistory[];
+  } catch {
+    return [];
   }
-
-  return data ?? [];
 };
 
-export const fetchReceiptHistory = async (userId: string) => {
-  const { data, error } = await supabase
-    .from("receipts")
-    .select("id, points_earned, status, protocol_number, created_at, establishments(name)")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .returns<ReceiptHistory[]>();
+export const fetchReceiptHistory = async (userId: string): Promise<ReceiptHistory[]> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from("receipts")
+      .select("id, points_earned, status, protocol_number, created_at, establishments(name)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("receipts table not available:", error.message);
+      return [];
+    }
+
+    return (data ?? []) as ReceiptHistory[];
+  } catch {
+    return [];
   }
-
-  return data ?? [];
 };
 
-export const fetchCurrentUserProfileName = async () => {
+export const fetchCurrentUserProfileName = async (): Promise<string | null> => {
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
   if (userError) {
@@ -186,33 +208,43 @@ export const fetchCurrentUserProfileName = async () => {
     return null;
   }
 
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("user_id", userData.user.id)
-    .maybeSingle();
+  try {
+    const { data, error } = await (supabase as any)
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("profiles table not available:", error.message);
+      return null;
+    }
+
+    return (data as { full_name: string | null } | null)?.full_name ?? null;
+  } catch {
+    return null;
   }
-
-  return data?.full_name ?? null;
 };
 
-export const fetchUserLedger = async (userId: string, limit = 5) => {
-  const { data, error } = await supabase.rpc("get_user_ledger", {
-    p_user_id: userId,
-    p_limit: limit,
-  });
+export const fetchUserLedger = async (userId: string, limit = 5): Promise<LedgerEntry[]> => {
+  try {
+    const { data, error } = await supabase.rpc("get_user_ledger" as never, {
+      p_user_id: userId,
+      p_limit: limit,
+    } as never);
 
-  if (error) {
-    throw error;
+    if (error) {
+      console.warn("get_user_ledger function not available:", error.message);
+      return [];
+    }
+
+    return (data ?? []) as LedgerEntry[];
+  } catch {
+    return [];
   }
-
-  return (data ?? []) as LedgerEntry[];
 };
 
-export const fetchCurrentUserId = async () => {
+export const fetchCurrentUserId = async (): Promise<string | null> => {
   const { data, error } = await supabase.auth.getUser();
 
   if (error) {

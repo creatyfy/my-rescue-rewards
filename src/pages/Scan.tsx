@@ -10,6 +10,11 @@ import { uploadReceiptForCurrentUser } from "@/integrations/supabase/storage";
 
 type ScanStep = "scan" | "form" | "success";
 
+type QrScanner = {
+  stop: () => Promise<void>;
+  clear: () => void;
+};
+
 export default function Scan() {
   const [step, setStep] = useState<ScanStep>("scan");
   const [establishmentName, setEstablishmentName] = useState("");
@@ -19,7 +24,7 @@ export default function Scan() {
   const [qrCodeToken, setQrCodeToken] = useState<string | null>(null);
   const [isValidatingQr, setIsValidatingQr] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => Promise<void> } | null>(null);
+  const scannerRef = useRef<QrScanner | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -49,7 +54,7 @@ export default function Scan() {
 
     try {
       await scannerRef.current.stop();
-      await scannerRef.current.clear();
+      scannerRef.current.clear();
     } catch (error) {
       console.error("Erro ao parar o scanner:", error);
     } finally {
@@ -149,7 +154,12 @@ export default function Scan() {
 
       const { Html5Qrcode } = await import("html5-qrcode");
       const scanner = new Html5Qrcode("qr-reader");
-      scannerRef.current = scanner;
+      
+      // Create a wrapper that adapts the Html5Qrcode interface
+      scannerRef.current = {
+        stop: () => scanner.stop(),
+        clear: () => scanner.clear(),
+      };
 
       try {
         await scanner.start(
