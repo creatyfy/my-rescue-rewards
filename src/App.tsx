@@ -18,6 +18,8 @@ import ProfilePayments from "./pages/ProfilePayments";
 import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
+import Help from "./pages/Help";
+import Settings from "./pages/Settings";
 import AuthGuard from "./components/auth/AuthGuard";
 
 const queryClient = new QueryClient();
@@ -110,6 +112,22 @@ const App = () => (
             element={
               <AuthGuard>
                 <History />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/help"
+            element={
+              <AuthGuard>
+                <Help />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <AuthGuard>
+                <Settings />
               </AuthGuard>
             }
           />
