@@ -45,7 +45,7 @@ export default function Admin() {
   }, [navigate]);
 
   return (
-    <AppLayout title="Admin" showNav={false}>
+    <AppLayout title="Admin" showNav={false} showBack>
       <div className="container px-4 py-6">
         {status === "loading" ? (
           <Card className="p-6">

@@ -62,7 +62,7 @@ export default function Settings() {
   };
 
   return (
-    <AppLayout title="Configurações">
+    <AppLayout title="Configurações" showBack>
       <div className="container px-4 py-6 space-y-6">
         <section className="bg-card border border-border/50 rounded-2xl shadow-soft p-6">
           <h2 className="font-display font-semibold text-lg text-foreground mb-4">

@@ -186,7 +186,7 @@ export default function Scan() {
   }, [step]);
 
   return (
-    <AppLayout title="Escanear QR">
+    <AppLayout title="Escanear QR" showBack>
       <div className="container px-4 py-6">
         {step === "scan" && (
           <div className="flex flex-col items-center">

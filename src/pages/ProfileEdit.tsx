@@ -72,7 +72,7 @@ export default function ProfileEdit() {
   };
 
   return (
-    <AppLayout title="Dados pessoais">
+    <AppLayout title="Dados pessoais" showBack>
       <div className="container px-4 py-6">
         <div className="bg-card border border-border/50 rounded-2xl shadow-soft p-6">
           <h2 className="font-display font-semibold text-lg text-foreground mb-4">

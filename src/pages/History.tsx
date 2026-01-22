@@ -95,7 +95,7 @@ export default function History() {
   });
 
   return (
-    <AppLayout title="Histórico">
+    <AppLayout title="Histórico" showBack>
       <div className="container px-4 py-6">
         {/* Filter Tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
