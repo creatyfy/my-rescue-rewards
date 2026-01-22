@@ -42,7 +42,7 @@ export default function ProfileSecurity() {
   };
 
   return (
-    <AppLayout title="Segurança">
+    <AppLayout title="Segurança" showBack>
       <div className="container px-4 py-6 space-y-6">
         <div className="bg-card border border-border/50 rounded-2xl shadow-soft p-6 space-y-4">
           <div>
