@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 interface HeaderProps {
   showBack?: boolean;
@@ -12,6 +13,7 @@ export function Header({ title, showBack = false }: HeaderProps) {
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border/50">
       <div className="container flex items-center justify-between h-14 px-4">
         <div className="flex items-center gap-2">
+          <SidebarTrigger className="hidden md:inline-flex" />
           {showBack && (
             <Button variant="ghost" size="sm" asChild>
               <Link to="/dashboard" className="flex items-center gap-2">
