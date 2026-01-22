@@ -1,8 +1,8 @@
 import { supabase } from "./client";
 
-type EstablishmentMatch = {
-  id: string;
-  name: string;
+type StoreMatch = {
+  store_id: string;
+  store_name: string;
 };
 
 type SubmittedReceipt = {
@@ -12,21 +12,25 @@ type SubmittedReceipt = {
   status: "pending" | "approved" | "rejected";
 };
 
-export const fetchEstablishmentByQrToken = async (qrCodeToken: string): Promise<EstablishmentMatch | null> => {
+export const fetchStoreByQrValue = async (
+  qrValue: string,
+): Promise<{ id: string; name: string } | null> => {
   try {
-    const { data, error } = await (supabase as any)
-      .from("establishments")
-      .select("id, name")
-      .eq("qr_code_token", qrCodeToken)
-      .eq("active", true)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("get_store_by_qr_value" as never, {
+      p_qr_value: qrValue,
+    } as never);
 
     if (error) {
-      console.warn("establishments table not available:", error.message);
+      console.warn("get_store_by_qr_value function not available:", error.message);
       return null;
     }
 
-    return data as EstablishmentMatch | null;
+    const result = data as StoreMatch[] | null;
+    const match = result?.[0];
+    if (!match) {
+      return null;
+    }
+    return { id: match.store_id, name: match.store_name };
   } catch {
     return null;
   }
@@ -43,7 +47,7 @@ export const submitReceiptForCurrentUser = async ({
 }): Promise<SubmittedReceipt | null> => {
   try {
     const { data, error } = await supabase.rpc("submit_receipt" as never, {
-      p_qr_code_token: qrCodeToken,
+      p_qr_value: qrCodeToken,
       p_purchase_value: purchaseValue,
       p_image_path: receiptPath,
     } as never);

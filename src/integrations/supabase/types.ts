@@ -50,6 +50,91 @@ export type Database = {
         }
         Relationships: []
       }
+      stores: {
+        Row: {
+          city: string
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          name: string
+          phone: string
+          qr_code_id: string | null
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          city: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          phone: string
+          qr_code_id?: string | null
+          state: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          phone?: string
+          qr_code_id?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stores_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      qr_codes: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          is_active: boolean
+          qr_image: string | null
+          qr_value: string
+          store_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          qr_image?: string | null
+          qr_value: string
+          store_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_active?: boolean
+          qr_image?: string | null
+          qr_value?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_codes_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       points_ledger: {
         Row: {
           amount: number
@@ -167,7 +252,7 @@ export type Database = {
       receipts: {
         Row: {
           created_at: string
-          establishment_id: string
+          store_id: string
           id: string
           image_path: string | null
           points_earned: number
@@ -181,7 +266,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          establishment_id: string
+          store_id: string
           id?: string
           image_path?: string | null
           points_earned: number
@@ -195,7 +280,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          establishment_id?: string
+          store_id?: string
           id?: string
           image_path?: string | null
           points_earned?: number
@@ -209,10 +294,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "receipts_establishment_id_fkey"
-            columns: ["establishment_id"]
+            foreignKeyName: "receipts_store_id_fkey"
+            columns: ["store_id"]
             isOneToOne: false
-            referencedRelation: "establishments"
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -289,7 +374,7 @@ export type Database = {
         Returns: {
           amount: number
           created_at: string
-          establishment_name: string
+          store_name: string
           ledger_id: string
           ledger_type: Database["public"]["Enums"]["ledger_type"]
           product_name: string
@@ -322,13 +407,29 @@ export type Database = {
         Args: {
           p_image_path: string
           p_purchase_value: number
-          p_qr_code_token: string
+          p_qr_value: string
         }
         Returns: {
           points_earned: number
           protocol_number: string
           receipt_id: string
           status: Database["public"]["Enums"]["receipt_status"]
+        }[]
+      }
+      generate_store_qr_code: {
+        Args: { p_store_id: string }
+        Returns: {
+          created_at: string
+          qr_code_id: string
+          qr_image: string
+          qr_value: string
+        }[]
+      }
+      get_store_by_qr_value: {
+        Args: { p_qr_value: string }
+        Returns: {
+          store_id: string
+          store_name: string
         }[]
       }
     }

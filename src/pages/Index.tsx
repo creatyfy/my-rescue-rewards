@@ -37,7 +37,7 @@ export default function Index() {
             </h1>
 
             <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto">
-              Acumule pontos em estabelecimentos parceiros e troque por produtos exclusivos. 
+              Acumule pontos em lojas parceiras e troque por produtos exclusivos. 
               Simples, rápido e vantajoso.
             </p>
 
@@ -76,7 +76,7 @@ export default function Index() {
               1. Escaneie o QR Code
             </h3>
             <p className="text-sm text-muted-foreground">
-              Ao fazer uma compra em um parceiro, escaneie o QR Code do estabelecimento
+              Ao fazer uma compra em um parceiro, escaneie o QR Code da loja
             </p>
           </div>
 

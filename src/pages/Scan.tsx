@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Camera, Upload, Store, CheckCircle, AlertCircle } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
-import { fetchEstablishmentByQrToken, submitReceiptForCurrentUser } from "@/integrations/supabase/receipts";
+import { fetchStoreByQrValue, submitReceiptForCurrentUser } from "@/integrations/supabase/receipts";
 import { uploadReceiptForCurrentUser } from "@/integrations/supabase/storage";
 
 type ScanStep = "scan" | "form" | "success";
@@ -71,15 +71,15 @@ export default function Scan() {
     setIsValidatingQr(true);
 
     try {
-      const establishment = await fetchEstablishmentByQrToken(token);
+      const store = await fetchStoreByQrValue(token);
 
-      if (!establishment) {
-        toast.error("QR Code inválido ou estabelecimento inativo.");
+      if (!store) {
+        toast.error("QR Code inválido ou loja inativa.");
         return;
       }
 
       setQrCodeToken(token);
-      setEstablishmentName(establishment.name);
+      setEstablishmentName(store.name);
       await stopScanner();
       setStep("form");
     } catch (error) {
@@ -208,7 +208,7 @@ export default function Scan() {
                   Aponte para o QR Code
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  do estabelecimento parceiro
+                  da loja parceira
                 </p>
               </div>
             </div>
@@ -217,7 +217,7 @@ export default function Scan() {
             <div className="w-full max-w-sm bg-accent/50 rounded-xl p-4 mb-6">
               <h3 className="font-semibold text-sm text-foreground mb-2">Como funciona:</h3>
               <ol className="text-xs text-muted-foreground space-y-1">
-                <li>1. Escaneie o QR Code do estabelecimento</li>
+                <li>1. Escaneie o QR Code da loja</li>
                 <li>2. Informe o valor da sua compra</li>
                 <li>3. Envie a foto do comprovante</li>
                 <li>4. Aguarde a aprovação e ganhe pontos!</li>
@@ -239,7 +239,7 @@ export default function Scan() {
                 <Store className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Estabelecimento</p>
+                <p className="text-xs text-muted-foreground">Loja</p>
                 <p className="font-display font-semibold text-foreground">
                   {establishmentName}
                 </p>

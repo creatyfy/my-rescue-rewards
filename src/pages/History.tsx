@@ -41,7 +41,7 @@ export default function History() {
         const receiptItems: Transaction[] = receipts.map((receipt) => ({
           id: receipt.id,
           type: "earn" as const,
-          title: receipt.establishments?.name ?? "Estabelecimento",
+          title: receipt.stores?.name ?? "Loja parceira",
           subtitle: `Comprovante ${receipt.protocol_number}`,
           points: receipt.points_earned,
           status: receipt.status as TransactionStatus,
