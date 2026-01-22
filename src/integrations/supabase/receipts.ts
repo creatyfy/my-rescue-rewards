@@ -8,9 +8,8 @@ type EstablishmentMatch = {
 type SubmittedReceipt = {
   receipt_id: string;
   protocol_number: string;
-  establishment_id: string;
-  establishment_name: string;
   points_earned: number;
+  status: "pending" | "approved" | "rejected";
 };
 
 export const fetchEstablishmentByQrToken = async (qrCodeToken: string): Promise<EstablishmentMatch | null> => {
@@ -44,9 +43,9 @@ export const submitReceiptForCurrentUser = async ({
 }): Promise<SubmittedReceipt | null> => {
   try {
     const { data, error } = await supabase.rpc("submit_receipt" as never, {
-      qr_token: qrCodeToken,
-      purchase_value: purchaseValue,
-      image_url: receiptPath,
+      p_qr_code_token: qrCodeToken,
+      p_purchase_value: purchaseValue,
+      p_image_path: receiptPath,
     } as never);
 
     if (error) {
