@@ -47,6 +47,7 @@ export function AdminEstablishmentsPanel() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formState, setFormState] = useState<EstablishmentFormState>(emptyFormState);
   const [saving, setSaving] = useState(false);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
 
   const loadEstablishments = async () => {
     try {
@@ -129,7 +130,8 @@ export function AdminEstablishmentsPanel() {
       setDialogOpen(false);
     } catch (error) {
       console.error("Erro ao salvar estabelecimento:", error);
-      toast.error("Não foi possível salvar o estabelecimento.");
+      const message = error instanceof Error ? error.message : "Não foi possível salvar o estabelecimento.";
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -142,9 +144,31 @@ export function AdminEstablishmentsPanel() {
       toast.success("Estabelecimento removido.");
     } catch (error) {
       console.error("Erro ao remover estabelecimento:", error);
-      toast.error("Não foi possível remover o estabelecimento.");
+      const message = error instanceof Error ? error.message : "Não foi possível remover o estabelecimento.";
+      toast.error(message);
     }
   };
+
+  useEffect(() => {
+    if (!dialogOpen) {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+      setLocalPreviewUrl(null);
+      return;
+    }
+
+    if (!formState.logoFile) {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+      setLocalPreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(formState.logoFile);
+    setLocalPreviewUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formState.logoFile, dialogOpen]);
 
   const qrMap = useMemo(() => new Map<string, string>(), []);
   const [qrRefresh, setQrRefresh] = useState(0);
@@ -279,6 +303,25 @@ export function AdminEstablishmentsPanel() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4">
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-medium text-foreground mb-3">Preview</p>
+              <div className="flex items-center gap-4">
+                <div className="h-20 w-20 rounded-xl border overflow-hidden bg-muted">
+                  {(localPreviewUrl || formState.logoUrl) ? (
+                    <img
+                      src={localPreviewUrl ?? formState.logoUrl}
+                      alt={formState.name || "Preview do estabelecimento"}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : null}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Se você selecionar um arquivo, ele será enviado e substituirá a URL.
+                </p>
+              </div>
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="est-name">Nome</Label>
               <Input

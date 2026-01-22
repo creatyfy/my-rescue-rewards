@@ -46,6 +46,7 @@ export function AdminProductsPanel() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formState, setFormState] = useState<ProductFormState>(emptyFormState);
   const [saving, setSaving] = useState(false);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
 
   const loadProducts = async () => {
     try {
@@ -133,7 +134,8 @@ export function AdminProductsPanel() {
       setDialogOpen(false);
     } catch (error) {
       console.error("Erro ao salvar produto:", error);
-      toast.error("Não foi possível salvar o produto.");
+      const message = error instanceof Error ? error.message : "Não foi possível salvar o produto.";
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -146,9 +148,31 @@ export function AdminProductsPanel() {
       toast.success("Produto removido.");
     } catch (error) {
       console.error("Erro ao remover produto:", error);
-      toast.error("Não foi possível remover o produto.");
+      const message = error instanceof Error ? error.message : "Não foi possível remover o produto.";
+      toast.error(message);
     }
   };
+
+  useEffect(() => {
+    if (!dialogOpen) {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+      setLocalPreviewUrl(null);
+      return;
+    }
+
+    if (!formState.imageFile) {
+      if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
+      setLocalPreviewUrl(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(formState.imageFile);
+    setLocalPreviewUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formState.imageFile, dialogOpen]);
 
   return (
     <Card className="p-6">
@@ -246,6 +270,25 @@ export function AdminProductsPanel() {
             <DialogTitle>{formState.id ? "Editar produto" : "Novo produto"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4">
+            <div className="rounded-xl border border-border/50 p-4">
+              <p className="text-sm font-medium text-foreground mb-3">Preview</p>
+              <div className="flex items-center gap-4">
+                <div className="h-20 w-20 rounded-xl border overflow-hidden bg-muted">
+                  {(localPreviewUrl || formState.imageUrl) ? (
+                    <img
+                      src={localPreviewUrl ?? formState.imageUrl}
+                      alt={formState.name || "Preview do produto"}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : null}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Se você selecionar um arquivo, ele será enviado e substituirá a URL.
+                </p>
+              </div>
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="product-name">Nome</Label>
               <Input
