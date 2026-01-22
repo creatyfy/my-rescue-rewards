@@ -50,13 +50,13 @@ export function AdminReceiptsPanel() {
   };
 
   const handlePreview = async (receipt: AdminReceipt) => {
-    if (!receipt.image_url) {
+    if (!receipt.image_path) {
       toast.error("Comprovante sem imagem disponível.");
       return;
     }
 
     try {
-      const url = await createSignedReceiptUrl(receipt.image_url, 180);
+      const url = await createSignedReceiptUrl(receipt.image_path, 180);
       setPreviewUrl(url);
       setPreviewProtocol(receipt.protocol_number);
     } catch (error) {
@@ -117,7 +117,7 @@ export function AdminReceiptsPanel() {
                       variant="outline"
                       size="sm"
                       onClick={() => handlePreview(receipt)}
-                      disabled={!receipt.image_url}
+                      disabled={!receipt.image_path}
                     >
                       <Eye className="mr-1 h-4 w-4" />
                       Ver
