@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { updateCurrentUserProfile } from "@/integrations/supabase/profile";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft } from "lucide-react";
 
@@ -50,6 +51,7 @@ export default function Auth() {
         email: formData.email,
         password: formData.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             full_name: formData.name,
           },
@@ -61,6 +63,7 @@ export default function Auth() {
       }
 
       if (data.session) {
+        await updateCurrentUserProfile({ fullName: formData.name });
         navigate("/dashboard");
       } else {
         toast.success("Conta criada! Verifique seu e-mail para confirmar.");
