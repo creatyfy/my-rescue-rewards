@@ -9,7 +9,7 @@ export type AdminReceipt = {
   purchase_value: number;
   points_earned: number;
   status: ReceiptReviewStatus;
-  image_url: string | null;
+  image_path: string | null;
   created_at: string;
   user_id: string;
   establishments: {
@@ -96,7 +96,7 @@ export const fetchPendingReceipts = async (): Promise<AdminReceipt[]> => {
     const { data, error } = await (supabase as any)
       .from("receipts")
       .select(
-        "id, protocol_number, purchase_value, points_earned, status, image_url, created_at, user_id, establishments(name)",
+        "id, protocol_number, purchase_value, points_earned, status, image_path, created_at, user_id, establishments(name)",
       )
       .eq("status", "pending")
       .order("created_at", { ascending: false });
