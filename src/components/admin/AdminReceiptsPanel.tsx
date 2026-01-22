@@ -172,7 +172,7 @@ export function AdminReceiptsPanel() {
             {receipts.map((receipt) => (
               <TableRow key={receipt.id}>
                 <TableCell className="font-medium">{receipt.protocol_number}</TableCell>
-                <TableCell>{receipt.stores?.name ?? "Loja"}</TableCell>
+                <TableCell>{receipt.establishments?.name ?? "Estabelecimento"}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {receipt.user_id}
                 </TableCell>

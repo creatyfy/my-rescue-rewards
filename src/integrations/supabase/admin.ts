@@ -12,7 +12,7 @@ export type AdminReceipt = {
   image_path: string | null;
   created_at: string;
   user_id: string;
-  stores: {
+  establishments: {
     name: string | null;
   } | null;
 };
@@ -28,25 +28,8 @@ export type AdminEstablishment = {
   created_at: string;
 };
 
-export type AdminStore = {
-  id: string;
-  name: string;
-  phone: string;
-  city: string;
-  state: string;
-  is_active: boolean;
-  qr_code_id: string | null;
-  created_at: string;
-};
-
-export type AdminQrCode = {
-  id: string;
-  store_id: string;
-  qr_value: string;
-  qr_image: string | null;
-  is_active: boolean;
-  created_at: string;
-};
+// REMOVIDO: AdminStore e AdminQrCode - tabelas não existem no schema atual
+// O sistema usa "establishments" para lojas parceiras
 
 export type AdminProduct = {
   id: string;
@@ -89,19 +72,47 @@ export const fetchAdminStatus = async (): Promise<boolean> => {
   }
 };
 
-export const bootstrapFirstAdmin = async (): Promise<boolean> => {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
+// REMOVIDO: bootstrapFirstAdmin - auto-promoção desabilitada por segurança
+// A promoção de admin só pode ser feita por outro admin via promote_user_to_admin
 
-  if (userError) {
-    throw userError;
+export type AdminUser = {
+  user_id: string;
+  email: string;
+  full_name: string | null;
+  role: string;
+  created_at: string;
+};
+
+export const fetchAdminUsers = async (): Promise<AdminUser[]> => {
+  try {
+    const { data, error } = await supabase.rpc("list_users_for_admin");
+
+    if (error) {
+      console.warn("list_users_for_admin failed:", error.message);
+      return [];
+    }
+
+    return (data ?? []) as AdminUser[];
+  } catch {
+    return [];
+  }
+};
+
+export const promoteUserToAdmin = async (targetUserId: string): Promise<boolean> => {
+  const { data, error } = await supabase.rpc("promote_user_to_admin", {
+    p_target_user_id: targetUserId,
+  });
+
+  if (error) {
+    throw error;
   }
 
-  if (!userData.user) {
-    throw new Error("Usuário não autenticado.");
-  }
+  return Boolean(data);
+};
 
-  const { data, error } = await supabase.rpc("bootstrap_first_admin", {
-    p_user_id: userData.user.id,
+export const demoteAdminToUser = async (targetUserId: string): Promise<boolean> => {
+  const { data, error } = await supabase.rpc("demote_admin_to_user", {
+    p_target_user_id: targetUserId,
   });
 
   if (error) {
@@ -133,7 +144,7 @@ export const fetchAdminReceipts = async (params?: {
     let q = supabase
       .from("receipts")
       .select(
-        "id, protocol_number, purchase_value, points_earned, status, image_path, created_at, user_id, stores(name)",
+        "id, protocol_number, purchase_value, points_earned, status, image_path, created_at, user_id, establishments(name)",
         { count: "exact" },
       )
       .order("created_at", { ascending: false });
@@ -143,8 +154,8 @@ export const fetchAdminReceipts = async (params?: {
     }
 
     if (query) {
-      // Busca por protocolo OU nome da loja (relacionamento via FK)
-      q = q.or(`protocol_number.ilike.%${query}%,stores.name.ilike.%${query}%`);
+      // Busca por protocolo OU nome do estabelecimento (relacionamento via FK)
+      q = q.or(`protocol_number.ilike.%${query}%,establishments.name.ilike.%${query}%`);
     }
 
     const { data, error, count } = await q.range(from, to);
@@ -264,147 +275,8 @@ export const fetchAdminEstablishments = async (): Promise<AdminEstablishment[]> 
   }
 };
 
-export const fetchAdminStores = async (): Promise<AdminStore[]> => {
-  try {
-    const { data, error } = await supabase
-      .from("stores")
-      .select("id, name, phone, city, state, is_active, qr_code_id, created_at")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.warn("stores table not available:", error.message);
-      return [];
-    }
-
-    return (data ?? []) as AdminStore[];
-  } catch {
-    return [];
-  }
-};
-
-export const fetchActiveQrCodesForStores = async (storeIds: string[]): Promise<AdminQrCode[]> => {
-  if (storeIds.length === 0) {
-    return [];
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from("qr_codes")
-      .select("id, store_id, qr_value, qr_image, is_active, created_at")
-      .in("store_id", storeIds)
-      .eq("is_active", true);
-
-    if (error) {
-      console.warn("qr_codes table not available:", error.message);
-      return [];
-    }
-
-    return (data ?? []) as AdminQrCode[];
-  } catch {
-    return [];
-  }
-};
-
-export const createStore = async (input: {
-  name: string;
-  phone: string;
-  city: string;
-  state: string;
-  isActive: boolean;
-}) => {
-  const { data, error } = await supabase
-    .from("stores")
-    .insert({
-      name: input.name,
-      phone: input.phone,
-      city: input.city,
-      state: input.state,
-      is_active: input.isActive,
-    })
-    .select("id, name, phone, city, state, is_active, qr_code_id, created_at")
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data as AdminStore;
-};
-
-export const updateStore = async (input: {
-  id: string;
-  name: string;
-  phone: string;
-  city: string;
-  state: string;
-  isActive: boolean;
-}) => {
-  const { data, error } = await supabase
-    .from("stores")
-    .update({
-      name: input.name,
-      phone: input.phone,
-      city: input.city,
-      state: input.state,
-      is_active: input.isActive,
-    })
-    .eq("id", input.id)
-    .select("id, name, phone, city, state, is_active, qr_code_id, created_at")
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data as AdminStore;
-};
-
-export const deactivateStore = async (id: string) => {
-  const { data, error } = await supabase
-    .from("stores")
-    .update({ is_active: false })
-    .eq("id", id)
-    .select("id, name, phone, city, state, is_active, qr_code_id, created_at")
-    .single();
-
-  if (error) {
-    throw error;
-  }
-
-  return data as AdminStore;
-};
-
-export const generateStoreQrCode = async (storeId: string) => {
-  const { data, error } = await supabase.rpc("generate_store_qr_code" as never, {
-    p_store_id: storeId,
-  } as never);
-
-  if (error) {
-    throw error;
-  }
-
-  const result = data as
-    | {
-        qr_code_id: string;
-        qr_value: string;
-        qr_image: string | null;
-        created_at: string;
-      }[]
-    | null;
-  const payload = result?.[0];
-  if (!payload) {
-    return null;
-  }
-
-  return {
-    id: payload.qr_code_id,
-    store_id: storeId,
-    qr_value: payload.qr_value,
-    qr_image: payload.qr_image,
-    is_active: true,
-    created_at: payload.created_at,
-  } satisfies AdminQrCode;
-};
+// REMOVIDO: funções de stores e qr_codes - tabelas não existem no schema
+// O sistema usa "establishments" para lojas parceiras com qr_code_token
 
 export const createEstablishment = async (input: {
   name: string;

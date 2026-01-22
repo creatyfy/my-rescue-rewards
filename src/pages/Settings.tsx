@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/sonner";
-import { bootstrapFirstAdmin, fetchAdminStatus } from "@/integrations/supabase/admin";
+import { fetchAdminStatus } from "@/integrations/supabase/admin";
 
 const initialPreferences = {
   notifications: true,
@@ -16,7 +14,6 @@ export default function Settings() {
   const [preferences, setPreferences] = useState(initialPreferences);
   const [adminLoading, setAdminLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [promoting, setPromoting] = useState(false);
 
   const togglePreference = (key: keyof typeof initialPreferences) => {
     setPreferences((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -40,26 +37,6 @@ export default function Settings() {
       mounted = false;
     };
   }, []);
-
-  const handleBootstrapAdmin = async () => {
-    setPromoting(true);
-    try {
-      const promoted = await bootstrapFirstAdmin();
-
-      if (!promoted) {
-        toast.error("Já existe um administrador cadastrado.");
-        return;
-      }
-
-      toast.success("Administrador ativado com sucesso neste usuário.");
-      setIsAdmin(true);
-    } catch (error) {
-      console.error("Erro ao ativar admin:", error);
-      toast.error("Não foi possível ativar administrador.");
-    } finally {
-      setPromoting(false);
-    }
-  };
 
   return (
     <AppLayout title="Configurações" showBack>
@@ -151,27 +128,21 @@ export default function Settings() {
           <h2 className="font-display font-semibold text-lg text-foreground mb-2">
             Administração
           </h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Ative o primeiro administrador do sistema (somente uma vez).
-          </p>
 
           {adminLoading ? (
             <p className="text-sm text-muted-foreground">Carregando...</p>
           ) : isAdmin ? (
             <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm font-medium text-foreground">Você já é administrador.</p>
+              <p className="text-sm font-medium text-foreground">Você é administrador.</p>
               <p className="text-xs text-muted-foreground mt-1">
-                O painel administrativo está disponível no seu Perfil.
+                O painel administrativo está disponível no menu do seu Perfil.
               </p>
             </div>
           ) : (
-            <div className="rounded-xl border border-border/50 p-4 space-y-3">
+            <div className="rounded-xl border border-border/50 p-4">
               <p className="text-sm text-muted-foreground">
-                Use este botão apenas no setup inicial. Se já existir um admin, a ativação será negada.
+                Você é um usuário comum. A promoção para administrador só pode ser feita por outro administrador.
               </p>
-              <Button onClick={handleBootstrapAdmin} disabled={promoting}>
-                {promoting ? "Ativando..." : "Ativar admin neste usuário"}
-              </Button>
             </div>
           )}
         </section>
