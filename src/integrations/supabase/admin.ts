@@ -92,23 +92,56 @@ export const bootstrapFirstAdmin = async (): Promise<boolean> => {
 };
 
 export const fetchPendingReceipts = async (): Promise<AdminReceipt[]> => {
+  const result = await fetchAdminReceipts({ status: "pending" });
+  return result.items;
+};
+
+export const fetchAdminReceipts = async (params?: {
+  status?: ReceiptReviewStatus;
+  query?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<{ items: AdminReceipt[]; total: number; page: number; pageSize: number }> => {
+  const status = params?.status;
+  const query = (params?.query ?? "").trim();
+  const pageSize = Math.max(1, Math.min(params?.pageSize ?? 20, 50));
+  const page = Math.max(1, params?.page ?? 1);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
   try {
-    const { data, error } = await supabase
+    let q = supabase
       .from("receipts")
       .select(
         "id, protocol_number, purchase_value, points_earned, status, image_path, created_at, user_id, establishments(name)",
+        { count: "exact" },
       )
-      .eq("status", "pending")
       .order("created_at", { ascending: false });
 
-    if (error) {
-      console.warn("receipts table not available:", error.message);
-      return [];
+    if (status) {
+      q = q.eq("status", status);
     }
 
-    return (data ?? []) as AdminReceipt[];
+    if (query) {
+      // Busca por protocolo OU nome do estabelecimento (relacionamento via FK)
+      q = q.or(`protocol_number.ilike.%${query}%,establishments.name.ilike.%${query}%`);
+    }
+
+    const { data, error, count } = await q.range(from, to);
+
+    if (error) {
+      console.warn("receipts query failed:", error.message);
+      return { items: [], total: 0, page, pageSize };
+    }
+
+    return {
+      items: (data ?? []) as AdminReceipt[],
+      total: Number(count ?? 0),
+      page,
+      pageSize,
+    };
   } catch {
-    return [];
+    return { items: [], total: 0, page, pageSize };
   }
 };
 

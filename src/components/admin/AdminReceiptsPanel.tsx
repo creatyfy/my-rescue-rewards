@@ -2,11 +2,18 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/sonner";
 import { createSignedReceiptUrl } from "@/integrations/supabase/storage";
-import { AdminReceipt, fetchPendingReceipts, reviewReceipt } from "@/integrations/supabase/admin";
-import { CheckCircle, Eye, XCircle } from "lucide-react";
+import {
+  AdminReceipt,
+  ReceiptReviewStatus,
+  fetchAdminReceipts,
+  reviewReceipt,
+} from "@/integrations/supabase/admin";
+import { CheckCircle, ChevronLeft, ChevronRight, Eye, Search, XCircle } from "lucide-react";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -17,11 +24,18 @@ export function AdminReceiptsPanel() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewProtocol, setPreviewProtocol] = useState<string | null>(null);
 
+  const [status, setStatus] = useState<ReceiptReviewStatus>("pending");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const [total, setTotal] = useState(0);
+
   const loadReceipts = async () => {
     try {
       setLoading(true);
-      const data = await fetchPendingReceipts();
-      setReceipts(data);
+      const result = await fetchAdminReceipts({ status, query, page, pageSize });
+      setReceipts(result.items);
+      setTotal(result.total);
     } catch (error) {
       console.error("Erro ao carregar comprovantes pendentes:", error);
       toast.error("Não foi possível carregar os comprovantes pendentes.");
@@ -32,12 +46,23 @@ export function AdminReceiptsPanel() {
 
   useEffect(() => {
     loadReceipts();
-  }, []);
+  }, [status, page]);
+
+  useEffect(() => {
+    // Ao alterar a busca, volta para a primeira página e recarrega.
+    setPage(1);
+    const handle = window.setTimeout(() => {
+      loadReceipts();
+    }, 250);
+    return () => window.clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [query, status]);
 
   const handleReview = async (receiptId: string, status: "approved" | "rejected") => {
     try {
       await reviewReceipt(receiptId, status);
       setReceipts((prev) => prev.filter((receipt) => receipt.id !== receiptId));
+      setTotal((prev) => Math.max(0, prev - 1));
       toast.success(
         status === "approved"
           ? "Comprovante aprovado com sucesso."
@@ -74,11 +99,61 @@ export function AdminReceiptsPanel() {
         </p>
       </div>
 
+      <div className="space-y-4 mb-6">
+        <Tabs
+          value={status}
+          onValueChange={(value) => setStatus(value as ReceiptReviewStatus)}
+        >
+          <TabsList className="flex flex-wrap">
+            <TabsTrigger value="pending">Pendentes</TabsTrigger>
+            <TabsTrigger value="approved">Aprovados</TabsTrigger>
+            <TabsTrigger value="rejected">Rejeitados</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Buscar por protocolo ou estabelecimento..."
+            className="pl-10"
+          />
+        </div>
+
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            {loading ? "" : `${total.toLocaleString("pt-BR")} resultado(s)`}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={loading || page <= 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Anterior
+            </Button>
+            <span className="text-xs text-muted-foreground">Página {page}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => p + 1)}
+              disabled={loading || page * pageSize >= total}
+            >
+              Próxima
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {loading ? (
         <p className="text-sm text-muted-foreground">Carregando comprovantes...</p>
       ) : receipts.length === 0 ? (
         <div className="rounded-lg border border-dashed border-muted-foreground/40 p-6 text-center text-sm text-muted-foreground">
-          Nenhum comprovante pendente no momento.
+          Nenhum comprovante encontrado.
         </div>
       ) : (
         <Table>
