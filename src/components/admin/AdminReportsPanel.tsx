@@ -3,14 +3,14 @@ import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/components/ui/sonner";
 import {
+  AdminEstablishment,
   AdminProduct,
   AdminReceiptSummary,
   AdminRedemption,
-  AdminStore,
+  fetchAdminEstablishments,
   fetchAdminProducts,
   fetchAdminReceiptsSummary,
   fetchAdminRedemptions,
-  fetchAdminStores,
 } from "@/integrations/supabase/admin";
 
 const formatCurrency = (value: number) =>
@@ -20,22 +20,22 @@ export function AdminReportsPanel() {
   const [receipts, setReceipts] = useState<AdminReceiptSummary[]>([]);
   const [redemptions, setRedemptions] = useState<AdminRedemption[]>([]);
   const [products, setProducts] = useState<AdminProduct[]>([]);
-  const [stores, setStores] = useState<AdminStore[]>([]);
+  const [establishments, setEstablishments] = useState<AdminEstablishment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadReports = async () => {
     try {
       setLoading(true);
-      const [receiptData, redemptionData, productData, storeData] = await Promise.all([
+      const [receiptData, redemptionData, productData, establishmentData] = await Promise.all([
         fetchAdminReceiptsSummary(),
         fetchAdminRedemptions(),
         fetchAdminProducts(),
-        fetchAdminStores(),
+        fetchAdminEstablishments(),
       ]);
       setReceipts(receiptData);
       setRedemptions(redemptionData);
       setProducts(productData);
-      setStores(storeData);
+      setEstablishments(establishmentData);
     } catch (error) {
       console.error("Erro ao carregar relatórios:", error);
       toast.error("Não foi possível carregar os relatórios.");
@@ -83,15 +83,15 @@ export function AdminReportsPanel() {
     );
 
     const activeProducts = products.filter((product) => product.active).length;
-    const activeStores = stores.filter((store) => store.is_active).length;
+    const activeEstablishments = establishments.filter((est) => est.active).length;
 
     return {
       receiptTotals,
       redemptionTotals,
       activeProducts,
-      activeStores,
+      activeEstablishments,
     };
-  }, [receipts, redemptions, products, stores]);
+  }, [receipts, redemptions, products, establishments]);
 
   return (
     <Card className="p-6">
@@ -152,10 +152,10 @@ export function AdminReportsPanel() {
               </p>
             </Card>
             <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Lojas ativas</p>
-              <p className="text-2xl font-semibold mt-2">{summary.activeStores}</p>
+              <p className="text-sm text-muted-foreground">Estabelecimentos ativos</p>
+              <p className="text-2xl font-semibold mt-2">{summary.activeEstablishments}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {stores.length} parceiros cadastrados
+                {establishments.length} parceiros cadastrados
               </p>
             </Card>
           </div>

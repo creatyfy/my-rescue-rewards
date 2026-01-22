@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { AdminStoresPanel } from "@/components/admin/AdminStoresPanel";
+import { AdminEstablishmentsPanel } from "@/components/admin/AdminEstablishmentsPanel";
 import { AdminProductsPanel } from "@/components/admin/AdminProductsPanel";
 import { AdminReceiptsPanel } from "@/components/admin/AdminReceiptsPanel";
 import { AdminReportsPanel } from "@/components/admin/AdminReportsPanel";
+import { AdminUsersPanel } from "@/components/admin/AdminUsersPanel";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -78,19 +79,23 @@ export default function Admin() {
             <Tabs defaultValue="receipts" className="space-y-6">
               <TabsList className="flex flex-wrap">
                 <TabsTrigger value="receipts">Comprovantes</TabsTrigger>
-                <TabsTrigger value="stores">Lojas</TabsTrigger>
+                <TabsTrigger value="establishments">Estabelecimentos</TabsTrigger>
                 <TabsTrigger value="products">Produtos</TabsTrigger>
+                <TabsTrigger value="users">Usuários</TabsTrigger>
                 <TabsTrigger value="reports">Relatórios</TabsTrigger>
               </TabsList>
 
               <TabsContent value="receipts">
                 <AdminReceiptsPanel />
               </TabsContent>
-              <TabsContent value="stores">
-                <AdminStoresPanel />
+              <TabsContent value="establishments">
+                <AdminEstablishmentsPanel />
               </TabsContent>
               <TabsContent value="products">
                 <AdminProductsPanel />
+              </TabsContent>
+              <TabsContent value="users">
+                <AdminUsersPanel />
               </TabsContent>
               <TabsContent value="reports">
                 <AdminReportsPanel />

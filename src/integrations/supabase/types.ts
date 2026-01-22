@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_logs: {
+        Row: {
+          action: string
+          admin_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          target_id: string | null
+          target_table: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string | null
+          target_table?: string | null
+        }
+        Relationships: []
+      }
       establishments: {
         Row: {
           active: boolean
@@ -282,6 +312,10 @@ export type Database = {
     }
     Functions: {
       bootstrap_first_admin: { Args: { p_user_id: string }; Returns: boolean }
+      demote_admin_to_user: {
+        Args: { p_target_user_id: string }
+        Returns: boolean
+      }
       get_pending_points: { Args: { p_user_id: string }; Returns: number }
       get_user_balance: { Args: { p_user_id: string }; Returns: number }
       get_user_ledger: {
@@ -306,6 +340,29 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      list_users_for_admin: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          role: string
+          user_id: string
+        }[]
+      }
+      log_admin_action: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_target_id?: string
+          p_target_table?: string
+        }
+        Returns: string
+      }
+      promote_user_to_admin: {
+        Args: { p_target_user_id: string }
+        Returns: boolean
+      }
       redeem_product: {
         Args: { p_product_id: string }
         Returns: {
