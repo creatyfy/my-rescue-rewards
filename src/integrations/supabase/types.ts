@@ -317,6 +317,13 @@ export type Database = {
         Returns: boolean
       }
       get_pending_points: { Args: { p_user_id: string }; Returns: number }
+      get_store_by_qr_value: {
+        Args: { p_qr_value: string }
+        Returns: {
+          store_id: string
+          store_name: string
+        }[]
+      }
       get_user_balance: { Args: { p_user_id: string }; Returns: number }
       get_user_ledger: {
         Args: { p_limit?: number; p_user_id: string }
