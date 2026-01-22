@@ -7,77 +7,29 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { fetchCurrentUserBalance, fetchProducts, redeemProduct } from "@/integrations/supabase/store";
 
-// Mock data
-const mockProducts = [
-  {
-    id: "1",
-    name: "Caneca Premium",
-    description: "Caneca de porcelana com design exclusivo Meu Resgate",
-    imageUrl: "https://images.unsplash.com/photo-1514228742587-6b1558fcca3d?w=400&h=400&fit=crop",
-    pointsCost: 500,
-    stock: 15,
-  },
-  {
-    id: "2",
-    name: "Camiseta Exclusiva",
-    description: "Camiseta 100% algodão com estampa especial",
-    imageUrl: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=400&fit=crop",
-    pointsCost: 1200,
-    stock: 8,
-  },
-  {
-    id: "3",
-    name: "Voucher R$50",
-    description: "Vale-compras para usar em estabelecimentos parceiros",
-    imageUrl: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400&h=400&fit=crop",
-    pointsCost: 2000,
-    stock: 50,
-  },
-  {
-    id: "4",
-    name: "Fone Bluetooth",
-    description: "Fone de ouvido wireless com cancelamento de ruído",
-    imageUrl: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
-    pointsCost: 3500,
-    stock: 3,
-  },
-  {
-    id: "5",
-    name: "Power Bank",
-    description: "Carregador portátil 10.000mAh com carga rápida",
-    imageUrl: "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400&h=400&fit=crop",
-    pointsCost: 1800,
-    stock: 0,
-  },
-  {
-    id: "6",
-    name: "Mochila Tech",
-    description: "Mochila com compartimento para notebook até 15 polegadas",
-    imageUrl: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=400&fit=crop",
-    pointsCost: 4500,
-    stock: 12,
-  },
-];
-
 export default function Store() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [products, setProducts] = useState(mockProducts);
-  const [userPoints, setUserPoints] = useState(1250);
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<
+    Array<{ id: string; name: string; description: string; imageUrl: string; pointsCost: number; stock: number }>
+  >([]);
+  const [userPoints, setUserPoints] = useState(0);
 
   useEffect(() => {
     const loadStoreData = async () => {
+      setLoading(true);
       try {
         const [productsData, balance] = await Promise.all([
           fetchProducts(),
           fetchCurrentUserBalance(),
         ]);
 
-        if (productsData.length > 0) {
-          setProducts(productsData);
-        }
+        setProducts(productsData);
         setUserPoints(balance);
       } catch (error) {
         console.error("Erro ao carregar loja:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -148,20 +100,24 @@ export default function Store() {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          {filteredProducts.map((product) => (
-            <ProductCard
-              key={product.id}
-              {...product}
-              userPoints={userPoints}
-              onRedeem={handleRedeem}
-            />
-          ))}
-        </div>
-
-        {filteredProducts.length === 0 && (
+        {loading ? (
+          <div className="py-12 text-center">
+            <p className="text-muted-foreground">Carregando produtos...</p>
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Nenhum produto encontrado</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                {...product}
+                userPoints={userPoints}
+                onRedeem={handleRedeem}
+              />
+            ))}
           </div>
         )}
       </div>
