@@ -18,75 +18,14 @@ type Transaction = {
   date: string;
 };
 
-const mockTransactions: Transaction[] = [
-  {
-    id: "1",
-    type: "earn",
-    title: "Café Central",
-    subtitle: "Comprovante #1234",
-    points: 45,
-    status: "approved",
-    sortTime: Date.now(),
-    date: "Hoje, 14:30",
-  },
-  {
-    id: "2",
-    type: "earn",
-    title: "Restaurante Sabor",
-    subtitle: "Comprovante #1235",
-    points: 120,
-    status: "pending",
-    sortTime: Date.now() - 86400000,
-    date: "Ontem, 20:15",
-  },
-  {
-    id: "3",
-    type: "redeem",
-    title: "Caneca Premium",
-    subtitle: "Produto resgatado",
-    points: 500,
-    status: "approved",
-    sortTime: Date.now() - 172800000,
-    date: "15 Jan, 10:00",
-  },
-  {
-    id: "4",
-    type: "earn",
-    title: "Padaria Pão Quente",
-    subtitle: "Comprovante #1230",
-    points: 28,
-    status: "approved",
-    sortTime: Date.now() - 259200000,
-    date: "14 Jan, 08:45",
-  },
-  {
-    id: "5",
-    type: "earn",
-    title: "Supermercado Extra",
-    subtitle: "Comprovante #1228",
-    points: 156,
-    status: "rejected",
-    sortTime: Date.now() - 345600000,
-    date: "12 Jan, 19:20",
-  },
-  {
-    id: "6",
-    type: "redeem",
-    title: "Voucher R$20",
-    subtitle: "Produto resgatado",
-    points: 800,
-    status: "approved",
-    sortTime: Date.now() - 432000000,
-    date: "10 Jan, 15:00",
-  },
-];
-
 export default function History() {
   const [filter, setFilter] = useState<FilterType>("all");
-  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
+  const [loading, setLoading] = useState(true);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
     const loadHistory = async () => {
+      setLoading(true);
       try {
         const userId = await fetchCurrentUserId();
 
@@ -139,12 +78,11 @@ export default function History() {
         const combined = [...receiptItems, ...redemptionItems].sort(
           (a, b) => b.sortTime - a.sortTime
         );
-
-        if (combined.length > 0) {
-          setTransactions(combined);
-        }
+        setTransactions(combined);
       } catch (error) {
         console.error("Erro ao carregar histórico:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -185,15 +123,19 @@ export default function History() {
         </div>
 
         {/* Transactions List */}
-        <div className="space-y-3">
-          {filteredTransactions.map(({ sortTime, ...transaction }) => (
-            <TransactionItem key={transaction.id} {...transaction} />
-          ))}
-        </div>
-
-        {filteredTransactions.length === 0 && (
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Carregando histórico...</p>
+          </div>
+        ) : filteredTransactions.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Nenhuma transação encontrada</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredTransactions.map(({ sortTime, ...transaction }) => (
+              <TransactionItem key={transaction.id} {...transaction} />
+            ))}
           </div>
         )}
       </div>
