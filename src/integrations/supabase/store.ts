@@ -44,7 +44,7 @@ type ReceiptHistory = {
   status: "pending" | "approved" | "rejected";
   protocol_number: string;
   created_at: string;
-  establishments: {
+  stores: {
     name: string | null;
   } | null;
 };
@@ -56,7 +56,7 @@ type LedgerEntry = {
   created_at: string;
   receipt_status: "pending" | "approved" | "rejected" | null;
   redemption_status: "pending" | "completed" | "cancelled" | null;
-  establishment_name: string | null;
+  store_name: string | null;
   product_name: string | null;
   protocol_number: string | null;
 };
@@ -182,7 +182,7 @@ export const fetchReceiptHistory = async (userId: string): Promise<ReceiptHistor
   try {
     const { data, error } = await (supabase as any)
       .from("receipts")
-      .select("id, points_earned, status, protocol_number, created_at, establishments(name)")
+      .select("id, points_earned, status, protocol_number, created_at, stores(name)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 

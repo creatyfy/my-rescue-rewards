@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { AdminEstablishmentsPanel } from "@/components/admin/AdminEstablishmentsPanel";
+import { AdminStoresPanel } from "@/components/admin/AdminStoresPanel";
 import { AdminProductsPanel } from "@/components/admin/AdminProductsPanel";
 import { AdminReceiptsPanel } from "@/components/admin/AdminReceiptsPanel";
 import { AdminReportsPanel } from "@/components/admin/AdminReportsPanel";
@@ -78,7 +78,7 @@ export default function Admin() {
             <Tabs defaultValue="receipts" className="space-y-6">
               <TabsList className="flex flex-wrap">
                 <TabsTrigger value="receipts">Comprovantes</TabsTrigger>
-                <TabsTrigger value="establishments">Estabelecimentos</TabsTrigger>
+                <TabsTrigger value="stores">Lojas</TabsTrigger>
                 <TabsTrigger value="products">Produtos</TabsTrigger>
                 <TabsTrigger value="reports">Relatórios</TabsTrigger>
               </TabsList>
@@ -86,8 +86,8 @@ export default function Admin() {
               <TabsContent value="receipts">
                 <AdminReceiptsPanel />
               </TabsContent>
-              <TabsContent value="establishments">
-                <AdminEstablishmentsPanel />
+              <TabsContent value="stores">
+                <AdminStoresPanel />
               </TabsContent>
               <TabsContent value="products">
                 <AdminProductsPanel />

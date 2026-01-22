@@ -116,7 +116,7 @@ export function AdminReceiptsPanel() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar por protocolo ou estabelecimento..."
+              placeholder="Buscar por protocolo ou loja..."
             className="pl-10"
           />
         </div>
@@ -160,7 +160,7 @@ export function AdminReceiptsPanel() {
           <TableHeader>
             <TableRow>
               <TableHead>Protocolo</TableHead>
-              <TableHead>Estabelecimento</TableHead>
+              <TableHead>Loja</TableHead>
               <TableHead>Usuário</TableHead>
               <TableHead>Valor</TableHead>
               <TableHead>Pontos</TableHead>
@@ -172,7 +172,7 @@ export function AdminReceiptsPanel() {
             {receipts.map((receipt) => (
               <TableRow key={receipt.id}>
                 <TableCell className="font-medium">{receipt.protocol_number}</TableCell>
-                <TableCell>{receipt.establishments?.name ?? "Estabelecimento"}</TableCell>
+                <TableCell>{receipt.stores?.name ?? "Loja"}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {receipt.user_id}
                 </TableCell>

@@ -64,7 +64,7 @@ export default function Dashboard() {
 
           const title =
             entry.ledger_type === "earn"
-              ? entry.establishment_name ?? "Estabelecimento"
+              ? entry.store_name ?? "Loja parceira"
               : entry.ledger_type === "redeem"
                 ? entry.product_name ?? "Produto resgatado"
                 : entry.ledger_type === "expire"

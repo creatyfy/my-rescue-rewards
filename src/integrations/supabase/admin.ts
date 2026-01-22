@@ -12,7 +12,7 @@ export type AdminReceipt = {
   image_path: string | null;
   created_at: string;
   user_id: string;
-  establishments: {
+  stores: {
     name: string | null;
   } | null;
 };
@@ -25,6 +25,26 @@ export type AdminEstablishment = {
   qr_code_token: string;
   logo_url: string | null;
   active: boolean;
+  created_at: string;
+};
+
+export type AdminStore = {
+  id: string;
+  name: string;
+  phone: string;
+  city: string;
+  state: string;
+  is_active: boolean;
+  qr_code_id: string | null;
+  created_at: string;
+};
+
+export type AdminQrCode = {
+  id: string;
+  store_id: string;
+  qr_value: string;
+  qr_image: string | null;
+  is_active: boolean;
   created_at: string;
 };
 
@@ -113,7 +133,7 @@ export const fetchAdminReceipts = async (params?: {
     let q = supabase
       .from("receipts")
       .select(
-        "id, protocol_number, purchase_value, points_earned, status, image_path, created_at, user_id, establishments(name)",
+        "id, protocol_number, purchase_value, points_earned, status, image_path, created_at, user_id, stores(name)",
         { count: "exact" },
       )
       .order("created_at", { ascending: false });
@@ -123,8 +143,8 @@ export const fetchAdminReceipts = async (params?: {
     }
 
     if (query) {
-      // Busca por protocolo OU nome do estabelecimento (relacionamento via FK)
-      q = q.or(`protocol_number.ilike.%${query}%,establishments.name.ilike.%${query}%`);
+      // Busca por protocolo OU nome da loja (relacionamento via FK)
+      q = q.or(`protocol_number.ilike.%${query}%,stores.name.ilike.%${query}%`);
     }
 
     const { data, error, count } = await q.range(from, to);
@@ -242,6 +262,148 @@ export const fetchAdminEstablishments = async (): Promise<AdminEstablishment[]> 
   } catch {
     return [];
   }
+};
+
+export const fetchAdminStores = async (): Promise<AdminStore[]> => {
+  try {
+    const { data, error } = await supabase
+      .from("stores")
+      .select("id, name, phone, city, state, is_active, qr_code_id, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.warn("stores table not available:", error.message);
+      return [];
+    }
+
+    return (data ?? []) as AdminStore[];
+  } catch {
+    return [];
+  }
+};
+
+export const fetchActiveQrCodesForStores = async (storeIds: string[]): Promise<AdminQrCode[]> => {
+  if (storeIds.length === 0) {
+    return [];
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("qr_codes")
+      .select("id, store_id, qr_value, qr_image, is_active, created_at")
+      .in("store_id", storeIds)
+      .eq("is_active", true);
+
+    if (error) {
+      console.warn("qr_codes table not available:", error.message);
+      return [];
+    }
+
+    return (data ?? []) as AdminQrCode[];
+  } catch {
+    return [];
+  }
+};
+
+export const createStore = async (input: {
+  name: string;
+  phone: string;
+  city: string;
+  state: string;
+  isActive: boolean;
+}) => {
+  const { data, error } = await supabase
+    .from("stores")
+    .insert({
+      name: input.name,
+      phone: input.phone,
+      city: input.city,
+      state: input.state,
+      is_active: input.isActive,
+    })
+    .select("id, name, phone, city, state, is_active, qr_code_id, created_at")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as AdminStore;
+};
+
+export const updateStore = async (input: {
+  id: string;
+  name: string;
+  phone: string;
+  city: string;
+  state: string;
+  isActive: boolean;
+}) => {
+  const { data, error } = await supabase
+    .from("stores")
+    .update({
+      name: input.name,
+      phone: input.phone,
+      city: input.city,
+      state: input.state,
+      is_active: input.isActive,
+    })
+    .eq("id", input.id)
+    .select("id, name, phone, city, state, is_active, qr_code_id, created_at")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as AdminStore;
+};
+
+export const deactivateStore = async (id: string) => {
+  const { data, error } = await supabase
+    .from("stores")
+    .update({ is_active: false })
+    .eq("id", id)
+    .select("id, name, phone, city, state, is_active, qr_code_id, created_at")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data as AdminStore;
+};
+
+export const generateStoreQrCode = async (storeId: string) => {
+  const { data, error } = await supabase.rpc("generate_store_qr_code" as never, {
+    p_store_id: storeId,
+  } as never);
+
+  if (error) {
+    throw error;
+  }
+
+  const result = data as
+    | {
+        qr_code_id: string;
+        qr_value: string;
+        qr_image: string | null;
+        created_at: string;
+      }[]
+    | null;
+  const payload = result?.[0];
+  if (!payload) {
+    return null;
+  }
+
+  return {
+    id: payload.qr_code_id,
+    store_id: storeId,
+    qr_value: payload.qr_value,
+    qr_image: payload.qr_image,
+    is_active: true,
+    created_at: payload.created_at,
+  } satisfies AdminQrCode;
 };
 
 export const createEstablishment = async (input: {
