@@ -69,6 +69,28 @@ export const fetchAdminStatus = async (): Promise<boolean> => {
   }
 };
 
+export const bootstrapFirstAdmin = async (): Promise<boolean> => {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+
+  if (userError) {
+    throw userError;
+  }
+
+  if (!userData.user) {
+    throw new Error("Usuário não autenticado.");
+  }
+
+  const { data, error } = await supabase.rpc("bootstrap_first_admin" as never, {
+    p_user_id: userData.user.id,
+  } as never);
+
+  if (error) {
+    throw error;
+  }
+
+  return Boolean(data);
+};
+
 export const fetchPendingReceipts = async (): Promise<AdminReceipt[]> => {
   try {
     const { data, error } = await (supabase as any)
