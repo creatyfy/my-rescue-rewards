@@ -56,7 +56,7 @@ export type AdminReceiptSummary = {
 
 export const fetchAdminStatus = async (): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc("is_admin" as never);
+    const { data, error } = await supabase.rpc("is_admin");
 
     if (error) {
       console.warn("is_admin function not available:", error.message);
@@ -80,9 +80,9 @@ export const bootstrapFirstAdmin = async (): Promise<boolean> => {
     throw new Error("Usuário não autenticado.");
   }
 
-  const { data, error } = await supabase.rpc("bootstrap_first_admin" as never, {
+  const { data, error } = await supabase.rpc("bootstrap_first_admin", {
     p_user_id: userData.user.id,
-  } as never);
+  });
 
   if (error) {
     throw error;
@@ -93,7 +93,7 @@ export const bootstrapFirstAdmin = async (): Promise<boolean> => {
 
 export const fetchPendingReceipts = async (): Promise<AdminReceipt[]> => {
   try {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("receipts")
       .select(
         "id, protocol_number, purchase_value, points_earned, status, image_path, created_at, user_id, establishments(name)",
@@ -123,7 +123,7 @@ export const reviewReceipt = async (receiptId: string, status: ReceiptReviewStat
     throw new Error("Usuário não autenticado.");
   }
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from("receipts")
     .update({
       status,
@@ -141,7 +141,7 @@ export const reviewReceipt = async (receiptId: string, status: ReceiptReviewStat
 
 export const fetchAdminReceiptsSummary = async (): Promise<AdminReceiptSummary[]> => {
   try {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("receipts")
       .select("id, status, purchase_value, points_earned, created_at")
       .order("created_at", { ascending: false });
@@ -159,7 +159,7 @@ export const fetchAdminReceiptsSummary = async (): Promise<AdminReceiptSummary[]
 
 export const fetchAdminRedemptions = async (): Promise<AdminRedemption[]> => {
   try {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("redemptions")
       .select("id, status, points_spent, created_at")
       .order("created_at", { ascending: false });
@@ -177,7 +177,7 @@ export const fetchAdminRedemptions = async (): Promise<AdminRedemption[]> => {
 
 export const fetchAdminProducts = async (): Promise<AdminProduct[]> => {
   try {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("products")
       .select("id, name, description, image_url, points_cost, stock, active, created_at")
       .order("created_at", { ascending: false });
@@ -195,7 +195,7 @@ export const fetchAdminProducts = async (): Promise<AdminProduct[]> => {
 
 export const fetchAdminEstablishments = async (): Promise<AdminEstablishment[]> => {
   try {
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from("establishments")
       .select("id, name, description, address, qr_code_token, logo_url, active, created_at")
       .order("created_at", { ascending: false });
@@ -224,7 +224,7 @@ export const createEstablishment = async (input: {
     ? getPublicUrl("establishments", await uploadEstablishmentImage(input.logoFile))
     : input.logoUrl ?? null;
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("establishments")
     .insert({
       name: input.name,
@@ -258,7 +258,7 @@ export const updateEstablishment = async (input: {
     ? getPublicUrl("establishments", await uploadEstablishmentImage(input.logoFile))
     : input.logoUrl ?? null;
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("establishments")
     .update({
       name: input.name,
@@ -280,7 +280,7 @@ export const updateEstablishment = async (input: {
 };
 
 export const deleteEstablishment = async (id: string) => {
-  const { error } = await (supabase as any).from("establishments").delete().eq("id", id);
+  const { error } = await supabase.from("establishments").delete().eq("id", id);
 
   if (error) {
     throw error;
@@ -302,7 +302,7 @@ export const createProduct = async (input: {
     ? getPublicUrl("products", await uploadProductImage(input.imageFile))
     : input.imageUrl ?? null;
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("products")
     .insert({
       name: input.name,
@@ -336,7 +336,7 @@ export const updateProduct = async (input: {
     ? getPublicUrl("products", await uploadProductImage(input.imageFile))
     : input.imageUrl ?? null;
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("products")
     .update({
       name: input.name,
@@ -358,7 +358,7 @@ export const updateProduct = async (input: {
 };
 
 export const deleteProduct = async (id: string) => {
-  const { error } = await (supabase as any).from("products").delete().eq("id", id);
+  const { error } = await supabase.from("products").delete().eq("id", id);
 
   if (error) {
     throw error;
