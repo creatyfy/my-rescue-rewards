@@ -33,8 +33,7 @@ export default function Index() {
             </div>
 
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-              Transforme suas compras em{" "}
-              <span className="text-gradient-primary">recompensas incríveis</span>
+              Transforme suas compras em recompensas
             </h1>
 
             <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto">
