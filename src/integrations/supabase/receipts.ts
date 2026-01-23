@@ -47,7 +47,7 @@ export const submitReceiptForCurrentUser = async ({
 }): Promise<SubmittedReceipt | null> => {
   try {
     const { data, error } = await supabase.rpc("submit_receipt" as never, {
-      p_qr_value: qrCodeToken,
+      p_qr_code_token: qrCodeToken,
       p_purchase_value: purchaseValue,
       p_image_path: receiptPath,
     } as never);
