@@ -208,20 +208,23 @@ export const reviewReceipt = async (receiptId: string, status: ReceiptReviewStat
   const reviewTimestamp = new Date().toISOString();
   const reviewedAt = reviewTimestamp;
   const reviewedBy = userData.user.id;
-  const approvedAt = status === "approved" ? reviewTimestamp : null;
-  const approvedBy = status === "approved" ? userData.user.id : null;
   const { error } = await supabase
     .from("receipts")
     .update({
       status,
       reviewed_at: reviewedAt,
       reviewed_by: reviewedBy,
-      approved_at: approvedAt,
-      approved_by: approvedBy,
     })
     .eq("id", receiptId);
 
   if (error) {
+    console.error("Erro ao atualizar comprovante:", {
+      receiptId,
+      status,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    });
     const message = error.message.toLowerCase();
     if (message.includes("permission") || message.includes("not authorized") || message.includes("forbidden")) {
       console.warn("Erro de permissão ao revisar comprovante:", {
