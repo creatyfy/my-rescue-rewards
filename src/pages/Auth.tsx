@@ -1,12 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { updateCurrentUserProfile } from "@/integrations/supabase/profile";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock, User, ArrowLeft } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Phone } from "lucide-react";
 
 type AuthMode = "login" | "register";
 
@@ -15,13 +15,28 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [formData, setFormData] = useState({
     name: "",
+    phone: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
+
+  useEffect(() => {
+    const requestedMode = searchParams.get("mode");
+
+    if (requestedMode === "register") {
+      setMode("register");
+      return;
+    }
+
+    if (requestedMode === "login") {
+      setMode("login");
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +69,7 @@ export default function Auth() {
           emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             full_name: formData.name,
+            phone: formData.phone,
           },
         },
       });
@@ -63,7 +79,10 @@ export default function Auth() {
       }
 
       if (data.session) {
-        await updateCurrentUserProfile({ fullName: formData.name });
+        await updateCurrentUserProfile({
+          fullName: formData.name,
+          phone: formData.phone,
+        });
         navigate("/dashboard");
       } else {
         toast.success("Conta criada! Verifique seu e-mail para confirmar.");
@@ -127,6 +146,25 @@ export default function Auth() {
                   type="text"
                   placeholder="Seu nome"
                   value={formData.name}
+                  onChange={handleChange}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          {mode === "register" && (
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefone</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="(00) 00000-0000"
+                  value={formData.phone}
                   onChange={handleChange}
                   className="pl-10"
                   required
