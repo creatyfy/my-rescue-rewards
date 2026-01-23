@@ -206,8 +206,9 @@ export type Database = {
       }
       receipts: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           created_at: string
-          establishment_id: string
           id: string
           image_path: string | null
           points_earned: number
@@ -215,13 +216,15 @@ export type Database = {
           purchase_value: number
           reviewed_at: string | null
           reviewed_by: string | null
+          store_id: string
           status: Database["public"]["Enums"]["receipt_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
-          establishment_id: string
           id?: string
           image_path?: string | null
           points_earned: number
@@ -229,13 +232,15 @@ export type Database = {
           purchase_value: number
           reviewed_at?: string | null
           reviewed_by?: string | null
+          store_id: string
           status?: Database["public"]["Enums"]["receipt_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           created_at?: string
-          establishment_id?: string
           id?: string
           image_path?: string | null
           points_earned?: number
@@ -243,16 +248,17 @@ export type Database = {
           purchase_value?: number
           reviewed_at?: string | null
           reviewed_by?: string | null
+          store_id?: string
           status?: Database["public"]["Enums"]["receipt_status"]
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "receipts_establishment_id_fkey"
-            columns: ["establishment_id"]
+            foreignKeyName: "receipts_store_id_fkey"
+            columns: ["store_id"]
             isOneToOne: false
-            referencedRelation: "establishments"
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]

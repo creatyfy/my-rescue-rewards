@@ -11,9 +11,7 @@ export type AdminReceipt = {
   receipt_image_url: string | null;
   created_at: string;
   user_id: string;
-  stores: {
-    name: string | null;
-  } | null;
+  store_name: string | null;
 };
 
 export type AdminEstablishment = {
@@ -54,6 +52,16 @@ export type AdminReceiptSummary = {
   purchase_value: number;
   points: number;
   created_at: string;
+};
+
+const normalizeReceiptStatus = (status?: string | null): ReceiptReviewStatus => {
+  if (status === "approved" || status === "rejected") {
+    return status;
+  }
+  if (status === "em_analise") {
+    return "pending";
+  }
+  return "pending";
 };
 
 export const fetchAdminStatus = async (): Promise<boolean> => {
@@ -141,9 +149,9 @@ export const fetchAdminReceipts = async (params?: {
 
   try {
     let q = supabase
-      .from("purchase_receipts")
+      .from("receipts")
       .select(
-        "id, purchase_value, points, status, receipt_image_url, created_at, user_id, stores(name)",
+        "id, purchase_value, points_earned, status, image_path, created_at, user_id, stores(name)",
         { count: "exact" },
       )
       .order("created_at", { ascending: false });
@@ -153,19 +161,29 @@ export const fetchAdminReceipts = async (params?: {
     }
 
     if (query) {
-      // Busca pelo nome da loja (relacionamento via FK)
       q = q.or(`stores.name.ilike.%${query}%`);
     }
 
     const { data, error, count } = await q.range(from, to);
 
     if (error) {
-      console.warn("purchase_receipts query failed:", error.message);
+      console.warn("receipts query failed:", error.message);
       return { items: [], total: 0, page, pageSize };
     }
 
+    const items = (data ?? []).map((receipt) => ({
+      id: receipt.id,
+      purchase_value: receipt.purchase_value,
+      points: receipt.points_earned,
+      status: normalizeReceiptStatus(receipt.status),
+      receipt_image_url: receipt.image_path,
+      created_at: receipt.created_at,
+      user_id: receipt.user_id,
+      store_name: receipt.stores?.name ?? null,
+    })) as AdminReceipt[];
+
     return {
-      items: (data ?? []) as AdminReceipt[],
+      items,
       total: Number(count ?? 0),
       page,
       pageSize,
@@ -187,14 +205,19 @@ export const reviewReceipt = async (receiptId: string, status: ReceiptReviewStat
     throw new Error("Usuário não autenticado.");
   }
 
-  const approvedAt = status === "approved" ? new Date().toISOString() : null;
+  const reviewTimestamp = new Date().toISOString();
+  const reviewedAt = reviewTimestamp;
+  const reviewedBy = userData.user.id;
+  const approvedAt = status === "approved" ? reviewTimestamp : null;
   const approvedBy = status === "approved" ? userData.user.id : null;
   const { error } = await supabase
-    .from("purchase_receipts")
+    .from("receipts")
     .update({
       status,
-      approved_by: approvedBy,
+      reviewed_at: reviewedAt,
+      reviewed_by: reviewedBy,
       approved_at: approvedAt,
+      approved_by: approvedBy,
     })
     .eq("id", receiptId);
 
@@ -216,16 +239,22 @@ export const reviewReceipt = async (receiptId: string, status: ReceiptReviewStat
 export const fetchAdminReceiptsSummary = async (): Promise<AdminReceiptSummary[]> => {
   try {
     const { data, error } = await supabase
-      .from("purchase_receipts")
-      .select("id, status, purchase_value, points, created_at")
+      .from("receipts")
+      .select("id, status, purchase_value, points_earned, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.warn("purchase_receipts table not available:", error.message);
+      console.warn("receipts table not available:", error.message);
       return [];
     }
 
-    return (data ?? []) as AdminReceiptSummary[];
+    return (data ?? []).map((receipt) => ({
+      id: receipt.id,
+      status: normalizeReceiptStatus(receipt.status),
+      purchase_value: receipt.purchase_value,
+      points: receipt.points_earned,
+      created_at: receipt.created_at,
+    })) as AdminReceiptSummary[];
   } catch {
     return [];
   }

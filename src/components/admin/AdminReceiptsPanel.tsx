@@ -172,7 +172,7 @@ export function AdminReceiptsPanel() {
             {receipts.map((receipt) => (
               <TableRow key={receipt.id}>
                 <TableCell className="font-medium">{receipt.id.slice(0, 8)}</TableCell>
-                <TableCell>{receipt.stores?.name ?? "Loja parceira"}</TableCell>
+                <TableCell>{receipt.store_name ?? "Loja parceira"}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {receipt.user_id}
                 </TableCell>
