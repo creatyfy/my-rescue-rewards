@@ -5,7 +5,6 @@ import {
   User,
   Mail,
   ChevronRight,
-  Settings,
   HelpCircle,
   LogOut,
   Shield,
@@ -120,11 +119,6 @@ export default function Profile() {
       icon: HelpCircle,
       label: "Ajuda e suporte",
       path: "/help",
-    },
-    {
-      icon: Settings,
-      label: "Configurações",
-      path: "/settings",
     },
   ];
 
