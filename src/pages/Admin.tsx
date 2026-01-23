@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AdminEstablishmentsPanel } from "@/components/admin/AdminEstablishmentsPanel";
 import { AdminProductsPanel } from "@/components/admin/AdminProductsPanel";
@@ -8,7 +8,6 @@ import { AdminReportsPanel } from "@/components/admin/AdminReportsPanel";
 import { AdminUsersPanel } from "@/components/admin/AdminUsersPanel";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchAdminStatus } from "@/integrations/supabase/admin";
@@ -16,14 +15,34 @@ import { ShieldAlert } from "lucide-react";
 
 export default function Admin() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const { section } = useParams();
   const [status, setStatus] = useState<"loading" | "authorized" | "unauthorized">("loading");
-  const tabParam = searchParams.get("tab");
-  const defaultTab = ["receipts", "establishments", "products", "users", "reports"].includes(
-    tabParam ?? "",
-  )
-    ? tabParam!
-    : "receipts";
+  const adminSections = useMemo(
+    () => ({
+      receipts: {
+        label: "Comprovantes",
+        content: <AdminReceiptsPanel />,
+      },
+      establishments: {
+        label: "Estabelecimentos",
+        content: <AdminEstablishmentsPanel />,
+      },
+      products: {
+        label: "Produtos",
+        content: <AdminProductsPanel />,
+      },
+      users: {
+        label: "Usuários",
+        content: <AdminUsersPanel />,
+      },
+      reports: {
+        label: "Relatórios",
+        content: <AdminReportsPanel />,
+      },
+    }),
+    [],
+  );
+  const currentSection = section && adminSections[section as keyof typeof adminSections];
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -74,7 +93,7 @@ export default function Admin() {
               </Button>
             </div>
           </Card>
-        ) : (
+        ) : currentSection ? (
           <div className="space-y-6">
             <Card className="p-6">
               <h1 className="text-2xl font-semibold">Painel administrativo</h1>
@@ -83,32 +102,10 @@ export default function Admin() {
               </p>
             </Card>
 
-            <Tabs defaultValue={defaultTab} className="space-y-6">
-              <TabsList className="flex flex-wrap">
-                <TabsTrigger value="receipts">Comprovantes</TabsTrigger>
-                <TabsTrigger value="establishments">Estabelecimentos</TabsTrigger>
-                <TabsTrigger value="products">Produtos</TabsTrigger>
-                <TabsTrigger value="users">Usuários</TabsTrigger>
-                <TabsTrigger value="reports">Relatórios</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="receipts">
-                <AdminReceiptsPanel />
-              </TabsContent>
-              <TabsContent value="establishments">
-                <AdminEstablishmentsPanel />
-              </TabsContent>
-              <TabsContent value="products">
-                <AdminProductsPanel />
-              </TabsContent>
-              <TabsContent value="users">
-                <AdminUsersPanel />
-              </TabsContent>
-              <TabsContent value="reports">
-                <AdminReportsPanel />
-              </TabsContent>
-            </Tabs>
+            <div>{currentSection.content}</div>
           </div>
+        ) : (
+          <Navigate to="/admin/receipts" replace />
         )}
       </div>
     </AppLayout>

@@ -129,7 +129,7 @@ export default function Profile() {
           {
             icon: ShieldCheck,
             label: "Painel administrativo",
-            path: "/admin",
+            path: "/admin/receipts",
           },
         ]
       : []),

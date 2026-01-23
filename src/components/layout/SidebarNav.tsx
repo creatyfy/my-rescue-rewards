@@ -36,22 +36,24 @@ const navItems = [
 ];
 
 const adminNavItems = [
-  { label: "Comprovantes", tab: "receipts" },
-  { label: "Estabelecimentos", tab: "establishments" },
-  { label: "Produtos", tab: "products" },
-  { label: "Usuários", tab: "users" },
-  { label: "Relatórios", tab: "reports" },
+  { label: "Comprovantes", path: "/admin/receipts" },
+  { label: "Estabelecimentos", path: "/admin/establishments" },
+  { label: "Produtos", path: "/admin/products" },
+  { label: "Usuários", path: "/admin/users" },
+  { label: "Relatórios", path: "/admin/reports" },
 ];
 
 export function SidebarNav() {
   const location = useLocation();
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
-  const isAdminPath = location.pathname === "/admin";
-  const adminTab = useMemo(() => {
-    const tab = new URLSearchParams(location.search).get("tab");
-    return adminNavItems.some((item) => item.tab === tab) ? tab : "receipts";
-  }, [location.search]);
+  const isAdminPath = location.pathname.startsWith("/admin");
+  const adminSection = useMemo(() => {
+    const section = location.pathname.split("/")[2];
+    return adminNavItems.some((item) => item.path.endsWith(`/${section}`))
+      ? section
+      : "receipts";
+  }, [location.pathname]);
 
   useEffect(() => {
     let mounted = true;
@@ -129,15 +131,21 @@ export function SidebarNav() {
               </SidebarMenuButton>
               {adminMenuOpen && (
                 <SidebarMenuSub>
-                  {adminNavItems.map((item) => (
-                    <SidebarMenuSubItem key={item.tab}>
-                      <SidebarMenuSubButton asChild isActive={isAdminPath && adminTab === item.tab}>
-                        <Link to={`/admin?tab=${item.tab}`}>
-                          <span>{item.label}</span>
-                        </Link>
-                      </SidebarMenuSubButton>
-                    </SidebarMenuSubItem>
-                  ))}
+                  {adminNavItems.map((item) => {
+                    const itemSection = item.path.split("/")[2];
+                    return (
+                      <SidebarMenuSubItem key={item.path}>
+                        <SidebarMenuSubButton
+                          asChild
+                          isActive={isAdminPath && adminSection === itemSection}
+                        >
+                          <Link to={item.path}>
+                            <span>{item.label}</span>
+                          </Link>
+                        </SidebarMenuSubButton>
+                      </SidebarMenuSubItem>
+                    );
+                  })}
                 </SidebarMenuSub>
               )}
             </SidebarMenuItem>
