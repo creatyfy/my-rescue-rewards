@@ -25,17 +25,17 @@ export function AppLayout({ children, title, showNav = true, showBack = false }:
           <Header title={title} />
           <main className={`pb-20 md:pb-8 ${showNav ? "" : ""}`}>
             {children}
+            {showBack && (
+              <div className="container px-4 pt-6 pb-4">
+                <Button variant="secondary" className="gap-2 text-muted-foreground hover:text-foreground" asChild>
+                  <Link to="/dashboard" aria-label="Voltar para o dashboard">
+                    <ArrowLeft className="h-4 w-4" />
+                    Voltar
+                  </Link>
+                </Button>
+              </div>
+            )}
           </main>
-          {showBack && (
-            <div className="container px-4 pb-16 md:pb-8">
-              <Button variant="secondary" className="gap-2 text-muted-foreground hover:text-foreground" asChild>
-                <Link to="/dashboard" aria-label="Voltar para o dashboard">
-                  <ArrowLeft className="h-4 w-4" />
-                  Voltar
-                </Link>
-              </Button>
-            </div>
-          )}
           {showNav && <MobileNav />}
         </div>
       </SidebarInset>

@@ -41,13 +41,13 @@ export default function Settings() {
   return (
     <AppLayout title="Configurações" showBack>
       <div className="container px-4 py-6 space-y-6">
-        <section className="bg-card border border-border/50 rounded-2xl shadow-soft p-6">
+        <section className="bg-card border border-border/50 rounded-2xl shadow-soft p-4 sm:p-6">
           <h2 className="font-display font-semibold text-lg text-foreground mb-4">
             Preferências gerais
           </h2>
           <div className="space-y-4">
-            <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 rounded-xl border border-border/50 p-4">
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">
                   Alertas de pontos
                 </p>
@@ -58,11 +58,12 @@ export default function Settings() {
               <Switch
                 checked={preferences.notifications}
                 onCheckedChange={() => togglePreference("notifications")}
+                className="shrink-0"
               />
             </div>
 
-            <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 rounded-xl border border-border/50 p-4">
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">
                   Ofertas e promoções
                 </p>
@@ -73,11 +74,12 @@ export default function Settings() {
               <Switch
                 checked={preferences.promotions}
                 onCheckedChange={() => togglePreference("promotions")}
+                className="shrink-0"
               />
             </div>
 
-            <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 rounded-xl border border-border/50 p-4">
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">
                   Lembrete de expiração
                 </p>
@@ -88,11 +90,12 @@ export default function Settings() {
               <Switch
                 checked={preferences.pointsExpiration}
                 onCheckedChange={() => togglePreference("pointsExpiration")}
+                className="shrink-0"
               />
             </div>
 
-            <div className="flex items-center justify-between gap-4 rounded-xl border border-border/50 p-4">
-              <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 rounded-xl border border-border/50 p-4">
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground">
                   Modo escuro automático
                 </p>
@@ -103,12 +106,13 @@ export default function Settings() {
               <Switch
                 checked={preferences.darkMode}
                 onCheckedChange={() => togglePreference("darkMode")}
+                className="shrink-0"
               />
             </div>
           </div>
         </section>
 
-        <section className="bg-card border border-border/50 rounded-2xl shadow-soft p-6">
+        <section className="bg-card border border-border/50 rounded-2xl shadow-soft p-4 sm:p-6">
           <h2 className="font-display font-semibold text-lg text-foreground mb-4">
             Resumo de privacidade
           </h2>
@@ -124,28 +128,19 @@ export default function Settings() {
           </div>
         </section>
 
-        <section className="bg-card border border-border/50 rounded-2xl shadow-soft p-6">
-          <h2 className="font-display font-semibold text-lg text-foreground mb-2">
-            Administração
-          </h2>
-
-          {adminLoading ? (
-            <p className="text-sm text-muted-foreground">Carregando...</p>
-          ) : isAdmin ? (
+        {isAdmin && (
+          <section className="bg-card border border-border/50 rounded-2xl shadow-soft p-4 sm:p-6">
+            <h2 className="font-display font-semibold text-lg text-foreground mb-2">
+              Administração
+            </h2>
             <div className="rounded-xl border border-border/50 p-4">
               <p className="text-sm font-medium text-foreground">Você é administrador.</p>
               <p className="text-xs text-muted-foreground mt-1">
                 O painel administrativo está disponível no menu lateral.
               </p>
             </div>
-          ) : (
-            <div className="rounded-xl border border-border/50 p-4">
-              <p className="text-sm text-muted-foreground">
-                Você é um usuário comum. A promoção para administrador só pode ser feita por outro administrador.
-              </p>
-            </div>
-          )}
-        </section>
+          </section>
+        )}
       </div>
     </AppLayout>
   );
