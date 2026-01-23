@@ -187,12 +187,19 @@ export const reviewReceipt = async (receiptId: string, status: ReceiptReviewStat
     throw new Error("Usuário não autenticado.");
   }
 
+  const approvedAt = status === "approved" ? new Date().toISOString() : null;
+  const approvedBy = status === "approved" ? userData.user.id : null;
+  const reviewedAt = new Date().toISOString();
+  const reviewedBy = userData.user.id;
+
   const { error } = await supabase
     .from("receipts")
     .update({
       status,
-      reviewed_by: userData.user.id,
-      reviewed_at: new Date().toISOString(),
+      approved_by: approvedBy,
+      approved_at: approvedAt,
+      reviewed_by: reviewedBy,
+      reviewed_at: reviewedAt,
     })
     .eq("id", receiptId);
 
