@@ -101,6 +101,22 @@ export default function ProfileSecurity() {
             <li>• Utilize combinações únicas para cada aplicativo.</li>
           </ul>
         </div>
+
+        <section className="bg-card border border-border/50 rounded-2xl shadow-soft p-4 sm:p-6">
+          <h2 className="font-display font-semibold text-lg text-foreground mb-4">
+            Resumo de privacidade
+          </h2>
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              Seus dados são usados apenas para validar compras, contabilizar pontos
+              e melhorar sua experiência.
+            </p>
+            <p>
+              Você pode atualizar suas preferências a qualquer momento. Para dúvidas
+              adicionais, fale com nosso suporte.
+            </p>
+          </div>
+        </section>
       </div>
     </AppLayout>
   );
