@@ -4,6 +4,8 @@ import {
   HelpCircle,
   History,
   Home,
+  LogOut,
+  Moon,
   QrCode,
   Settings,
   ShieldCheck,
@@ -21,9 +23,13 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { fetchAdminStatus } from "@/integrations/supabase/admin";
+import { logoutCurrentUser } from "@/integrations/supabase/profile";
+import { useNavigate } from "react-router-dom";
+import { useTheme } from "next-themes";
 
 const navItems = [
   { icon: Home, label: "Início", path: "/dashboard" },
@@ -45,9 +51,12 @@ const adminNavItems = [
 
 export function SidebarNav() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminMenuOpen, setAdminMenuOpen] = useState(false);
   const isAdminPath = location.pathname.startsWith("/admin");
+  const isDarkMode = theme === "dark";
   const adminSection = useMemo(() => {
     const section = location.pathname.split("/")[2];
     return adminNavItems.some((item) => item.path.endsWith(`/${section}`))
@@ -80,6 +89,15 @@ export function SidebarNav() {
       setAdminMenuOpen(true);
     }
   }, [isAdminPath]);
+
+  const handleLogout = async () => {
+    try {
+      await logoutCurrentUser();
+      navigate("/auth", { replace: true });
+    } catch (error) {
+      console.error("Erro ao sair da conta:", error);
+    }
+  };
 
   return (
     <SidebarContent>
@@ -150,6 +168,31 @@ export function SidebarNav() {
               )}
             </SidebarMenuItem>
           )}
+        </SidebarMenu>
+      </SidebarGroup>
+      <SidebarGroup>
+        <SidebarGroupLabel>Preferências</SidebarGroupLabel>
+        <SidebarMenu className="gap-1">
+          <SidebarMenuItem>
+            <div className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground">
+              <span className="flex items-center gap-2">
+                <Moon className="h-4 w-4 text-muted-foreground" />
+                <span>Modo escuro</span>
+              </span>
+              <Switch
+                checked={isDarkMode}
+                onCheckedChange={(checked) =>
+                  setTheme(checked ? "dark" : "light")
+                }
+              />
+            </div>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={handleLogout} tooltip="Sair da conta">
+              <LogOut className="h-4 w-4" />
+              <span>Sair da conta</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
       </SidebarGroup>
     </SidebarContent>
