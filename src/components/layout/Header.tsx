@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import logoHorizontal from "@/assets/logo-horizontal.png";
 
 interface HeaderProps {
   showBack?: boolean;
@@ -22,13 +23,12 @@ export function Header({ title, showBack = false }: HeaderProps) {
               </Link>
             </Button>
           )}
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">MR</span>
-            </div>
-            <span className="font-display font-bold text-lg hidden sm:block">
-              Meu Resgate
-            </span>
+          <Link to="/dashboard" className="flex items-center">
+            <img 
+              src={logoHorizontal} 
+              alt="Meu Resgate" 
+              className="h-8 w-auto"
+            />
           </Link>
         </div>
 
