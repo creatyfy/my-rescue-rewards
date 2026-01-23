@@ -196,8 +196,6 @@ export type Database = {
       }
       receipts: {
         Row: {
-          approved_at: string | null
-          approved_by: string | null
           created_at: string
           establishment_id: string
           id: string
@@ -212,8 +210,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          approved_at?: string | null
-          approved_by?: string | null
           created_at?: string
           establishment_id: string
           id?: string
@@ -228,8 +224,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          approved_at?: string | null
-          approved_by?: string | null
           created_at?: string
           establishment_id?: string
           id?: string
