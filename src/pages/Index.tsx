@@ -43,7 +43,7 @@ export default function Index() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="xl" asChild>
-                <Link to="/auth">
+                <Link to="/auth?mode=register">
                   Começar agora
                   <ChevronRight className="w-5 h-5 ml-1" />
                 </Link>
@@ -120,7 +120,7 @@ export default function Index() {
               Crie sua conta grátis e comece a acumular pontos hoje mesmo
             </p>
             <Button variant="gold" size="lg" asChild>
-              <Link to="/auth">
+              <Link to="/auth?mode=register">
                 Criar conta grátis
                 <ChevronRight className="w-5 h-5 ml-1" />
               </Link>
