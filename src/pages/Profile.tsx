@@ -17,49 +17,82 @@ import {
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { fetchCurrentUserProfile, logoutCurrentUser } from "@/integrations/supabase/profile";
+import {
+  fetchCurrentUserBalance,
+  fetchCurrentUserId,
+  fetchReceiptHistory,
+  fetchRedemptionHistory,
+} from "@/integrations/supabase/store";
 import { fetchAdminStatus } from "@/integrations/supabase/admin";
 
 export default function Profile() {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
-
-  // Mock user data
-  const [user, setUser] = useState({
-    name: "Maria Silva",
-    email: "maria.silva@email.com",
-    phone: "(11) 99999-9999",
-    memberSince: "Janeiro 2024",
-    avatarUrl: null,
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<{
+    name: string;
+    email: string;
+    phone: string | null;
+    memberSince: string | null;
+    avatarUrl: string | null;
+  } | null>(null);
+  const [stats, setStats] = useState({
+    points: 0,
+    receipts: 0,
+    redemptions: 0,
   });
 
   useEffect(() => {
     let isMounted = true;
 
     const loadProfile = async () => {
+      setIsLoading(true);
       try {
-        const [profile, adminStatus] = await Promise.all([
+        const userId = await fetchCurrentUserId();
+
+        const [profile, adminStatus, balance, receipts, redemptions] = await Promise.all([
           fetchCurrentUserProfile(),
           fetchAdminStatus().catch(() => false),
+          fetchCurrentUserBalance(),
+          userId ? fetchReceiptHistory(userId) : Promise.resolve([]),
+          userId ? fetchRedemptionHistory(userId) : Promise.resolve([]),
         ]);
 
-        if (!profile || !isMounted) {
+        if (!isMounted) {
           return;
         }
 
-        const memberSince = formatMemberSince(profile.createdAt);
+        const memberSince = profile ? formatMemberSince(profile.createdAt) : null;
 
         setIsAdmin(adminStatus);
-        setUser((prev) => ({
-          ...prev,
-          name: profile.fullName || prev.name,
-          email: profile.email || prev.email,
-          phone: profile.phone || prev.phone,
-          memberSince: memberSince ?? prev.memberSince,
-          avatarUrl: profile.avatarUrl ?? prev.avatarUrl,
-        }));
+
+        if (profile) {
+          setUser({
+            name: profile.fullName,
+            email: profile.email,
+            phone: profile.phone,
+            memberSince,
+            avatarUrl: profile.avatarUrl,
+          });
+        }
+
+        const approvedReceipts = receipts.filter((receipt) => receipt.status === "approved").length;
+        const completedRedemptions = redemptions.filter(
+          (redemption) => redemption.status === "completed",
+        ).length;
+
+        setStats({
+          points: balance,
+          receipts: approvedReceipts,
+          redemptions: completedRedemptions,
+        });
       } catch (error) {
         console.error("Erro ao carregar perfil:", error);
         toast.error("Não foi possível carregar seu perfil.");
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
     };
 
@@ -129,21 +162,27 @@ export default function Profile() {
         <div className="bg-card rounded-2xl border border-border/50 shadow-soft p-6 mb-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-display font-bold text-xl">
-              {user.name
-                .split(" ")
-                .map((n) => n[0])
-                .join("")}
+              {user?.name
+                ? user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                : "?"}
             </div>
             <div className="flex-1">
               <h2 className="font-display font-bold text-lg text-foreground">
-                {user.name}
+                {user?.name ?? (isLoading ? "Carregando..." : "Usuário")}
               </h2>
               <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                 <Mail className="w-3.5 h-3.5" />
-                {user.email}
+                {user?.email ?? (isLoading ? "Carregando..." : "Sem email")}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Membro desde {user.memberSince}
+                {user?.memberSince
+                  ? `Membro desde ${user.memberSince}`
+                  : isLoading
+                    ? "Carregando..."
+                    : "Membro desde -"}
               </p>
             </div>
           </div>
@@ -152,15 +191,21 @@ export default function Profile() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
-            <p className="font-display font-bold text-xl text-foreground">1.250</p>
+            <p className="font-display font-bold text-xl text-foreground">
+              {isLoading ? "—" : stats.points.toLocaleString("pt-BR")}
+            </p>
             <p className="text-xs text-muted-foreground">Pontos</p>
           </div>
           <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
-            <p className="font-display font-bold text-xl text-foreground">15</p>
+            <p className="font-display font-bold text-xl text-foreground">
+              {isLoading ? "—" : stats.receipts}
+            </p>
             <p className="text-xs text-muted-foreground">Compras</p>
           </div>
           <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
-            <p className="font-display font-bold text-xl text-foreground">3</p>
+            <p className="font-display font-bold text-xl text-foreground">
+              {isLoading ? "—" : stats.redemptions}
+            </p>
             <p className="text-xs text-muted-foreground">Resgates</p>
           </div>
         </div>
