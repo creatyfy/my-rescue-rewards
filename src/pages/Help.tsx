@@ -27,20 +27,14 @@ const contactChannels = [
   {
     title: "WhatsApp",
     description: "Atendimento rápido em dias úteis, das 9h às 18h.",
-    detail: "+55 (77) 99845-4773",
+    detail: "+55 (11) 98888-7777",
     icon: MessageCircle,
   },
   {
     title: "E-mail",
     description: "Para solicitações detalhadas e anexos.",
-    detail: "weltoncnn@gmail.com",
+    detail: "suporte@meuresgate.com",
     icon: Mail,
-  },
-  {
-    title: "Telefone",
-    description: "Suporte humanizado para questões urgentes.",
-    detail: "0800 123 456",
-    icon: Phone,
   },
 ];
 
