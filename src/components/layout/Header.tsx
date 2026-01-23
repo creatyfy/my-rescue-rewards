@@ -12,14 +12,19 @@ interface HeaderProps {
 export function Header({ title, showBack = false }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border/50">
-      <div className="container flex items-center justify-between h-14 px-4">
+      <div className="container grid grid-cols-[auto_1fr_auto] items-center h-14 px-4">
         <div className="flex items-center gap-2">
           <SidebarTrigger className="hidden md:inline-flex" />
           {showBack && (
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/dashboard" className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              asChild
+            >
+              <Link to="/dashboard" aria-label="Voltar para o dashboard">
                 <ArrowLeft className="w-4 h-4" />
-                <span className="text-sm font-medium">Voltar</span>
+                <span className="sr-only">Voltar</span>
               </Link>
             </Button>
           )}
@@ -33,7 +38,7 @@ export function Header({ title, showBack = false }: HeaderProps) {
         </div>
 
         {title && (
-          <h1 className="font-display font-semibold text-lg absolute left-1/2 -translate-x-1/2">
+          <h1 className="font-display font-semibold text-lg text-center truncate">
             {title}
           </h1>
         )}
