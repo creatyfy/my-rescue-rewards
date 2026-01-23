@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Header } from "./Header";
 import { MobileNav } from "./MobileNav";
@@ -15,6 +15,12 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children, title, showNav = true, showBack = false }: AppLayoutProps) {
+  const navigate = useNavigate();
+
+  const handleGoBack = () => {
+    navigate(-1);
+  };
+
   return (
     <SidebarProvider defaultOpen={false}>
       <Sidebar collapsible="offcanvas">
@@ -27,11 +33,9 @@ export function AppLayout({ children, title, showNav = true, showBack = false }:
             {children}
             {showBack && (
               <div className="container px-4 pt-6 pb-4 flex justify-center">
-                <Button variant="outline" className="gap-2" asChild>
-                  <Link to="/dashboard" aria-label="Voltar para o dashboard">
-                    <ArrowLeft className="h-4 w-4" />
-                    Voltar
-                  </Link>
+                <Button variant="outline" className="gap-2" onClick={handleGoBack} aria-label="Voltar para a página anterior">
+                  <ArrowLeft className="h-4 w-4" />
+                  Voltar
                 </Button>
               </div>
             )}
