@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
-import { Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { NotificationPanel } from "@/components/notifications/NotificationPanel";
 import logoHorizontal from "@/assets/logo-horizontal.png";
 
 interface HeaderProps {
@@ -30,10 +29,7 @@ export function Header({ title }: HeaderProps) {
         )}
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full" />
-          </Button>
+          <NotificationPanel />
         </div>
       </div>
     </header>
