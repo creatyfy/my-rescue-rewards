@@ -4,7 +4,7 @@ import { TransactionItem } from "@/components/transactions/TransactionItem";
 import { Button } from "@/components/ui/button";
 import { fetchCurrentUserId, fetchReceiptHistory, fetchRedemptionHistory } from "@/integrations/supabase/store";
 
-type FilterType = "all" | "earn" | "redeem";
+type FilterType = "all" | "earn" | "redeem" | "rejected";
 type TransactionStatus = "approved" | "pending" | "rejected";
 
 type Transaction = {
@@ -94,7 +94,9 @@ export default function History() {
 
   const filteredTransactions = transactions.filter((t) => {
     if (filter === "all") return true;
-    return t.type === filter;
+    if (filter === "earn") return t.type === "earn" && t.status !== "rejected";
+    if (filter === "rejected") return t.type === "earn" && t.status === "rejected";
+    return t.type === "redeem";
   });
 
   return (
@@ -115,6 +117,13 @@ export default function History() {
             onClick={() => setFilter("earn")}
           >
             Pontos ganhos
+          </Button>
+          <Button
+            variant={filter === "rejected" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFilter("rejected")}
+          >
+            Pontos recusados
           </Button>
           <Button
             variant={filter === "redeem" ? "default" : "outline"}
