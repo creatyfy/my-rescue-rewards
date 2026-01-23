@@ -151,7 +151,7 @@ export const fetchAdminReceipts = async (params?: {
     let q = supabase
       .from("receipts")
       .select(
-        "id, purchase_value, points_earned, status, image_path, created_at, user_id, stores(name)",
+        "id, purchase_value, points_earned, status, image_path, created_at, user_id, establishments(name)",
         { count: "exact" },
       )
       .order("created_at", { ascending: false });
@@ -161,7 +161,7 @@ export const fetchAdminReceipts = async (params?: {
     }
 
     if (query) {
-      q = q.or(`stores.name.ilike.%${query}%`);
+      q = q.or(`establishments.name.ilike.%${query}%`);
     }
 
     const { data, error, count } = await q.range(from, to);
@@ -179,7 +179,7 @@ export const fetchAdminReceipts = async (params?: {
       receipt_image_url: receipt.image_path,
       created_at: receipt.created_at,
       user_id: receipt.user_id,
-      store_name: receipt.stores?.name ?? null,
+      store_name: receipt.establishments?.name ?? null,
     })) as AdminReceipt[];
 
     return {

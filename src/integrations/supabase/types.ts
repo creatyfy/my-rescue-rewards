@@ -87,7 +87,6 @@ export type Database = {
           expires_at: string | null
           id: string
           ledger_type: Database["public"]["Enums"]["ledger_type"]
-          purchase_receipt_id: string | null
           receipt_id: string | null
           redemption_id: string | null
           user_id: string
@@ -98,7 +97,6 @@ export type Database = {
           expires_at?: string | null
           id?: string
           ledger_type: Database["public"]["Enums"]["ledger_type"]
-          purchase_receipt_id?: string | null
           receipt_id?: string | null
           redemption_id?: string | null
           user_id: string
@@ -109,19 +107,11 @@ export type Database = {
           expires_at?: string | null
           id?: string
           ledger_type?: Database["public"]["Enums"]["ledger_type"]
-          purchase_receipt_id?: string | null
           receipt_id?: string | null
           redemption_id?: string | null
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "points_ledger_purchase_receipt_id_fkey"
-            columns: ["purchase_receipt_id"]
-            isOneToOne: false
-            referencedRelation: "purchase_receipts"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "points_ledger_receipt_id_fkey"
             columns: ["receipt_id"]
@@ -206,9 +196,8 @@ export type Database = {
       }
       receipts: {
         Row: {
-          approved_at: string | null
-          approved_by: string | null
           created_at: string
+          establishment_id: string
           id: string
           image_path: string | null
           points_earned: number
@@ -216,15 +205,13 @@ export type Database = {
           purchase_value: number
           reviewed_at: string | null
           reviewed_by: string | null
-          store_id: string
           status: Database["public"]["Enums"]["receipt_status"]
           updated_at: string
           user_id: string
         }
         Insert: {
-          approved_at?: string | null
-          approved_by?: string | null
           created_at?: string
+          establishment_id: string
           id?: string
           image_path?: string | null
           points_earned: number
@@ -232,15 +219,13 @@ export type Database = {
           purchase_value: number
           reviewed_at?: string | null
           reviewed_by?: string | null
-          store_id: string
           status?: Database["public"]["Enums"]["receipt_status"]
           updated_at?: string
           user_id: string
         }
         Update: {
-          approved_at?: string | null
-          approved_by?: string | null
           created_at?: string
+          establishment_id?: string
           id?: string
           image_path?: string | null
           points_earned?: number
@@ -248,159 +233,16 @@ export type Database = {
           purchase_value?: number
           reviewed_at?: string | null
           reviewed_by?: string | null
-          store_id?: string
           status?: Database["public"]["Enums"]["receipt_status"]
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "receipts_store_id_fkey"
-            columns: ["store_id"]
+            foreignKeyName: "receipts_establishment_id_fkey"
+            columns: ["establishment_id"]
             isOneToOne: false
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      purchase_receipts: {
-        Row: {
-          approved_at: string | null
-          approved_by: string | null
-          created_at: string
-          id: string
-          points: number
-          purchase_value: number
-          qr_code_id: string
-          receipt_image_url: string | null
-          status: Database["public"]["Enums"]["receipt_status"]
-          store_id: string
-          user_id: string
-        }
-        Insert: {
-          approved_at?: string | null
-          approved_by?: string | null
-          created_at?: string
-          id?: string
-          points: number
-          purchase_value: number
-          qr_code_id: string
-          receipt_image_url?: string | null
-          status?: Database["public"]["Enums"]["receipt_status"]
-          store_id: string
-          user_id: string
-        }
-        Update: {
-          approved_at?: string | null
-          approved_by?: string | null
-          created_at?: string
-          id?: string
-          points?: number
-          purchase_value?: number
-          qr_code_id?: string
-          receipt_image_url?: string | null
-          status?: Database["public"]["Enums"]["receipt_status"]
-          store_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "purchase_receipts_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "purchase_receipts_qr_code_id_fkey"
-            columns: ["qr_code_id"]
-            isOneToOne: false
-            referencedRelation: "qr_codes"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      qr_codes: {
-        Row: {
-          created_at: string
-          created_by: string
-          id: string
-          is_active: boolean
-          qr_image: string | null
-          qr_value: string
-          store_id: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          id?: string
-          is_active?: boolean
-          qr_image?: string | null
-          qr_value: string
-          store_id: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          id?: string
-          is_active?: boolean
-          qr_image?: string | null
-          qr_value?: string
-          store_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "qr_codes_store_id_fkey"
-            columns: ["store_id"]
-            isOneToOne: false
-            referencedRelation: "stores"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      stores: {
-        Row: {
-          city: string
-          created_at: string
-          created_by: string
-          id: string
-          is_active: boolean
-          name: string
-          phone: string
-          qr_code_id: string | null
-          state: string
-          updated_at: string
-        }
-        Insert: {
-          city: string
-          created_at?: string
-          created_by: string
-          id?: string
-          is_active?: boolean
-          name: string
-          phone: string
-          qr_code_id?: string | null
-          state: string
-          updated_at?: string
-        }
-        Update: {
-          city?: string
-          created_at?: string
-          created_by?: string
-          id?: string
-          is_active?: boolean
-          name?: string
-          phone?: string
-          qr_code_id?: string | null
-          state?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stores_qr_code_id_fkey"
-            columns: ["qr_code_id"]
-            isOneToOne: false
-            referencedRelation: "qr_codes"
+            referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
         ]
@@ -488,13 +330,13 @@ export type Database = {
         Returns: {
           amount: number
           created_at: string
+          establishment_name: string
           ledger_id: string
           ledger_type: Database["public"]["Enums"]["ledger_type"]
           product_name: string
           protocol_number: string
           receipt_status: Database["public"]["Enums"]["receipt_status"]
           redemption_status: Database["public"]["Enums"]["redemption_status"]
-          store_name: string
         }[]
       }
       has_role: {
@@ -542,12 +384,13 @@ export type Database = {
       }
       submit_receipt: {
         Args: {
+          p_image_path: string
           p_purchase_value: number
           p_qr_code_token: string
-          p_receipt_image_url: string
         }
         Returns: {
-          points: number
+          points_earned: number
+          protocol_number: string
           receipt_id: string
           status: Database["public"]["Enums"]["receipt_status"]
         }[]

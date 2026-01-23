@@ -44,7 +44,7 @@ type ReceiptHistoryRecord = {
   status: "pending" | "approved" | "rejected";
   created_at: string;
   purchase_value: number;
-  stores: {
+  establishments: {
     name: string | null;
   } | null;
 };
@@ -55,7 +55,7 @@ type ReceiptHistory = {
   status: "pending" | "approved" | "rejected";
   created_at: string;
   purchase_value: number;
-  stores: {
+  establishments: {
     name: string | null;
   } | null;
 };
@@ -203,7 +203,7 @@ export const fetchReceiptHistory = async (userId: string): Promise<ReceiptHistor
   try {
     const { data, error } = await (supabase as any)
       .from("receipts")
-      .select("id, points_earned, status, purchase_value, created_at, stores(name)")
+      .select("id, points_earned, status, purchase_value, created_at, establishments(name)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
@@ -218,7 +218,7 @@ export const fetchReceiptHistory = async (userId: string): Promise<ReceiptHistor
       status: normalizeReceiptStatus(receipt.status),
       created_at: receipt.created_at,
       purchase_value: receipt.purchase_value,
-      stores: receipt.stores ? { name: receipt.stores.name } : null,
+      establishments: receipt.establishments ? { name: receipt.establishments.name } : null,
     }));
   } catch {
     return [];
