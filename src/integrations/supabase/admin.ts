@@ -44,6 +44,8 @@ export type AdminRedemption = {
   status: "pending" | "completed" | "cancelled";
   points_spent: number;
   created_at: string;
+  user_id: string;
+  product_name: string | null;
 };
 
 export type AdminReceiptSummary = {
@@ -52,6 +54,9 @@ export type AdminReceiptSummary = {
   purchase_value: number;
   points: number;
   created_at: string;
+  establishment_id: string | null;
+  establishment_name: string | null;
+  user_id: string;
 };
 
 const normalizeReceiptStatus = (status?: string | null): ReceiptReviewStatus => {
@@ -243,7 +248,9 @@ export const fetchAdminReceiptsSummary = async (): Promise<AdminReceiptSummary[]
   try {
     const { data, error } = await supabase
       .from("receipts")
-      .select("id, status, purchase_value, points_earned, created_at")
+      .select(
+        "id, status, purchase_value, points_earned, created_at, establishment_id, establishments(name), user_id",
+      )
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -257,6 +264,9 @@ export const fetchAdminReceiptsSummary = async (): Promise<AdminReceiptSummary[]
       purchase_value: receipt.purchase_value,
       points: receipt.points_earned,
       created_at: receipt.created_at,
+      establishment_id: receipt.establishment_id ?? null,
+      establishment_name: receipt.establishments?.name ?? null,
+      user_id: receipt.user_id,
     })) as AdminReceiptSummary[];
   } catch {
     return [];
@@ -267,7 +277,7 @@ export const fetchAdminRedemptions = async (): Promise<AdminRedemption[]> => {
   try {
     const { data, error } = await supabase
       .from("redemptions")
-      .select("id, status, points_spent, created_at")
+      .select("id, status, points_spent, created_at, user_id, products(name)")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -275,10 +285,51 @@ export const fetchAdminRedemptions = async (): Promise<AdminRedemption[]> => {
       return [];
     }
 
-    return (data ?? []) as AdminRedemption[];
+    return (data ?? []).map((redemption) => ({
+      id: redemption.id,
+      status: redemption.status,
+      points_spent: redemption.points_spent,
+      created_at: redemption.created_at,
+      user_id: redemption.user_id,
+      product_name: redemption.products?.name ?? null,
+    })) as AdminRedemption[];
   } catch {
     return [];
   }
+};
+
+export type AdminProfile = {
+  user_id: string;
+  full_name: string | null;
+  phone: string | null;
+};
+
+export const fetchAdminProfiles = async (): Promise<AdminProfile[]> => {
+  try {
+    const { data, error } = await supabase.from("profiles").select("user_id, full_name, phone");
+
+    if (error) {
+      console.warn("profiles table not available:", error.message);
+      return [];
+    }
+
+    return (data ?? []) as AdminProfile[];
+  } catch {
+    return [];
+  }
+};
+
+export const updateAdminRedemptionStatus = async (
+  redemptionId: string,
+  status: "pending" | "completed" | "cancelled",
+) => {
+  const { error } = await supabase.from("redemptions").update({ status }).eq("id", redemptionId);
+
+  if (error) {
+    throw error;
+  }
+
+  return true;
 };
 
 export const fetchAdminProducts = async (): Promise<AdminProduct[]> => {
