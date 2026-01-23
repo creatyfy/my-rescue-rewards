@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Gift, QrCode, ShoppingBag, Star, ChevronRight, Sparkles } from "lucide-react";
-
+import logoHorizontal from "@/assets/logo-horizontal.png";
 export default function Index() {
   return (
     <div className="min-h-screen bg-background">
@@ -12,12 +12,13 @@ export default function Index() {
         <div className="absolute bottom-20 -left-20 w-48 h-48 bg-secondary/20 rounded-full blur-3xl" />
 
         <header className="container px-4 py-4 flex items-center justify-between relative">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-primary">
-              <span className="text-primary-foreground font-display font-bold">MR</span>
-            </div>
-            <span className="font-display font-bold text-xl text-foreground">Meu Resgate</span>
-          </div>
+          <Link to="/" className="flex items-center">
+            <img 
+              src={logoHorizontal} 
+              alt="Meu Resgate" 
+              className="h-10 w-auto"
+            />
+          </Link>
           <Button variant="ghost" asChild>
             <Link to="/auth">Entrar</Link>
           </Button>
@@ -132,12 +133,13 @@ export default function Index() {
       {/* Footer */}
       <footer className="container px-4 py-8 border-t border-border/50">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg gradient-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">MR</span>
-            </div>
-            <span className="font-display font-bold text-foreground">Meu Resgate</span>
-          </div>
+          <Link to="/" className="flex items-center">
+            <img 
+              src={logoHorizontal} 
+              alt="Meu Resgate" 
+              className="h-8 w-auto"
+            />
+          </Link>
           <p className="text-sm text-muted-foreground">
             © 2024 Meu Resgate. Todos os direitos reservados.
           </p>

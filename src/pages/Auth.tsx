@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { updateCurrentUserProfile } from "@/integrations/supabase/profile";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Phone } from "lucide-react";
+import logoHorizontal from "@/assets/logo-horizontal.png";
 
 type AuthMode = "login" | "register";
 
@@ -118,11 +119,11 @@ export default function Auth() {
       <div className="flex-1 flex flex-col justify-center px-6 py-12 max-w-sm mx-auto w-full">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-primary flex items-center justify-center shadow-primary">
-            <span className="text-primary-foreground font-display font-bold text-2xl">
-              MR
-            </span>
-          </div>
+          <img 
+            src={logoHorizontal} 
+            alt="Meu Resgate" 
+            className="h-12 w-auto mx-auto mb-4"
+          />
           <h1 className="font-display text-2xl font-bold text-foreground">
             {mode === "login" ? "Bem-vindo de volta!" : "Criar conta"}
           </h1>
