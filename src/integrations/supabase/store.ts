@@ -40,10 +40,10 @@ type RedemptionHistory = {
 
 type ReceiptHistory = {
   id: string;
-  points_earned: number;
+  points: number;
   status: "pending" | "approved" | "rejected";
-  protocol_number: string;
   created_at: string;
+  purchase_value: number;
   stores: {
     name: string | null;
   } | null;
@@ -181,13 +181,13 @@ export const fetchRedemptionHistory = async (userId: string): Promise<Redemption
 export const fetchReceiptHistory = async (userId: string): Promise<ReceiptHistory[]> => {
   try {
     const { data, error } = await (supabase as any)
-      .from("receipts")
-      .select("id, points_earned, status, protocol_number, created_at, stores(name)")
+      .from("purchase_receipts")
+      .select("id, points, status, purchase_value, created_at, stores(name)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.warn("receipts table not available:", error.message);
+      console.warn("purchase_receipts table not available:", error.message);
       return [];
     }
 
