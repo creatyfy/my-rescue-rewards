@@ -1,4 +1,4 @@
-import { QrCode, ShoppingBag, History, Gift } from "lucide-react";
+import { QrCode, ShoppingBag, History } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const actions = [
@@ -23,18 +23,11 @@ const actions = [
     path: "/history",
     color: "bg-accent text-accent-foreground",
   },
-  {
-    icon: Gift,
-    label: "Promoções",
-    description: "Ofertas especiais",
-    path: "/promotions",
-    color: "bg-success/10 text-success",
-  },
 ];
 
 export function QuickActions() {
   return (
-    <div className="grid grid-cols-4 gap-3">
+    <div className="grid grid-cols-3 gap-3">
       {actions.map((action) => {
         const Icon = action.icon;
         return (
