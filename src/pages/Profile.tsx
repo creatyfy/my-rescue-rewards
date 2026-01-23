@@ -8,7 +8,7 @@ import {
   HelpCircle,
   LogOut,
   Shield,
-  Bell,
+  FileText,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -106,8 +106,8 @@ export default function Profile() {
       path: "/profile/edit",
     },
     {
-      icon: Bell,
-      label: "Notificações",
+      icon: FileText,
+      label: "Relatório da conta",
       path: "/profile/notifications",
     },
     {
