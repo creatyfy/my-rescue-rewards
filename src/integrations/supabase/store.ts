@@ -38,6 +38,17 @@ type RedemptionHistory = {
   } | null;
 };
 
+type ReceiptHistoryRecord = {
+  id: string;
+  points_earned: number;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  purchase_value: number;
+  stores: {
+    name: string | null;
+  } | null;
+};
+
 type ReceiptHistory = {
   id: string;
   points: number;
@@ -47,6 +58,16 @@ type ReceiptHistory = {
   stores: {
     name: string | null;
   } | null;
+};
+
+const normalizeReceiptStatus = (status?: string | null): ReceiptHistory["status"] => {
+  if (status === "approved" || status === "rejected") {
+    return status;
+  }
+  if (status === "em_analise") {
+    return "pending";
+  }
+  return "pending";
 };
 
 type LedgerEntry = {
@@ -181,17 +202,24 @@ export const fetchRedemptionHistory = async (userId: string): Promise<Redemption
 export const fetchReceiptHistory = async (userId: string): Promise<ReceiptHistory[]> => {
   try {
     const { data, error } = await (supabase as any)
-      .from("purchase_receipts")
-      .select("id, points, status, purchase_value, created_at, stores(name)")
+      .from("receipts")
+      .select("id, points_earned, status, purchase_value, created_at, stores(name)")
       .eq("user_id", userId)
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.warn("purchase_receipts table not available:", error.message);
+      console.warn("receipts table not available:", error.message);
       return [];
     }
 
-    return (data ?? []) as ReceiptHistory[];
+    return ((data ?? []) as ReceiptHistoryRecord[]).map((receipt) => ({
+      id: receipt.id,
+      points: receipt.points_earned,
+      status: normalizeReceiptStatus(receipt.status),
+      created_at: receipt.created_at,
+      purchase_value: receipt.purchase_value,
+      stores: receipt.stores ? { name: receipt.stores.name } : null,
+    }));
   } catch {
     return [];
   }

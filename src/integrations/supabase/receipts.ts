@@ -15,6 +15,7 @@ type LegacySubmittedReceipt = {
   receipt_id: string;
   points?: number | null;
   points_earned?: number | null;
+  protocol_number?: string | null;
   status?: "pending" | "approved" | "rejected" | null;
 };
 
@@ -31,11 +32,21 @@ const shouldRetryLegacySubmit = (message: string) => {
   );
 };
 
-const normalizeSubmittedReceipt = (receipt: LegacySubmittedReceipt): SubmittedReceipt => ({
-  receipt_id: receipt.receipt_id,
-  points: receipt.points ?? receipt.points_earned ?? 0,
-  status: receipt.status ?? "pending",
-});
+const normalizeSubmittedReceipt = (receipt: LegacySubmittedReceipt): SubmittedReceipt => {
+  const status = receipt.status;
+  if (status === "approved" || status === "rejected") {
+    return {
+      receipt_id: receipt.receipt_id,
+      points: receipt.points ?? receipt.points_earned ?? 0,
+      status,
+    };
+  }
+  return {
+    receipt_id: receipt.receipt_id,
+    points: receipt.points ?? receipt.points_earned ?? 0,
+    status: "pending",
+  };
+};
 
 export const fetchStoreByQrValue = async (
   qrValue: string,
@@ -77,9 +88,9 @@ export const submitReceiptForCurrentUser = async ({
       receiptPath,
     });
     const { data, error } = await supabase.rpc("submit_receipt" as never, {
-      p_qr_code_token: qrCodeToken,
+      p_qr_value: qrCodeToken,
       p_purchase_value: purchaseValue,
-      p_receipt_image_url: receiptPath,
+      p_image_path: receiptPath,
     } as never);
 
     if (error) {
@@ -94,6 +105,11 @@ export const submitReceiptForCurrentUser = async ({
           p_qr_code_token: qrCodeToken,
           p_purchase_value: purchaseValue,
           p_image_path: receiptPath,
+        },
+        {
+          p_qr_code_token: qrCodeToken,
+          p_purchase_value: purchaseValue,
+          p_receipt_image_url: receiptPath,
         },
         {
           qr_token: qrCodeToken,
