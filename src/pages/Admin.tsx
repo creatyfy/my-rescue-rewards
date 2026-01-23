@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AdminEstablishmentsPanel } from "@/components/admin/AdminEstablishmentsPanel";
 import { AdminProductsPanel } from "@/components/admin/AdminProductsPanel";
@@ -16,7 +16,14 @@ import { ShieldAlert } from "lucide-react";
 
 export default function Admin() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<"loading" | "authorized" | "unauthorized">("loading");
+  const tabParam = searchParams.get("tab");
+  const defaultTab = ["receipts", "establishments", "products", "users", "reports"].includes(
+    tabParam ?? "",
+  )
+    ? tabParam!
+    : "receipts";
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -76,7 +83,7 @@ export default function Admin() {
               </p>
             </Card>
 
-            <Tabs defaultValue="receipts" className="space-y-6">
+            <Tabs defaultValue={defaultTab} className="space-y-6">
               <TabsList className="flex flex-wrap">
                 <TabsTrigger value="receipts">Comprovantes</TabsTrigger>
                 <TabsTrigger value="establishments">Estabelecimentos</TabsTrigger>

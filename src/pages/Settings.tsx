@@ -135,7 +135,7 @@ export default function Settings() {
             <div className="rounded-xl border border-border/50 p-4">
               <p className="text-sm font-medium text-foreground">Você é administrador.</p>
               <p className="text-xs text-muted-foreground mt-1">
-                O painel administrativo está disponível no menu do seu Perfil.
+                O painel administrativo está disponível no menu lateral.
               </p>
             </div>
           ) : (
