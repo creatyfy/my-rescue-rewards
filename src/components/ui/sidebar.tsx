@@ -415,13 +415,13 @@ const SidebarMenuItem = React.forwardRef<HTMLLIElement, React.ComponentProps<"li
 SidebarMenuItem.displayName = "SidebarMenuItem";
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-lg border-l-2 border-transparent px-3 py-2 text-left text-sm font-normal outline-none ring-sidebar-ring transition-colors duration-200 ease-out hover:bg-sky-50 hover:text-slate-900 focus-visible:ring-2 active:bg-sky-50 active:text-slate-900 disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:border-sky-400 data-[active=true]:bg-sky-100 data-[active=true]:font-medium data-[active=true]:text-sky-700 data-[state=open]:hover:bg-sky-50 data-[state=open]:hover:text-slate-900 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-slate-500 hover:[&>svg]:text-slate-700 data-[active=true]:[&>svg]:text-sky-600",
+  "peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-lg border-l-2 border-transparent px-3 py-2 text-left text-sm font-normal outline-none ring-sidebar-ring transition-colors duration-200 ease-out hover:bg-sky-50 hover:text-slate-900 focus-visible:ring-2 active:bg-sky-50 active:text-slate-900 disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:border-sky-400 data-[active=true]:bg-sky-100 data-[active=true]:font-medium data-[active=true]:text-sky-700 data-[state=open]:hover:bg-sky-50 data-[state=open]:hover:text-slate-900 group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-slate-500 hover:[&>svg]:text-slate-700 data-[active=true]:[&>svg]:text-sky-600 dark:hover:bg-sidebar-accent dark:hover:text-sidebar-accent-foreground dark:active:bg-sidebar-accent dark:active:text-sidebar-accent-foreground dark:data-[active=true]:border-sidebar-ring dark:data-[active=true]:bg-sidebar-accent dark:data-[active=true]:text-sidebar-accent-foreground dark:data-[state=open]:hover:bg-sidebar-accent dark:data-[state=open]:hover:text-sidebar-accent-foreground dark:[&>svg]:text-sidebar-foreground/70 dark:hover:[&>svg]:text-sidebar-foreground dark:data-[active=true]:[&>svg]:text-sidebar-accent-foreground",
   {
     variants: {
       variant: {
-        default: "hover:bg-sky-50 hover:text-slate-900",
+        default: "hover:bg-sky-50 hover:text-slate-900 dark:hover:bg-sidebar-accent dark:hover:text-sidebar-accent-foreground",
         outline:
-          "bg-white shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sky-50 hover:text-slate-900 hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))]",
+          "bg-white shadow-[0_0_0_1px_hsl(var(--sidebar-border))] hover:bg-sky-50 hover:text-slate-900 hover:shadow-[0_0_0_1px_hsl(var(--sidebar-accent))] dark:hover:bg-sidebar-accent dark:hover:text-sidebar-accent-foreground",
       },
       size: {
         default: "h-8 text-sm",
@@ -599,8 +599,8 @@ const SidebarMenuSubButton = React.forwardRef<
       data-size={size}
       data-active={isActive}
       className={cn(
-        "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md border-l-2 border-transparent px-2 text-sidebar-foreground outline-none ring-sidebar-ring aria-disabled:pointer-events-none aria-disabled:opacity-50 transition-colors duration-200 ease-out hover:bg-sky-50 hover:text-slate-900 focus-visible:ring-2 active:bg-sky-50 active:text-slate-900 disabled:pointer-events-none disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-slate-500 hover:[&>svg]:text-slate-700",
-        "data-[active=true]:border-sky-400 data-[active=true]:bg-sky-100 data-[active=true]:text-sky-700 data-[active=true]:[&>svg]:text-sky-600",
+        "flex h-7 min-w-0 -translate-x-px items-center gap-2 overflow-hidden rounded-md border-l-2 border-transparent px-2 text-sidebar-foreground outline-none ring-sidebar-ring aria-disabled:pointer-events-none aria-disabled:opacity-50 transition-colors duration-200 ease-out hover:bg-sky-50 hover:text-slate-900 focus-visible:ring-2 active:bg-sky-50 active:text-slate-900 disabled:pointer-events-none disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-slate-500 hover:[&>svg]:text-slate-700 dark:hover:bg-sidebar-accent dark:hover:text-sidebar-accent-foreground dark:active:bg-sidebar-accent dark:active:text-sidebar-accent-foreground dark:[&>svg]:text-sidebar-foreground/70 dark:hover:[&>svg]:text-sidebar-foreground",
+        "data-[active=true]:border-sky-400 data-[active=true]:bg-sky-100 data-[active=true]:text-sky-700 data-[active=true]:[&>svg]:text-sky-600 dark:data-[active=true]:border-sidebar-ring dark:data-[active=true]:bg-sidebar-accent dark:data-[active=true]:text-sidebar-accent-foreground dark:data-[active=true]:[&>svg]:text-sidebar-accent-foreground",
         size === "sm" && "text-xs",
         size === "md" && "text-sm",
         "group-data-[collapsible=icon]:hidden",

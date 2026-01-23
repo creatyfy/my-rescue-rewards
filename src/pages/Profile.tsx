@@ -11,7 +11,6 @@ import {
   LogOut,
   Shield,
   Bell,
-  CreditCard,
   ShieldCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -118,11 +117,6 @@ export default function Profile() {
       icon: Shield,
       label: "Segurança",
       path: "/profile/security",
-    },
-    {
-      icon: CreditCard,
-      label: "Métodos de pagamento",
-      path: "/profile/payments",
     },
     ...(isAdmin
       ? [
