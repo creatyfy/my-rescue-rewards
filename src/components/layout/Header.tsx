@@ -10,8 +10,8 @@ interface HeaderProps {
 export function Header({ title }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border/50">
-      <div className="container flex items-center justify-between h-14 px-4">
-        <div className="flex items-center gap-2">
+      <div className="container flex items-center h-14 px-4">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <SidebarTrigger />
           <Link to="/dashboard" className="flex items-center">
             <img 
@@ -23,12 +23,14 @@ export function Header({ title }: HeaderProps) {
         </div>
 
         {title && (
-          <h1 className="font-display font-semibold text-lg absolute left-1/2 -translate-x-1/2 max-w-[50%] truncate text-center">
-            {title}
-          </h1>
+          <div className="flex-1 flex justify-center px-2 min-w-0">
+            <h1 className="font-display font-semibold text-lg truncate">
+              {title}
+            </h1>
+          </div>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
           <NotificationPanel />
         </div>
       </div>

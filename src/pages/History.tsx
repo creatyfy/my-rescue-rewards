@@ -103,10 +103,11 @@ export default function History() {
     <AppLayout title="Histórico" showBack>
       <div className="container px-4 py-6 md:py-8">
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 md:flex-wrap md:gap-3 md:overflow-visible md:pb-0">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:gap-3 md:overflow-visible md:pb-0 scrollbar-hide">
           <Button
             variant={filter === "all" ? "default" : "outline"}
             size="sm"
+            className="flex-shrink-0"
             onClick={() => setFilter("all")}
           >
             Todos
@@ -114,6 +115,7 @@ export default function History() {
           <Button
             variant={filter === "earn" ? "default" : "outline"}
             size="sm"
+            className="flex-shrink-0"
             onClick={() => setFilter("earn")}
           >
             Pontos ganhos
@@ -121,6 +123,7 @@ export default function History() {
           <Button
             variant={filter === "rejected" ? "default" : "outline"}
             size="sm"
+            className="flex-shrink-0"
             onClick={() => setFilter("rejected")}
           >
             Pontos recusados
@@ -128,6 +131,7 @@ export default function History() {
           <Button
             variant={filter === "redeem" ? "default" : "outline"}
             size="sm"
+            className="flex-shrink-0"
             onClick={() => setFilter("redeem")}
           >
             Resgates
