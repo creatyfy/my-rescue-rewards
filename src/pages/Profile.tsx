@@ -4,14 +4,12 @@ import { toast } from "@/components/ui/sonner";
 import {
   User,
   Mail,
-  Phone,
   ChevronRight,
   Settings,
   HelpCircle,
   LogOut,
   Shield,
   Bell,
-  ShieldCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -118,15 +116,6 @@ export default function Profile() {
       label: "Segurança",
       path: "/profile/security",
     },
-    ...(isAdmin
-      ? [
-          {
-            icon: ShieldCheck,
-            label: "Painel administrativo",
-            path: "/admin/receipts",
-          },
-        ]
-      : []),
     {
       icon: HelpCircle,
       label: "Ajuda e suporte",
