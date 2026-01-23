@@ -44,7 +44,7 @@ const App = () => (
             }
           />
           <Route
-            path="/admin"
+            path="/admin/:section?"
             element={
               <AuthGuard>
                 <Admin />
