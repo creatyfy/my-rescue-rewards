@@ -18,6 +18,9 @@ type Transaction = {
   date: string;
 };
 
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+
 export default function History() {
   const [filter, setFilter] = useState<FilterType>("all");
   const [loading, setLoading] = useState(true);
@@ -42,8 +45,8 @@ export default function History() {
           id: receipt.id,
           type: "earn" as const,
           title: receipt.stores?.name ?? "Loja parceira",
-          subtitle: `Comprovante ${receipt.protocol_number}`,
-          points: receipt.points_earned,
+          subtitle: `Compra de ${formatCurrency(Number(receipt.purchase_value))}`,
+          points: receipt.points,
           status: receipt.status as TransactionStatus,
           sortTime: new Date(receipt.created_at).getTime(),
           date: new Date(receipt.created_at).toLocaleString("pt-BR", {

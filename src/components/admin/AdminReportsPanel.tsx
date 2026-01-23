@@ -55,7 +55,7 @@ export function AdminReportsPanel() {
         acc.purchaseValue += Number(receipt.purchase_value);
         if (receipt.status === "approved") {
           acc.approved += 1;
-          acc.pointsEarned += receipt.points_earned;
+          acc.pointsEarned += receipt.points;
         } else if (receipt.status === "rejected") {
           acc.rejected += 1;
         } else {

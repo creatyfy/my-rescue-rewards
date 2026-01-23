@@ -7,8 +7,7 @@ type StoreMatch = {
 
 type SubmittedReceipt = {
   receipt_id: string;
-  protocol_number: string;
-  points_earned: number;
+  points: number;
   status: "pending" | "approved" | "rejected";
 };
 
@@ -46,10 +45,15 @@ export const submitReceiptForCurrentUser = async ({
   receiptPath: string;
 }): Promise<SubmittedReceipt | null> => {
   try {
+    console.info("Enviando comprovante para análise:", {
+      qrCodeToken,
+      purchaseValue,
+      receiptPath,
+    });
     const { data, error } = await supabase.rpc("submit_receipt" as never, {
       p_qr_code_token: qrCodeToken,
       p_purchase_value: purchaseValue,
-      p_image_path: receiptPath,
+      p_receipt_image_url: receiptPath,
     } as never);
 
     if (error) {
@@ -58,6 +62,12 @@ export const submitReceiptForCurrentUser = async ({
     }
 
     const result = data as SubmittedReceipt[] | null;
+    if (result?.[0]) {
+      console.info("Comprovante criado:", {
+        receiptId: result[0].receipt_id,
+        status: result[0].status,
+      });
+    }
     return result?.[0] ?? null;
   } catch (err) {
     throw err;

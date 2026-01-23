@@ -116,6 +116,7 @@ export default function Scan() {
         purchaseValue: parsedValue,
         receiptPath,
       });
+      toast.success("Comprovante enviado para análise.");
       setStep("success");
     } catch (error) {
       console.error("Erro ao enviar:", error);
@@ -452,10 +453,10 @@ export default function Scan() {
               <CheckCircle className="w-10 h-10 text-success" />
             </div>
             <h2 className="font-display text-2xl font-bold text-foreground mb-2">
-              Enviado com sucesso!
+              Comprovante enviado para análise
             </h2>
             <p className="text-muted-foreground mb-6">
-              Seu comprovante está aguardando aprovação.
+              Seu comprovante foi encaminhado para aprovação.
             </p>
             <div className="p-4 rounded-xl bg-accent border border-border/50 mb-6">
               <div className="flex items-center justify-between">

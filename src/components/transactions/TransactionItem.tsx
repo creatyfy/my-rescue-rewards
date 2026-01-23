@@ -16,7 +16,7 @@ interface TransactionItemProps {
 const statusConfig = {
   pending: {
     icon: Clock,
-    label: "Pendente",
+    label: "Em análise",
     className: "text-pending bg-pending/10",
   },
   approved: {

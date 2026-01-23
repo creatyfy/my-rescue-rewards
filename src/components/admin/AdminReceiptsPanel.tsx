@@ -75,15 +75,15 @@ export function AdminReceiptsPanel() {
   };
 
   const handlePreview = async (receipt: AdminReceipt) => {
-    if (!receipt.image_path) {
+    if (!receipt.receipt_image_url) {
       toast.error("Comprovante sem imagem disponível.");
       return;
     }
 
     try {
-      const url = await createSignedReceiptUrl(receipt.image_path, 180);
+      const url = await createSignedReceiptUrl(receipt.receipt_image_url, 180);
       setPreviewUrl(url);
-      setPreviewProtocol(receipt.protocol_number);
+      setPreviewProtocol(receipt.id.slice(0, 8));
     } catch (error) {
       console.error("Erro ao gerar visualização do comprovante:", error);
       toast.error("Não foi possível carregar a imagem do comprovante.");
@@ -116,7 +116,7 @@ export function AdminReceiptsPanel() {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por protocolo ou loja..."
+            placeholder="Buscar por loja..."
             className="pl-10"
           />
         </div>
@@ -159,7 +159,7 @@ export function AdminReceiptsPanel() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Protocolo</TableHead>
+              <TableHead>Comprovante</TableHead>
               <TableHead>Loja</TableHead>
               <TableHead>Usuário</TableHead>
               <TableHead>Valor</TableHead>
@@ -171,13 +171,13 @@ export function AdminReceiptsPanel() {
           <TableBody>
             {receipts.map((receipt) => (
               <TableRow key={receipt.id}>
-                <TableCell className="font-medium">{receipt.protocol_number}</TableCell>
-                <TableCell>{receipt.establishments?.name ?? "Estabelecimento"}</TableCell>
+                <TableCell className="font-medium">{receipt.id.slice(0, 8)}</TableCell>
+                <TableCell>{receipt.stores?.name ?? "Loja parceira"}</TableCell>
                 <TableCell className="text-xs text-muted-foreground">
                   {receipt.user_id}
                 </TableCell>
                 <TableCell>{formatCurrency(Number(receipt.purchase_value))}</TableCell>
-                <TableCell>{receipt.points_earned}</TableCell>
+                <TableCell>{receipt.points}</TableCell>
                 <TableCell>
                   {new Date(receipt.created_at).toLocaleString("pt-BR", {
                     day: "2-digit",
@@ -192,7 +192,7 @@ export function AdminReceiptsPanel() {
                       variant="outline"
                       size="sm"
                       onClick={() => handlePreview(receipt)}
-                      disabled={!receipt.image_path}
+                      disabled={!receipt.receipt_image_url}
                     >
                       <Eye className="mr-1 h-4 w-4" />
                       Ver

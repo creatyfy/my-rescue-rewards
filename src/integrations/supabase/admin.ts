@@ -5,14 +5,13 @@ export type ReceiptReviewStatus = "pending" | "approved" | "rejected";
 
 export type AdminReceipt = {
   id: string;
-  protocol_number: string;
   purchase_value: number;
-  points_earned: number;
+  points: number;
   status: ReceiptReviewStatus;
-  image_path: string | null;
+  receipt_image_url: string | null;
   created_at: string;
   user_id: string;
-  establishments: {
+  stores: {
     name: string | null;
   } | null;
 };
@@ -53,7 +52,7 @@ export type AdminReceiptSummary = {
   id: string;
   status: ReceiptReviewStatus;
   purchase_value: number;
-  points_earned: number;
+  points: number;
   created_at: string;
 };
 
@@ -142,9 +141,9 @@ export const fetchAdminReceipts = async (params?: {
 
   try {
     let q = supabase
-      .from("receipts")
+      .from("purchase_receipts")
       .select(
-        "id, protocol_number, purchase_value, points_earned, status, image_path, created_at, user_id, establishments(name)",
+        "id, purchase_value, points, status, receipt_image_url, created_at, user_id, stores(name)",
         { count: "exact" },
       )
       .order("created_at", { ascending: false });
@@ -154,14 +153,14 @@ export const fetchAdminReceipts = async (params?: {
     }
 
     if (query) {
-      // Busca por protocolo OU nome do estabelecimento (relacionamento via FK)
-      q = q.or(`protocol_number.ilike.%${query}%,establishments.name.ilike.%${query}%`);
+      // Busca pelo nome da loja (relacionamento via FK)
+      q = q.or(`stores.name.ilike.%${query}%`);
     }
 
     const { data, error, count } = await q.range(from, to);
 
     if (error) {
-      console.warn("receipts query failed:", error.message);
+      console.warn("purchase_receipts query failed:", error.message);
       return { items: [], total: 0, page, pageSize };
     }
 
@@ -177,6 +176,7 @@ export const fetchAdminReceipts = async (params?: {
 };
 
 export const reviewReceipt = async (receiptId: string, status: ReceiptReviewStatus) => {
+  console.info("Tentativa de revisão de comprovante:", { receiptId, status });
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
   if (userError) {
@@ -189,21 +189,24 @@ export const reviewReceipt = async (receiptId: string, status: ReceiptReviewStat
 
   const approvedAt = status === "approved" ? new Date().toISOString() : null;
   const approvedBy = status === "approved" ? userData.user.id : null;
-  const reviewedAt = new Date().toISOString();
-  const reviewedBy = userData.user.id;
-
   const { error } = await supabase
-    .from("receipts")
+    .from("purchase_receipts")
     .update({
       status,
       approved_by: approvedBy,
       approved_at: approvedAt,
-      reviewed_by: reviewedBy,
-      reviewed_at: reviewedAt,
     })
     .eq("id", receiptId);
 
   if (error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("permission") || message.includes("not authorized") || message.includes("forbidden")) {
+      console.warn("Erro de permissão ao revisar comprovante:", {
+        receiptId,
+        status,
+        message: error.message,
+      });
+    }
     throw error;
   }
 
@@ -213,12 +216,12 @@ export const reviewReceipt = async (receiptId: string, status: ReceiptReviewStat
 export const fetchAdminReceiptsSummary = async (): Promise<AdminReceiptSummary[]> => {
   try {
     const { data, error } = await supabase
-      .from("receipts")
-      .select("id, status, purchase_value, points_earned, created_at")
+      .from("purchase_receipts")
+      .select("id, status, purchase_value, points, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.warn("receipts table not available:", error.message);
+      console.warn("purchase_receipts table not available:", error.message);
       return [];
     }
 
