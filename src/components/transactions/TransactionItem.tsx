@@ -41,6 +41,8 @@ export function TransactionItem({
 }: TransactionItemProps) {
   const StatusIcon = statusConfig[status].icon;
   const isEarn = type === "earn";
+  const isRejectedEarn = isEarn && status === "rejected";
+  const pointsText = isRejectedEarn ? "—" : `${isEarn ? "+" : "-"}${points.toLocaleString("pt-BR")}`;
 
   return (
     <div className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border/50 shadow-soft">
@@ -74,10 +76,10 @@ export function TransactionItem({
         <span
           className={cn(
             "font-bold text-sm",
-            isEarn ? "text-success" : "text-foreground"
+            isRejectedEarn ? "text-muted-foreground" : isEarn ? "text-success" : "text-foreground"
           )}
         >
-          {isEarn ? "+" : "-"}{points.toLocaleString('pt-BR')}
+          {pointsText}
         </span>
         <p className="text-[10px] text-muted-foreground">pontos</p>
       </div>
