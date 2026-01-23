@@ -1,33 +1,19 @@
 import { Link } from "react-router-dom";
-import { ArrowLeft, Bell } from "lucide-react";
+import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import logoHorizontal from "@/assets/logo-horizontal.png";
 
 interface HeaderProps {
-  showBack?: boolean;
   title?: string;
 }
 
-export function Header({ title, showBack = false }: HeaderProps) {
+export function Header({ title }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border/50">
       <div className="container grid grid-cols-[auto_1fr_auto] items-center h-14 px-4">
         <div className="flex items-center gap-2">
-          <SidebarTrigger className="hidden md:inline-flex" />
-          {showBack && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
-              asChild
-            >
-              <Link to="/dashboard" aria-label="Voltar para o dashboard">
-                <ArrowLeft className="w-4 h-4" />
-                <span className="sr-only">Voltar</span>
-              </Link>
-            </Button>
-          )}
+          <SidebarTrigger className="inline-flex" />
           <Link to="/dashboard" className="flex items-center">
             <img 
               src={logoHorizontal} 

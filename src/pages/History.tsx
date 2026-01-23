@@ -101,9 +101,9 @@ export default function History() {
 
   return (
     <AppLayout title="Histórico" showBack>
-      <div className="container px-4 py-6">
+      <div className="container px-4 py-6 md:py-8">
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 md:flex-wrap md:gap-3 md:overflow-visible md:pb-0">
           <Button
             variant={filter === "all" ? "default" : "outline"}
             size="sm"
