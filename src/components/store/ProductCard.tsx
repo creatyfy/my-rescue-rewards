@@ -54,12 +54,12 @@ export function ProductCard({
           {description}
         </p>
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-1.5">
-            <div className="p-1.5 rounded-lg gradient-gold">
-              <Coins className="w-4 h-4 text-points-gold-foreground" />
+            <div className="p-1 sm:p-1.5 rounded-lg gradient-gold flex-shrink-0">
+              <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-points-gold-foreground" />
             </div>
-            <span className="font-bold text-lg text-foreground">
+            <span className="font-bold text-base sm:text-lg text-foreground">
               {pointsCost.toLocaleString('pt-BR')}
             </span>
           </div>
@@ -69,7 +69,7 @@ export function ProductCard({
             size="sm"
             disabled={!canRedeem}
             onClick={() => onRedeem?.(id)}
-            className="text-xs"
+            className="text-[10px] sm:text-xs w-full sm:w-auto"
           >
             {!isAvailable ? "Esgotado" : !canAfford ? "Pontos insuf." : "Resgatar"}
           </Button>
