@@ -105,24 +105,33 @@ export function SidebarNav() {
         <SidebarGroupLabel>Menu</SidebarGroupLabel>
         <SidebarMenu className="gap-1">
           {navItems.map((item) => {
+            if (
+              isAdmin &&
+              item.label !== "Início" &&
+              item.label !== "Perfil"
+            ) {
+              return null;
+            }
             const isActive = item.matchPrefix
               ? location.pathname.startsWith(item.path)
               : location.pathname === item.path;
             const Icon = item.icon;
+            const label =
+              isAdmin && item.label === "Início" ? "Visão Geral" : item.label;
 
             return (
               <SidebarMenuItem key={item.path}>
                 <SidebarMenuButton
                   asChild
                   isActive={isActive}
-                  tooltip={item.label}
+                  tooltip={label}
                 >
                   <Link
                     to={item.path}
                     className={cn("flex items-center gap-2")}
                   >
                     <Icon className="h-4 w-4" />
-                    <span>{item.label}</span>
+                    <span>{label}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
