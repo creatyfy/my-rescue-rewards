@@ -1,11 +1,28 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Gift, QrCode, Star, ChevronRight, Sparkles, Download, Check, Smartphone } from "lucide-react";
+import { Gift, QrCode, Star, ChevronRight, Sparkles, Download, Check, Smartphone, Share } from "lucide-react";
 import logoHorizontal from "@/assets/logo-horizontal.png";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Index() {
-  const { isInstallable, isInstalled, installApp } = usePWAInstall();
+  const { isInstallable, isInstalled, isIOSDevice, installApp } = usePWAInstall();
+  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
+
+  const handleInstallClick = async () => {
+    if (isIOSDevice) {
+      setShowIOSInstructions(true);
+    } else {
+      await installApp();
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -24,10 +41,11 @@ export default function Index() {
             />
           </Link>
           <div className="flex items-center gap-2">
-            {isInstallable && (
-              <Button variant="outline" size="sm" onClick={installApp} className="gap-2">
+            {isInstallable && !isInstalled && (
+              <Button variant="outline" size="sm" onClick={handleInstallClick} className="gap-2">
                 <Download className="w-4 h-4" />
                 <span className="hidden sm:inline">Instalar App</span>
+                <span className="sm:hidden">Instalar</span>
               </Button>
             )}
             {isInstalled && (
@@ -73,7 +91,7 @@ export default function Index() {
             </div>
 
             {/* PWA Install Banner */}
-            {isInstallable && (
+            {isInstallable && !isInstalled && (
               <div className="mt-8 p-4 rounded-2xl bg-card border border-border/50 shadow-soft max-w-md mx-auto animate-fade-in">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0">
@@ -81,11 +99,24 @@ export default function Index() {
                   </div>
                   <div className="text-left flex-1 min-w-0">
                     <p className="font-semibold text-foreground">Baixe o App</p>
-                    <p className="text-sm text-muted-foreground">Acesse mais rápido direto do seu celular</p>
+                    <p className="text-sm text-muted-foreground">
+                      {isIOSDevice 
+                        ? "Adicione à tela inicial do seu iPhone" 
+                        : "Acesse mais rápido direto do seu celular"}
+                    </p>
                   </div>
-                  <Button size="sm" onClick={installApp} className="flex-shrink-0">
-                    <Download className="w-4 h-4 mr-1" />
-                    Instalar
+                  <Button size="sm" onClick={handleInstallClick} className="flex-shrink-0">
+                    {isIOSDevice ? (
+                      <>
+                        <Share className="w-4 h-4 mr-1" />
+                        Ver como
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-1" />
+                        Instalar
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -182,6 +213,59 @@ export default function Index() {
           </p>
         </div>
       </footer>
+
+      {/* iOS Installation Instructions Dialog */}
+      <Dialog open={showIOSInstructions} onOpenChange={setShowIOSInstructions}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Smartphone className="w-5 h-5 text-primary" />
+              Instalar no iPhone/iPad
+            </DialogTitle>
+            <DialogDescription>
+              Siga os passos abaixo para adicionar o app à sua tela inicial
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-semibold text-sm">
+                1
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Toque no botão Compartilhar</p>
+                <p className="text-sm text-muted-foreground">
+                  Na barra inferior do Safari, toque no ícone <Share className="w-4 h-4 inline" /> (quadrado com seta para cima)
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-semibold text-sm">
+                2
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Adicionar à Tela de Início</p>
+                <p className="text-sm text-muted-foreground">
+                  Role para baixo e toque em "Adicionar à Tela de Início"
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 text-primary font-semibold text-sm">
+                3
+              </div>
+              <div>
+                <p className="font-medium text-foreground">Confirme a instalação</p>
+                <p className="text-sm text-muted-foreground">
+                  Toque em "Adicionar" no canto superior direito
+                </p>
+              </div>
+            </div>
+          </div>
+          <Button onClick={() => setShowIOSInstructions(false)} className="w-full">
+            Entendi
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
