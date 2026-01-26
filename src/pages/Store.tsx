@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProductCard } from "@/components/store/ProductCard";
-import { Search, Filter, Coins } from "lucide-react";
+import { Search, Filter, Coins, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,6 +14,7 @@ import {
   fetchProducts,
   redeemProduct,
 } from "@/integrations/supabase/store";
+import { useCepLookup } from "@/hooks/useCepLookup";
 
 export default function Store() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -34,6 +35,8 @@ export default function Store() {
   });
   const [userContact, setUserContact] = useState<UserContact | null>(null);
   const [redeeming, setRedeeming] = useState(false);
+
+  const { loading: cepLoading, error: cepError, lookup: lookupCep, reset: resetCep } = useCepLookup();
 
   useEffect(() => {
     const loadStoreData = async () => {
@@ -86,6 +89,33 @@ export default function Store() {
   const isCepValid = cepDigits.length === 8;
   const isStateValid = trimmedDelivery.state.length === 2;
   const isDeliveryValid = isDeliveryComplete && isCepValid && isStateValid;
+
+  const handleCepChange = async (value: string) => {
+    // Format CEP as user types (00000-000)
+    const digits = value.replace(/\D/g, "");
+    let formatted = digits;
+    if (digits.length > 5) {
+      formatted = `${digits.slice(0, 5)}-${digits.slice(5, 8)}`;
+    }
+    setDeliveryData((prev) => ({ ...prev, cep: formatted }));
+
+    // Auto-lookup when CEP has 8 digits
+    if (digits.length === 8) {
+      const result = await lookupCep(digits);
+      if (result) {
+        setDeliveryData((prev) => ({
+          ...prev,
+          address: result.logradouro || prev.address,
+          neighborhood: result.bairro || prev.neighborhood,
+          city: result.localidade || prev.city,
+          state: result.uf || prev.state,
+        }));
+        toast.success("Endereço preenchido automaticamente!");
+      }
+    } else {
+      resetCep();
+    }
+  };
 
   const handleRedeem = (productId: string) => {
     setSelectedProductId(productId);
@@ -150,6 +180,7 @@ export default function Store() {
         city: "",
         state: "",
       });
+      resetCep();
     } catch (error) {
       const errorDetails = error as {
         message?: string;
@@ -223,7 +254,7 @@ export default function Store() {
             <p className="text-muted-foreground">Nenhum produto encontrado</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
             {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}
@@ -237,7 +268,7 @@ export default function Store() {
       </div>
 
       <Dialog open={redeemDialogOpen} onOpenChange={setRedeemDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Dados de entrega</DialogTitle>
             <DialogDescription>
@@ -267,22 +298,31 @@ export default function Store() {
                 Endereço de entrega <span className="text-destructive">*</span>
               </p>
               <p className="text-xs text-muted-foreground">
-                Todos os campos são obrigatórios para realizar o resgate.
+                Digite o CEP para preencher automaticamente. Todos os campos são obrigatórios.
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-1">
                 <label className="text-xs font-medium text-muted-foreground">
                   CEP <span className="text-destructive">*</span>
                 </label>
-                <Input
-                  value={deliveryData.cep}
-                  onChange={(event) => setDeliveryData((prev) => ({ ...prev, cep: event.target.value }))}
-                  placeholder="00000-000"
-                  required
-                  className={!isCepValid && deliveryData.cep.length > 0 ? "border-destructive" : ""}
-                />
-                {!isCepValid && deliveryData.cep.length > 0 && (
+                <div className="relative">
+                  <Input
+                    value={deliveryData.cep}
+                    onChange={(event) => handleCepChange(event.target.value)}
+                    placeholder="00000-000"
+                    maxLength={9}
+                    required
+                    className={cepError || (!isCepValid && deliveryData.cep.length > 0) ? "border-destructive pr-10" : "pr-10"}
+                  />
+                  {cepLoading && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
+                  )}
+                </div>
+                {cepError && (
+                  <p className="text-xs text-destructive">{cepError}</p>
+                )}
+                {!cepError && !isCepValid && deliveryData.cep.length > 0 && (
                   <p className="text-xs text-destructive">CEP deve ter 8 dígitos</p>
                 )}
               </div>
@@ -335,7 +375,7 @@ export default function Store() {
                   required
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 sm:col-span-2">
                 <label className="text-xs font-medium text-muted-foreground">
                   Cidade <span className="text-destructive">*</span>
                 </label>
@@ -353,11 +393,11 @@ export default function Store() {
               </p>
             )}
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="outline" onClick={() => setRedeemDialogOpen(false)} disabled={redeeming}>
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:gap-0">
+            <Button variant="outline" onClick={() => setRedeemDialogOpen(false)} disabled={redeeming} className="w-full sm:w-auto">
               Voltar
             </Button>
-            <Button onClick={handleConfirmRedeem} disabled={redeeming || isContactMissing || !isDeliveryValid}>
+            <Button onClick={handleConfirmRedeem} disabled={redeeming || isContactMissing || !isDeliveryValid} className="w-full sm:w-auto">
               {redeeming ? "Confirmando..." : "Confirmar resgate"}
             </Button>
           </DialogFooter>

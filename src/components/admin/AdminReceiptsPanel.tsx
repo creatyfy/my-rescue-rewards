@@ -121,7 +121,7 @@ export function AdminReceiptsPanel() {
           />
         </div>
 
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">
             {loading ? "" : `${total.toLocaleString("pt-BR")} resultado(s)`}
           </p>
@@ -133,16 +133,16 @@ export function AdminReceiptsPanel() {
               disabled={loading || page <= 1}
             >
               <ChevronLeft className="h-4 w-4" />
-              Anterior
+              <span className="hidden xs:inline">Anterior</span>
             </Button>
-            <span className="text-xs text-muted-foreground">Página {page}</span>
+            <span className="text-xs text-muted-foreground">Pág. {page}</span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setPage((p) => p + 1)}
               disabled={loading || page * pageSize >= total}
             >
-              Próxima
+              <span className="hidden xs:inline">Próxima</span>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -156,70 +156,72 @@ export function AdminReceiptsPanel() {
           Nenhum comprovante encontrado.
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Comprovante</TableHead>
-              <TableHead>Loja</TableHead>
-              <TableHead>Usuário</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead>Pontos</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {receipts.map((receipt) => (
-              <TableRow key={receipt.id}>
-                <TableCell className="font-medium">{receipt.id.slice(0, 8)}</TableCell>
-                <TableCell>{receipt.store_name ?? "Loja parceira"}</TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {receipt.user_id}
-                </TableCell>
-                <TableCell>{formatCurrency(Number(receipt.purchase_value))}</TableCell>
-                <TableCell>{receipt.points}</TableCell>
-                <TableCell>
-                  {new Date(receipt.created_at).toLocaleString("pt-BR", {
-                    day: "2-digit",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePreview(receipt)}
-                      disabled={!receipt.receipt_image_url}
-                    >
-                      <Eye className="mr-1 h-4 w-4" />
-                      Ver
-                    </Button>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => handleReview(receipt.id, "approved")}
-                    >
-                      <CheckCircle className="mr-1 h-4 w-4" />
-                      Aprovar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-destructive/50 text-destructive hover:bg-destructive/10"
-                      onClick={() => handleReview(receipt.id, "rejected")}
-                    >
-                      <XCircle className="mr-1 h-4 w-4" />
-                      Rejeitar
-                    </Button>
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto -mx-6 px-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="whitespace-nowrap">Comprovante</TableHead>
+                <TableHead className="whitespace-nowrap">Loja</TableHead>
+                <TableHead className="whitespace-nowrap">Usuário</TableHead>
+                <TableHead className="whitespace-nowrap">Valor</TableHead>
+                <TableHead className="whitespace-nowrap">Pontos</TableHead>
+                <TableHead className="whitespace-nowrap">Data</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {receipts.map((receipt) => (
+                <TableRow key={receipt.id}>
+                  <TableCell className="font-medium whitespace-nowrap">{receipt.id.slice(0, 8)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{receipt.store_name ?? "Loja parceira"}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    {receipt.user_id.slice(0, 8)}...
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">{formatCurrency(Number(receipt.purchase_value))}</TableCell>
+                  <TableCell className="whitespace-nowrap">{receipt.points}</TableCell>
+                  <TableCell className="whitespace-nowrap">
+                    {new Date(receipt.created_at).toLocaleString("pt-BR", {
+                      day: "2-digit",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePreview(receipt)}
+                        disabled={!receipt.receipt_image_url}
+                      >
+                        <Eye className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Ver</span>
+                      </Button>
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={() => handleReview(receipt.id, "approved")}
+                      >
+                        <CheckCircle className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Aprovar</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                        onClick={() => handleReview(receipt.id, "rejected")}
+                      >
+                        <XCircle className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Rejeitar</span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       <Dialog
