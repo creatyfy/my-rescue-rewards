@@ -18,7 +18,6 @@ import {
   fetchAdminReceiptsSummary,
   fetchAdminRedemptions,
   fetchAdminUsers,
-  updateAdminRedemptionStatus,
 } from "@/integrations/supabase/admin";
 
 const formatCurrency = (value: number) =>
@@ -42,7 +41,6 @@ export function AdminReportsPanel({
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [profiles, setProfiles] = useState<AdminProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updatingRedemptionId, setUpdatingRedemptionId] = useState<string | null>(null);
   const [periodFilter, setPeriodFilter] = useState<"last7" | "last15" | "last30" | "custom">("last30");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
@@ -207,7 +205,7 @@ export function AdminReportsPanel({
     const redemptionTotals = filteredRedemptions.reduce(
       (acc, redemption) => {
         acc.total += 1;
-        if (redemption.status === "completed") {
+        if (redemption.status === "concluído" || redemption.status === "completed") {
           acc.completed += 1;
           acc.pointsSpent += redemption.points_spent;
         } else if (redemption.status === "cancelled") {
@@ -231,20 +229,39 @@ export function AdminReportsPanel({
     };
   }, [filteredReceipts, filteredRedemptions, filteredProducts, filteredEstablishments]);
 
-  const handleUpdateStatus = async (redemptionId: string, status: AdminRedemption["status"]) => {
-    try {
-      setUpdatingRedemptionId(redemptionId);
-      await updateAdminRedemptionStatus(redemptionId, status);
-      setRedemptions((prev) =>
-        prev.map((redemption) => (redemption.id === redemptionId ? { ...redemption, status } : redemption)),
-      );
-      toast.success("Status do resgate atualizado.");
-    } catch (error) {
-      console.error("Erro ao atualizar resgate:", error);
-      toast.error("Não foi possível atualizar o resgate.");
-    } finally {
-      setUpdatingRedemptionId(null);
+  const getRedemptionStatusLabel = (status: AdminRedemption["status"]) => {
+    switch (status) {
+      case "concluído":
+      case "completed":
+        return { label: "Concluído", className: "text-success font-medium" };
+      case "cancelled":
+        return { label: "Cancelado", className: "text-destructive font-medium" };
+      case "em andamento":
+        return { label: "Em andamento", className: "text-pending font-medium" };
+      case "enviado":
+        return { label: "Enviado", className: "text-pending font-medium" };
+      case "solicitado":
+        return { label: "Solicitado", className: "text-pending font-medium" };
+      case "pendente":
+      case "pending":
+      default:
+        return { label: "Pendente", className: "text-pending font-medium" };
     }
+  };
+
+  const getDeliverySummary = (redemption: AdminRedemption) => {
+    const parts = [
+      [redemption.delivery_address, redemption.delivery_number].filter(Boolean).join(", "),
+      redemption.delivery_neighborhood,
+      [redemption.delivery_city, redemption.delivery_state].filter(Boolean).join("/"),
+      redemption.delivery_cep,
+    ].filter((value) => value && value.trim().length > 0);
+
+    if (parts.length === 0) {
+      return "Não informado";
+    }
+
+    return parts.join(" • ");
   };
 
   return (
@@ -487,31 +504,21 @@ export function AdminReportsPanel({
                       <TableHead className="font-semibold text-foreground whitespace-nowrap">Estabelecimento</TableHead>
                       <TableHead className="font-semibold text-foreground whitespace-nowrap">Entrega</TableHead>
                       <TableHead className="font-semibold text-foreground whitespace-nowrap">Status</TableHead>
-                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Ação</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredRedemptions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={10} className="text-center py-8 text-sm text-muted-foreground">
+                        <TableCell colSpan={9} className="text-center py-8 text-sm text-muted-foreground">
                           Nenhum resgate encontrado para os filtros selecionados.
                         </TableCell>
                       </TableRow>
                     ) : (
                       filteredRedemptions.map((redemption) => {
                         const userInfo = userLookup.get(redemption.user_id);
-                        const statusLabel =
-                          redemption.status === "completed"
-                            ? "Concluído"
-                            : redemption.status === "cancelled"
-                              ? "Cancelado"
-                              : "Pendente";
-                        const statusClass =
-                          redemption.status === "completed"
-                            ? "text-success font-medium"
-                            : redemption.status === "cancelled"
-                              ? "text-destructive font-medium"
-                              : "text-pending font-medium";
+                        const { label: statusLabel, className: statusClass } = getRedemptionStatusLabel(
+                          redemption.status,
+                        );
                         const establishmentLabel =
                           establishmentFilter === "all"
                             ? "—"
@@ -536,28 +543,9 @@ export function AdminReportsPanel({
                             </TableCell>
                             <TableCell className="text-muted-foreground">{establishmentLabel}</TableCell>
                             <TableCell className="text-xs text-muted-foreground whitespace-normal">
-                              —
+                              {getDeliverySummary(redemption)}
                             </TableCell>
                             <TableCell className={statusClass}>{statusLabel}</TableCell>
-                            <TableCell>
-                              <Select
-                                value={redemption.status}
-                                onValueChange={(value) =>
-                                  handleUpdateStatus(redemption.id, value as AdminRedemption["status"])
-                                }
-                                disabled={updatingRedemptionId === redemption.id}
-                              >
-                                <SelectTrigger className="w-36">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover border-border">
-                                  <SelectItem value="pending">Pendente</SelectItem>
-                                  <SelectItem value="pendente">Pendente (novo)</SelectItem>
-                                  <SelectItem value="completed">Concluído</SelectItem>
-                                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </TableCell>
                           </TableRow>
                         );
                       })

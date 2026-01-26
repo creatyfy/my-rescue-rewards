@@ -25,7 +25,7 @@ type RedemptionResult = {
   points_spent: number;
   remaining_balance: number;
   stock_remaining: number;
-  status: "pending" | "completed" | "cancelled";
+  status: "pendente" | "solicitado" | "em andamento" | "enviado" | "concluído" | "pending" | "completed" | "cancelled";
 };
 
 type RedemptionHistory = {
@@ -184,12 +184,16 @@ export const fetchCurrentUserPendingPoints = async (): Promise<number> => {
 
 export const redeemProduct = async (
   productId: string,
-  _deliveryData: DeliveryData,
+  deliveryData: DeliveryData,
 ): Promise<RedemptionResult | null> => {
-  // Note: Delivery data is collected for UI validation but the current RPC
-  // only accepts product_id. Address persistence requires backend update.
   const { data, error } = await supabase.rpc("redeem_product", {
     p_product_id: productId,
+    p_delivery_cep: deliveryData.cep,
+    p_delivery_address: deliveryData.address,
+    p_delivery_number: deliveryData.number,
+    p_delivery_neighborhood: deliveryData.neighborhood,
+    p_delivery_city: deliveryData.city,
+    p_delivery_state: deliveryData.state,
   });
 
   if (error) {

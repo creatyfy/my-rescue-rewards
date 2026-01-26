@@ -81,6 +81,7 @@ export function AdminRedemptionsPanel() {
 
   const getStatusBadge = (status: AdminRedemption["status"]) => {
     switch (status) {
+      case "concluído":
       case "completed":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
@@ -93,6 +94,25 @@ export function AdminRedemptionsPanel() {
             Cancelado
           </span>
         );
+      case "em andamento":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
+            Em andamento
+          </span>
+        );
+      case "enviado":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
+            Enviado
+          </span>
+        );
+      case "solicitado":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
+            Solicitado
+          </span>
+        );
+      case "pendente":
       case "pending":
       default:
         return (
@@ -101,6 +121,21 @@ export function AdminRedemptionsPanel() {
           </span>
         );
     }
+  };
+
+  const getDeliverySummary = (redemption: AdminRedemption) => {
+    const parts = [
+      [redemption.delivery_address, redemption.delivery_number].filter(Boolean).join(", "),
+      redemption.delivery_neighborhood,
+      [redemption.delivery_city, redemption.delivery_state].filter(Boolean).join("/"),
+      redemption.delivery_cep,
+    ].filter((value) => value && value.trim().length > 0);
+
+    if (parts.length === 0) {
+      return "Não informado";
+    }
+
+    return parts.join(" • ");
   };
 
   return (
@@ -125,6 +160,7 @@ export function AdminRedemptionsPanel() {
                   <TableHead className="font-semibold text-foreground whitespace-nowrap">Usuário</TableHead>
                   <TableHead className="font-semibold text-foreground whitespace-nowrap">Prêmio</TableHead>
                   <TableHead className="font-semibold text-foreground whitespace-nowrap">Pontos</TableHead>
+                  <TableHead className="font-semibold text-foreground whitespace-nowrap">Entrega</TableHead>
                   <TableHead className="font-semibold text-foreground whitespace-nowrap">Status</TableHead>
                   <TableHead className="font-semibold text-foreground whitespace-nowrap">Data</TableHead>
                   <TableHead className="font-semibold text-foreground whitespace-nowrap">Ação</TableHead>
@@ -133,7 +169,7 @@ export function AdminRedemptionsPanel() {
               <TableBody>
                 {redemptions.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-sm text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-sm text-muted-foreground">
                       Nenhum resgate encontrado.
                     </TableCell>
                   </TableRow>
@@ -159,6 +195,9 @@ export function AdminRedemptionsPanel() {
                         <TableCell className="text-sm font-semibold tabular-nums">
                           {redemption.points_spent.toLocaleString("pt-BR")}
                         </TableCell>
+                        <TableCell className="text-xs text-muted-foreground whitespace-normal">
+                          {getDeliverySummary(redemption)}
+                        </TableCell>
                         <TableCell>{getStatusBadge(redemption.status)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                           {new Date(redemption.created_at).toLocaleString("pt-BR", {
@@ -181,9 +220,11 @@ export function AdminRedemptionsPanel() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-popover border-border">
-                              <SelectItem value="pending">Pendente</SelectItem>
-                              <SelectItem value="completed">Concluído</SelectItem>
-                              <SelectItem value="cancelled">Cancelado</SelectItem>
+                              <SelectItem value="pendente">Pendente</SelectItem>
+                              <SelectItem value="solicitado">Solicitado</SelectItem>
+                              <SelectItem value="em andamento">Em andamento</SelectItem>
+                              <SelectItem value="enviado">Enviado</SelectItem>
+                              <SelectItem value="concluído">Concluído</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
