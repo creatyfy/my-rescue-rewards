@@ -43,14 +43,10 @@ export type AdminRedemption = {
   id: string;
   status:
     | "pendente"
-    | "solicitado"
-    | "em andamento"
+    | "em_andamento"
     | "enviado"
-    | "cancelado"
-    | "concluído"
-    | "pending"
-    | "completed"
-    | "cancelled";
+    | "concluido"
+    | "cancelado";
   points_spent: number;
   created_at: string;
   user_id: string;
@@ -344,7 +340,7 @@ export const fetchAdminProfiles = async (): Promise<AdminProfile[]> => {
 
 export const updateAdminRedemptionStatus = async (
   redemptionId: string,
-  status: "pendente" | "solicitado" | "em andamento" | "enviado" | "cancelado" | "concluído",
+  status: "pendente" | "em_andamento" | "enviado" | "cancelado" | "concluido",
 ) => {
   const { error } = await supabase.from("redemptions").update({ status }).eq("id", redemptionId);
 

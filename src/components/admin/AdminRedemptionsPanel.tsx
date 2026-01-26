@@ -81,21 +81,19 @@ export function AdminRedemptionsPanel() {
 
   const getStatusBadge = (status: AdminRedemption["status"]) => {
     switch (status) {
-      case "concluído":
-      case "completed":
+      case "concluido":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
             Concluído
           </span>
         );
-      case "cancelled":
       case "cancelado":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
             Cancelado
           </span>
         );
-      case "em andamento":
+      case "em_andamento":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
             Em andamento
@@ -107,14 +105,7 @@ export function AdminRedemptionsPanel() {
             Enviado
           </span>
         );
-      case "solicitado":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
-            Solicitado
-          </span>
-        );
       case "pendente":
-      case "pending":
       default:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
@@ -222,11 +213,10 @@ export function AdminRedemptionsPanel() {
                             </SelectTrigger>
                             <SelectContent className="bg-popover border-border">
                               <SelectItem value="pendente">Pendente</SelectItem>
-                              <SelectItem value="solicitado">Solicitado</SelectItem>
-                              <SelectItem value="em andamento">Em andamento</SelectItem>
+                              <SelectItem value="em_andamento">Em andamento</SelectItem>
                               <SelectItem value="enviado">Enviado</SelectItem>
                               <SelectItem value="cancelado">Cancelado</SelectItem>
-                              <SelectItem value="concluído">Concluído</SelectItem>
+                              <SelectItem value="concluido">Concluído</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
