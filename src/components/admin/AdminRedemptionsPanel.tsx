@@ -89,6 +89,7 @@ export function AdminRedemptionsPanel() {
           </span>
         );
       case "cancelled":
+      case "cancelado":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
             Cancelado
@@ -224,6 +225,7 @@ export function AdminRedemptionsPanel() {
                               <SelectItem value="solicitado">Solicitado</SelectItem>
                               <SelectItem value="em andamento">Em andamento</SelectItem>
                               <SelectItem value="enviado">Enviado</SelectItem>
+                              <SelectItem value="cancelado">Cancelado</SelectItem>
                               <SelectItem value="concluído">Concluído</SelectItem>
                             </SelectContent>
                           </Select>

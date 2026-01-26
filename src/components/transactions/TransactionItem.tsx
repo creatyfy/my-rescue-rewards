@@ -8,6 +8,7 @@ export type TransactionStatus =
   | "rejected"
   | "completed"
   | "cancelled"
+  | "cancelado"
   | "solicitado"
   | "em andamento"
   | "enviado"
@@ -50,6 +51,11 @@ const statusConfig: Record<TransactionStatus, { icon: typeof Clock; label: strin
     className: "text-success bg-success/10",
   },
   cancelled: {
+    icon: XCircle,
+    label: "Cancelado",
+    className: "text-destructive bg-destructive/10",
+  },
+  cancelado: {
     icon: XCircle,
     label: "Cancelado",
     className: "text-destructive bg-destructive/10",

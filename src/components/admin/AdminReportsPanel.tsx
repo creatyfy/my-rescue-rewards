@@ -208,7 +208,7 @@ export function AdminReportsPanel({
         if (redemption.status === "concluído" || redemption.status === "completed") {
           acc.completed += 1;
           acc.pointsSpent += redemption.points_spent;
-        } else if (redemption.status === "cancelled") {
+        } else if (redemption.status === "cancelled" || redemption.status === "cancelado") {
           acc.cancelled += 1;
         } else {
           acc.pending += 1;
@@ -235,6 +235,7 @@ export function AdminReportsPanel({
       case "completed":
         return { label: "Concluído", className: "text-success font-medium" };
       case "cancelled":
+      case "cancelado":
         return { label: "Cancelado", className: "text-destructive font-medium" };
       case "em andamento":
         return { label: "Em andamento", className: "text-pending font-medium" };

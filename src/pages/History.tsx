@@ -13,6 +13,7 @@ type TransactionStatus =
   | "solicitado"
   | "em andamento"
   | "enviado"
+  | "cancelado"
   | "concluído";
 
 type Transaction = {
