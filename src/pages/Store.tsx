@@ -151,10 +151,27 @@ export default function Store() {
         state: "",
       });
     } catch (error) {
+      const errorDetails = error as {
+        message?: string;
+        code?: string;
+        stack?: string;
+      };
+      const maskedDeliveryData = {
+        ...deliveryData,
+        cep: deliveryData.cep ? `${deliveryData.cep.slice(0, 2)}***` : deliveryData.cep,
+        address: deliveryData.address ? "[redacted]" : deliveryData.address,
+        number: deliveryData.number ? "[redacted]" : deliveryData.number,
+        neighborhood: deliveryData.neighborhood ? "[redacted]" : deliveryData.neighborhood,
+      };
+
       console.error("Falha ao confirmar resgate:", {
-        productId: selectedProductId,
-        deliveryData,
-        error,
+        message: errorDetails?.message,
+        code: errorDetails?.code,
+        stack: errorDetails?.stack,
+        payload: {
+          productId: selectedProductId,
+          deliveryData: maskedDeliveryData,
+        },
       });
       toast.error("Não foi possível realizar o resgate.");
     } finally {
