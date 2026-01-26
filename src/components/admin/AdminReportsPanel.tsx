@@ -251,228 +251,315 @@ export function AdminReportsPanel({
   };
 
   return (
-    <Card className={cn("p-6 md:p-8", className)}>
-      <div className="flex flex-col gap-2 mb-8">
-        <h2 className="text-xl font-semibold">{title}</h2>
-        <p className="text-sm text-muted-foreground">
+    <div className={cn("space-y-6", className)}>
+      {/* Header Section */}
+      <div className="flex flex-col gap-1">
+        <h2 className="font-display text-2xl font-bold text-foreground tracking-tight">{title}</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">
           {description}
         </p>
       </div>
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Carregando relatórios...</p>
+        <Card className="p-8 text-center">
+          <p className="text-sm text-muted-foreground animate-pulse">Carregando relatórios...</p>
+        </Card>
       ) : (
-        <div className="grid gap-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="grid gap-2">
-              <span className="text-sm font-medium">Período do relatório</span>
-              <Select value={periodFilter} onValueChange={(value) => setPeriodFilter(value as typeof periodFilter)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o período" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="last7">Últimos 7 dias</SelectItem>
-                  <SelectItem value="last15">Últimos 15 dias</SelectItem>
-                  <SelectItem value="last30">Últimos 30 dias</SelectItem>
-                  <SelectItem value="custom">Intervalo personalizado</SelectItem>
-                </SelectContent>
-              </Select>
+        <div className="space-y-6">
+          {/* Filters Section */}
+          <Card className="p-5 bg-card border-border/60">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Período do relatório
+                </label>
+                <Select value={periodFilter} onValueChange={(value) => setPeriodFilter(value as typeof periodFilter)}>
+                  <SelectTrigger className="bg-background border-input hover:border-ring transition-colors">
+                    <SelectValue placeholder="Selecione o período" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    <SelectItem value="last7">Últimos 7 dias</SelectItem>
+                    <SelectItem value="last15">Últimos 15 dias</SelectItem>
+                    <SelectItem value="last30">Últimos 30 dias</SelectItem>
+                    <SelectItem value="custom">Intervalo personalizado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Estabelecimento
+                </label>
+                <Select value={establishmentFilter} onValueChange={setEstablishmentFilter}>
+                  <SelectTrigger className="bg-background border-input hover:border-ring transition-colors">
+                    <SelectValue placeholder="Selecione a loja" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border">
+                    <SelectItem value="all">Todas as lojas</SelectItem>
+                    {establishments.map((establishment) => (
+                      <SelectItem key={establishment.id} value={establishment.id}>
+                        {establishment.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {periodFilter === "custom" ? (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Data inicial
+                    </label>
+                    <Input 
+                      type="date" 
+                      value={customStart} 
+                      onChange={(event) => setCustomStart(event.target.value)}
+                      className="bg-background border-input hover:border-ring transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      Data final
+                    </label>
+                    <Input 
+                      type="date" 
+                      value={customEnd} 
+                      onChange={(event) => setCustomEnd(event.target.value)}
+                      className="bg-background border-input hover:border-ring transition-colors"
+                    />
+                  </div>
+                </>
+              ) : null}
             </div>
-            <div className="grid gap-2">
-              <span className="text-sm font-medium">Estabelecimento</span>
-              <Select value={establishmentFilter} onValueChange={setEstablishmentFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a loja" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as lojas</SelectItem>
-                  {establishments.map((establishment) => (
-                    <SelectItem key={establishment.id} value={establishment.id}>
-                      {establishment.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {periodFilter === "custom" ? (
-              <>
-                <div className="grid gap-2">
-                  <span className="text-sm font-medium">Data inicial</span>
-                  <Input type="date" value={customStart} onChange={(event) => setCustomStart(event.target.value)} />
-                </div>
-                <div className="grid gap-2">
-                  <span className="text-sm font-medium">Data final</span>
-                  <Input type="date" value={customEnd} onChange={(event) => setCustomEnd(event.target.value)} />
-                </div>
-              </>
-            ) : null}
-          </div>
+          </Card>
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Comprovantes recebidos</p>
-              <p className="text-2xl font-semibold mt-2">{summary.receiptTotals.total}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {summary.receiptTotals.pending} pendentes
-              </p>
+          {/* Primary Metrics Grid */}
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <Card className="p-5 bg-card border-border/60 hover:shadow-soft transition-shadow">
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Comprovantes recebidos
+                </p>
+                <p className="font-display text-3xl font-bold text-foreground tabular-nums">
+                  {summary.receiptTotals.total}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 text-pending font-medium">
+                    {summary.receiptTotals.pending}
+                  </span>{" "}
+                  pendentes
+                </p>
+              </div>
             </Card>
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Valor em compras</p>
-              <p className="text-2xl font-semibold mt-2">
-                {formatCurrency(summary.receiptTotals.purchaseValue)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {summary.receiptTotals.approved} aprovados
-              </p>
+            <Card className="p-5 bg-card border-border/60 hover:shadow-soft transition-shadow">
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Valor em compras
+                </p>
+                <p className="font-display text-3xl font-bold text-foreground tabular-nums">
+                  {formatCurrency(summary.receiptTotals.purchaseValue)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 text-success font-medium">
+                    {summary.receiptTotals.approved}
+                  </span>{" "}
+                  aprovados
+                </p>
+              </div>
             </Card>
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Pontos concedidos</p>
-              <p className="text-2xl font-semibold mt-2">
-                {summary.receiptTotals.pointsEarned.toLocaleString("pt-BR")}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {summary.receiptTotals.rejected} rejeitados
-              </p>
+            <Card className="p-5 bg-card border-border/60 hover:shadow-soft transition-shadow">
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Pontos concedidos
+                </p>
+                <p className="font-display text-3xl font-bold text-primary tabular-nums">
+                  {summary.receiptTotals.pointsEarned.toLocaleString("pt-BR")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 text-destructive font-medium">
+                    {summary.receiptTotals.rejected}
+                  </span>{" "}
+                  rejeitados
+                </p>
+              </div>
             </Card>
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Pontos resgatados</p>
-              <p className="text-2xl font-semibold mt-2">
-                {summary.redemptionTotals.pointsSpent.toLocaleString("pt-BR")}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {summary.redemptionTotals.completed} resgates concluídos
-              </p>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Catálogo ativo</p>
-              <p className="text-2xl font-semibold mt-2">{summary.activeProducts}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {filteredProducts.length} produtos cadastrados
-              </p>
-            </Card>
-            <Card className="p-4">
-              <p className="text-sm text-muted-foreground">Estabelecimentos ativos</p>
-              <p className="text-2xl font-semibold mt-2">{summary.activeEstablishments}</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {filteredEstablishments.length} parceiros cadastrados
-              </p>
+            <Card className="p-5 bg-card border-border/60 hover:shadow-soft transition-shadow">
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Pontos resgatados
+                </p>
+                <p className="font-display text-3xl font-bold text-foreground tabular-nums">
+                  {summary.redemptionTotals.pointsSpent.toLocaleString("pt-BR")}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1 text-success font-medium">
+                    {summary.redemptionTotals.completed}
+                  </span>{" "}
+                  resgates concluídos
+                </p>
+              </div>
             </Card>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Indicador</TableHead>
-                <TableHead>Valor</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <TableRow>
-                <TableCell>Comprovantes aprovados</TableCell>
-                <TableCell>{summary.receiptTotals.approved}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Comprovantes rejeitados</TableCell>
-                <TableCell>{summary.receiptTotals.rejected}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Comprovantes pendentes</TableCell>
-                <TableCell>{summary.receiptTotals.pending}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Resgates pendentes</TableCell>
-                <TableCell>{summary.redemptionTotals.pending}</TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell>Resgates cancelados</TableCell>
-                <TableCell>{summary.redemptionTotals.cancelled}</TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-
-          <div className="grid gap-2">
-            <h3 className="text-base font-semibold">Resgates</h3>
-            <p className="text-sm text-muted-foreground">
-              Lista completa de resgates com status e dados do usuário.
-            </p>
+          {/* Secondary Metrics Grid */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Card className="p-5 bg-card border-border/60 hover:shadow-soft transition-shadow">
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Catálogo ativo
+                </p>
+                <p className="font-display text-3xl font-bold text-foreground tabular-nums">
+                  {summary.activeProducts}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {filteredProducts.length} produtos cadastrados
+                </p>
+              </div>
+            </Card>
+            <Card className="p-5 bg-card border-border/60 hover:shadow-soft transition-shadow">
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Estabelecimentos ativos
+                </p>
+                <p className="font-display text-3xl font-bold text-foreground tabular-nums">
+                  {summary.activeEstablishments}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {filteredEstablishments.length} parceiros cadastrados
+                </p>
+              </div>
+            </Card>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Usuário</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Telefone</TableHead>
-                <TableHead>Prêmio</TableHead>
-                <TableHead>Pontos</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Estabelecimento</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ação</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRedemptions.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="text-center text-sm text-muted-foreground">
-                    Nenhum resgate encontrado para os filtros selecionados.
-                  </TableCell>
+
+          {/* Summary Table */}
+          <Card className="overflow-hidden border-border/60">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30 hover:bg-muted/30">
+                  <TableHead className="font-semibold text-foreground">Indicador</TableHead>
+                  <TableHead className="font-semibold text-foreground text-right">Valor</TableHead>
                 </TableRow>
-              ) : (
-                filteredRedemptions.map((redemption) => {
-                  const userInfo = userLookup.get(redemption.user_id);
-                  const statusLabel =
-                    redemption.status === "completed"
-                      ? "Entregue"
-                      : redemption.status === "cancelled"
-                        ? "Cancelado"
-                        : "Pendente";
-                  const establishmentLabel =
-                    establishmentFilter === "all"
-                      ? "—"
-                      : establishmentLookup.get(establishmentFilter) ?? "—";
-                  return (
-                    <TableRow key={redemption.id}>
-                      <TableCell>{userInfo?.fullName ?? "Usuário"}</TableCell>
-                      <TableCell>{userInfo?.email ?? "Não informado"}</TableCell>
-                      <TableCell>{userInfo?.phone ?? "Não informado"}</TableCell>
-                      <TableCell>{redemption.product_name ?? "Prêmio resgatado"}</TableCell>
-                      <TableCell>{redemption.points_spent.toLocaleString("pt-BR")}</TableCell>
-                      <TableCell>
-                        {new Date(redemption.created_at).toLocaleString("pt-BR", {
-                          day: "2-digit",
-                          month: "2-digit",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </TableCell>
-                      <TableCell>{establishmentLabel}</TableCell>
-                      <TableCell>{statusLabel}</TableCell>
-                      <TableCell>
-                        {redemption.status === "pending" ? (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={updatingRedemptionId === redemption.id}
-                            onClick={() => handleMarkDelivered(redemption.id)}
-                          >
-                            Marcar como entregue
-                          </Button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Sem ação</span>
-                        )}
-                      </TableCell>
+              </TableHeader>
+              <TableBody>
+                <TableRow className="hover:bg-muted/20">
+                  <TableCell className="text-muted-foreground">Comprovantes aprovados</TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">{summary.receiptTotals.approved}</TableCell>
+                </TableRow>
+                <TableRow className="hover:bg-muted/20">
+                  <TableCell className="text-muted-foreground">Comprovantes rejeitados</TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">{summary.receiptTotals.rejected}</TableCell>
+                </TableRow>
+                <TableRow className="hover:bg-muted/20">
+                  <TableCell className="text-muted-foreground">Comprovantes pendentes</TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">{summary.receiptTotals.pending}</TableCell>
+                </TableRow>
+                <TableRow className="hover:bg-muted/20">
+                  <TableCell className="text-muted-foreground">Resgates pendentes</TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">{summary.redemptionTotals.pending}</TableCell>
+                </TableRow>
+                <TableRow className="hover:bg-muted/20">
+                  <TableCell className="text-muted-foreground">Resgates cancelados</TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">{summary.redemptionTotals.cancelled}</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </Card>
+
+          {/* Redemptions Section */}
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <h3 className="font-display text-lg font-semibold text-foreground">Resgates</h3>
+              <p className="text-sm text-muted-foreground">
+                Lista completa de resgates com status e dados do usuário.
+              </p>
+            </div>
+            <Card className="overflow-hidden border-border/60">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/30 hover:bg-muted/30">
+                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Usuário</TableHead>
+                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Email</TableHead>
+                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Telefone</TableHead>
+                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Prêmio</TableHead>
+                      <TableHead className="font-semibold text-foreground whitespace-nowrap text-right">Pontos</TableHead>
+                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Data</TableHead>
+                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Estabelecimento</TableHead>
+                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Status</TableHead>
+                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Ação</TableHead>
                     </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRedemptions.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-8 text-sm text-muted-foreground">
+                          Nenhum resgate encontrado para os filtros selecionados.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredRedemptions.map((redemption) => {
+                        const userInfo = userLookup.get(redemption.user_id);
+                        const statusLabel =
+                          redemption.status === "completed"
+                            ? "Entregue"
+                            : redemption.status === "cancelled"
+                              ? "Cancelado"
+                              : "Pendente";
+                        const statusClass =
+                          redemption.status === "completed"
+                            ? "text-success font-medium"
+                            : redemption.status === "cancelled"
+                              ? "text-destructive font-medium"
+                              : "text-pending font-medium";
+                        const establishmentLabel =
+                          establishmentFilter === "all"
+                            ? "—"
+                            : establishmentLookup.get(establishmentFilter) ?? "—";
+                        return (
+                          <TableRow key={redemption.id} className="hover:bg-muted/20">
+                            <TableCell className="font-medium">{userInfo?.fullName ?? "Usuário"}</TableCell>
+                            <TableCell className="text-muted-foreground">{userInfo?.email ?? "Não informado"}</TableCell>
+                            <TableCell className="text-muted-foreground">{userInfo?.phone ?? "Não informado"}</TableCell>
+                            <TableCell>{redemption.product_name ?? "Prêmio resgatado"}</TableCell>
+                            <TableCell className="text-right font-medium tabular-nums">
+                              {redemption.points_spent.toLocaleString("pt-BR")}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground whitespace-nowrap">
+                              {new Date(redemption.created_at).toLocaleString("pt-BR", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">{establishmentLabel}</TableCell>
+                            <TableCell className={statusClass}>{statusLabel}</TableCell>
+                            <TableCell>
+                              {redemption.status === "pending" ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="whitespace-nowrap hover:bg-primary hover:text-primary-foreground transition-colors"
+                                  disabled={updatingRedemptionId === redemption.id}
+                                  onClick={() => handleMarkDelivered(redemption.id)}
+                                >
+                                  Marcar como entregue
+                                </Button>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          </div>
         </div>
       )}
-    </Card>
+    </div>
   );
 }
