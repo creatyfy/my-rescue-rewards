@@ -116,22 +116,12 @@ export function AdminRedemptionsPanel() {
                 ) : (
                   redemptions.map((redemption) => {
                     const userInfo = userLookup.get(redemption.user_id);
-                    const deliveryLines = [
-                      redemption.delivery_address,
-                      redemption.delivery_number ? `Nº ${redemption.delivery_number}` : null,
-                      redemption.delivery_neighborhood,
-                      redemption.delivery_city,
-                      redemption.delivery_state,
-                      redemption.delivery_cep ? `CEP ${redemption.delivery_cep}` : null,
-                    ].filter(Boolean);
                     const statusLabel =
-                      redemption.status === "concluído"
+                      redemption.status === "completed"
                         ? "Concluído"
-                        : redemption.status === "enviado"
-                          ? "Enviado"
-                          : redemption.status === "em andamento"
-                            ? "Em andamento"
-                            : "Solicitado";
+                        : redemption.status === "cancelled"
+                          ? "Cancelado"
+                          : "Pendente";
                     return (
                       <TableRow key={redemption.id} className="hover:bg-muted/20">
                         <TableCell className="font-medium">
@@ -150,15 +140,7 @@ export function AdminRedemptionsPanel() {
                           })}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground whitespace-normal">
-                          {deliveryLines.length > 0 ? (
-                            <div className="space-y-1">
-                              {deliveryLines.map((line, index) => (
-                                <div key={`${redemption.id}-delivery-${index}`}>{line}</div>
-                              ))}
-                            </div>
-                          ) : (
-                            "Endereço não informado"
-                          )}
+                          —
                         </TableCell>
                         <TableCell>
                           <Select
@@ -172,10 +154,9 @@ export function AdminRedemptionsPanel() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-popover border-border">
-                              <SelectItem value="solicitado">Solicitado</SelectItem>
-                              <SelectItem value="em andamento">Em andamento</SelectItem>
-                              <SelectItem value="enviado">Enviado</SelectItem>
-                              <SelectItem value="concluído">Concluído</SelectItem>
+                              <SelectItem value="pending">Pendente</SelectItem>
+                              <SelectItem value="completed">Concluído</SelectItem>
+                              <SelectItem value="cancelled">Cancelado</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>

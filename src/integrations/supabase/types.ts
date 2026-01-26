@@ -277,12 +277,6 @@ export type Database = {
       redemptions: {
         Row: {
           created_at: string
-          delivery_address: string | null
-          delivery_cep: string | null
-          delivery_city: string | null
-          delivery_neighborhood: string | null
-          delivery_number: string | null
-          delivery_state: string | null
           id: string
           points_spent: number
           product_id: string
@@ -292,12 +286,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          delivery_address?: string | null
-          delivery_cep?: string | null
-          delivery_city?: string | null
-          delivery_neighborhood?: string | null
-          delivery_number?: string | null
-          delivery_state?: string | null
           id?: string
           points_spent: number
           product_id: string
@@ -307,12 +295,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          delivery_address?: string | null
-          delivery_cep?: string | null
-          delivery_city?: string | null
-          delivery_neighborhood?: string | null
-          delivery_number?: string | null
-          delivery_state?: string | null
           id?: string
           points_spent?: number
           product_id?: string
@@ -416,15 +398,7 @@ export type Database = {
         Returns: boolean
       }
       redeem_product: {
-        Args: {
-          p_delivery_address: string
-          p_delivery_cep: string
-          p_delivery_city: string
-          p_delivery_neighborhood: string
-          p_delivery_number: string
-          p_delivery_state: string
-          p_product_id: string
-        }
+        Args: { p_product_id: string }
         Returns: {
           points_spent: number
           product_id: string
@@ -453,7 +427,7 @@ export type Database = {
       app_role: "admin" | "user"
       ledger_type: "earn" | "redeem" | "expire" | "adjustment"
       receipt_status: "pending" | "approved" | "rejected"
-      redemption_status: "solicitado" | "em andamento" | "enviado" | "concluído"
+      redemption_status: "pending" | "completed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -584,7 +558,7 @@ export const Constants = {
       app_role: ["admin", "user"],
       ledger_type: ["earn", "redeem", "expire", "adjustment"],
       receipt_status: ["pending", "approved", "rejected"],
-      redemption_status: ["solicitado", "em andamento", "enviado", "concluído"],
+      redemption_status: ["pending", "completed", "cancelled"],
     },
   },
 } as const

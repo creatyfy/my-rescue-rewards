@@ -41,17 +41,11 @@ export type AdminProduct = {
 
 export type AdminRedemption = {
   id: string;
-  status: "solicitado" | "em andamento" | "enviado" | "concluído";
+  status: "pending" | "completed" | "cancelled";
   points_spent: number;
   created_at: string;
   user_id: string;
   product_name: string | null;
-  delivery_cep: string | null;
-  delivery_address: string | null;
-  delivery_number: string | null;
-  delivery_neighborhood: string | null;
-  delivery_city: string | null;
-  delivery_state: string | null;
 };
 
 export type AdminReceiptSummary = {
@@ -283,9 +277,7 @@ export const fetchAdminRedemptions = async (): Promise<AdminRedemption[]> => {
   try {
     const { data, error } = await supabase
       .from("redemptions")
-      .select(
-        "id, status, points_spent, created_at, user_id, products(name), delivery_cep, delivery_address, delivery_number, delivery_neighborhood, delivery_city, delivery_state",
-      )
+      .select("id, status, points_spent, created_at, user_id, products(name)")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -300,12 +292,6 @@ export const fetchAdminRedemptions = async (): Promise<AdminRedemption[]> => {
       created_at: redemption.created_at,
       user_id: redemption.user_id,
       product_name: redemption.products?.name ?? null,
-      delivery_cep: redemption.delivery_cep ?? null,
-      delivery_address: redemption.delivery_address ?? null,
-      delivery_number: redemption.delivery_number ?? null,
-      delivery_neighborhood: redemption.delivery_neighborhood ?? null,
-      delivery_city: redemption.delivery_city ?? null,
-      delivery_state: redemption.delivery_state ?? null,
     })) as AdminRedemption[];
   } catch {
     return [];
@@ -335,7 +321,7 @@ export const fetchAdminProfiles = async (): Promise<AdminProfile[]> => {
 
 export const updateAdminRedemptionStatus = async (
   redemptionId: string,
-  status: "solicitado" | "em andamento" | "enviado" | "concluído",
+  status: "pending" | "completed" | "cancelled",
 ) => {
   const { error } = await supabase.from("redemptions").update({ status }).eq("id", redemptionId);
 
