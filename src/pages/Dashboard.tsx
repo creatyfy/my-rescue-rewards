@@ -19,6 +19,7 @@ import { Link } from "react-router-dom";
 type TransactionStatus =
   | "approved"
   | "pending"
+  | "pendente"
   | "rejected"
   | "solicitado"
   | "em andamento"

@@ -552,6 +552,7 @@ export function AdminReportsPanel({
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover border-border">
                                   <SelectItem value="pending">Pendente</SelectItem>
+                                  <SelectItem value="pendente">Pendente (novo)</SelectItem>
                                   <SelectItem value="completed">Concluído</SelectItem>
                                   <SelectItem value="cancelled">Cancelado</SelectItem>
                                 </SelectContent>
