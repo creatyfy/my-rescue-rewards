@@ -1,7 +1,14 @@
 import { Store, ShoppingBag, Clock, CheckCircle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type TransactionStatus = "pending" | "approved" | "rejected";
+export type TransactionStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "solicitado"
+  | "em andamento"
+  | "enviado"
+  | "concluído";
 export type TransactionType = "earn" | "redeem";
 
 interface TransactionItemProps {
@@ -28,6 +35,26 @@ const statusConfig = {
     icon: XCircle,
     label: "Rejeitado",
     className: "text-destructive bg-destructive/10",
+  },
+  solicitado: {
+    icon: Clock,
+    label: "Solicitado",
+    className: "text-muted-foreground bg-muted/60",
+  },
+  "em andamento": {
+    icon: Clock,
+    label: "Em andamento",
+    className: "text-pending bg-pending/10",
+  },
+  enviado: {
+    icon: ShoppingBag,
+    label: "Enviado",
+    className: "text-primary bg-primary/10",
+  },
+  concluído: {
+    icon: CheckCircle,
+    label: "Concluído",
+    className: "text-success bg-success/10",
   },
 };
 

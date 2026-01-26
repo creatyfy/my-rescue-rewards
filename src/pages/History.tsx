@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button";
 import { fetchCurrentUserId, fetchReceiptHistory, fetchRedemptionHistory } from "@/integrations/supabase/store";
 
 type FilterType = "all" | "earn" | "redeem" | "rejected";
-type TransactionStatus = "approved" | "pending" | "rejected";
+type TransactionStatus =
+  | "approved"
+  | "pending"
+  | "rejected"
+  | "solicitado"
+  | "em andamento"
+  | "enviado"
+  | "concluído";
 
 type Transaction = {
   id: string;
@@ -63,12 +70,7 @@ export default function History() {
           title: redemption.products?.name ?? "Produto resgatado",
           subtitle: "Produto resgatado",
           points: redemption.points_spent,
-          status:
-            redemption.status === "completed"
-              ? "approved" as const
-              : redemption.status === "cancelled"
-                ? "rejected" as const
-                : "pending" as const,
+          status: redemption.status,
           sortTime: new Date(redemption.created_at).getTime(),
           date: new Date(redemption.created_at).toLocaleString("pt-BR", {
             day: "2-digit",

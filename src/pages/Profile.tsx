@@ -74,7 +74,7 @@ export default function Profile() {
 
         const approvedReceipts = receipts.filter((receipt) => receipt.status === "approved").length;
         const completedRedemptions = redemptions.filter(
-          (redemption) => redemption.status === "completed",
+          (redemption) => redemption.status === "concluído",
         ).length;
 
         setStats({

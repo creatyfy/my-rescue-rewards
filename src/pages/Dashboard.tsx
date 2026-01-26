@@ -16,7 +16,14 @@ import {
 import { ChevronRight } from "lucide-react";
 import { Link } from "react-router-dom";
 
-type TransactionStatus = "approved" | "pending" | "rejected";
+type TransactionStatus =
+  | "approved"
+  | "pending"
+  | "rejected"
+  | "solicitado"
+  | "em andamento"
+  | "enviado"
+  | "concluído";
 
 type Transaction = {
   id: string;
@@ -118,13 +125,7 @@ export default function Dashboard() {
 
           const status =
             entry.receipt_status ??
-            (entry.redemption_status === "completed"
-              ? ("approved" as const)
-              : entry.redemption_status === "cancelled"
-                ? ("rejected" as const)
-                : entry.redemption_status === "pending"
-                  ? ("pending" as const)
-                  : ("approved" as const));
+            (entry.redemption_status ?? ("approved" as const));
 
           return {
             id: entry.ledger_id,

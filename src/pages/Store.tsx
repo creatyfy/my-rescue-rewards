@@ -1,11 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProductCard } from "@/components/store/ProductCard";
 import { Search, Filter, Coins } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
-import { fetchCurrentUserBalance, fetchProducts, redeemProduct } from "@/integrations/supabase/store";
+import {
+  DeliveryData,
+  UserContact,
+  fetchCurrentUserBalance,
+  fetchCurrentUserContact,
+  fetchProducts,
+  redeemProduct,
+} from "@/integrations/supabase/store";
 
 export default function Store() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -14,18 +22,32 @@ export default function Store() {
     Array<{ id: string; name: string; description: string; imageUrl: string; pointsCost: number; stock: number }>
   >([]);
   const [userPoints, setUserPoints] = useState(0);
+  const [redeemDialogOpen, setRedeemDialogOpen] = useState(false);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [deliveryData, setDeliveryData] = useState<DeliveryData>({
+    cep: "",
+    address: "",
+    number: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+  });
+  const [userContact, setUserContact] = useState<UserContact | null>(null);
+  const [redeeming, setRedeeming] = useState(false);
 
   useEffect(() => {
     const loadStoreData = async () => {
       setLoading(true);
       try {
-        const [productsData, balance] = await Promise.all([
+        const [productsData, balance, contact] = await Promise.all([
           fetchProducts(),
           fetchCurrentUserBalance(),
+          fetchCurrentUserContact(),
         ]);
 
         setProducts(productsData);
         setUserPoints(balance);
+        setUserContact(contact);
       } catch (error) {
         console.error("Erro ao carregar loja:", error);
       } finally {
@@ -40,9 +62,39 @@ export default function Store() {
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleRedeem = async (productId: string) => {
+  const selectedProduct = useMemo(
+    () => products.find((product) => product.id === selectedProductId) ?? null,
+    [products, selectedProductId],
+  );
+
+  const isContactMissing =
+    !userContact?.fullName || !userContact?.email || !userContact?.phone;
+
+  const isDeliveryComplete = Object.values(deliveryData).every((value) => value.trim().length > 0);
+
+  const handleRedeem = (productId: string) => {
+    setSelectedProductId(productId);
+    setRedeemDialogOpen(true);
+  };
+
+  const handleConfirmRedeem = async () => {
+    if (!selectedProductId) {
+      return;
+    }
+
+    if (isContactMissing) {
+      toast.error("Atualize seu perfil com nome, email e telefone antes de resgatar.");
+      return;
+    }
+
+    if (!isDeliveryComplete) {
+      toast.error("Preencha todos os dados de entrega para concluir o resgate.");
+      return;
+    }
+
     try {
-      const redemption = await redeemProduct(productId);
+      setRedeeming(true);
+      const redemption = await redeemProduct(selectedProductId, deliveryData);
 
       if (!redemption) {
         toast.error("Não foi possível realizar o resgate.");
@@ -54,14 +106,26 @@ export default function Store() {
         prevProducts.map((product) =>
           product.id === redemption.product_id
             ? { ...product, stock: redemption.stock_remaining }
-            : product
-        )
+            : product,
+        ),
       );
 
       toast.success(`Resgate confirmado: ${redemption.product_name}.`);
+      setRedeemDialogOpen(false);
+      setSelectedProductId(null);
+      setDeliveryData({
+        cep: "",
+        address: "",
+        number: "",
+        neighborhood: "",
+        city: "",
+        state: "",
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "Não foi possível realizar o resgate.";
       toast.error(message);
+    } finally {
+      setRedeeming(false);
     }
   };
 
@@ -121,6 +185,100 @@ export default function Store() {
           </div>
         )}
       </div>
+
+      <Dialog open={redeemDialogOpen} onOpenChange={setRedeemDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Dados de entrega</DialogTitle>
+            <DialogDescription>
+              Confirme os dados do destinatário e informe o endereço para envio do prêmio.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-sm">
+              <p className="font-medium text-foreground">{selectedProduct?.name ?? "Produto"}</p>
+              <p className="text-xs text-muted-foreground">
+                {selectedProduct?.pointsCost.toLocaleString("pt-BR")} pontos
+              </p>
+            </div>
+            <div className="space-y-1 text-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Destinatário</p>
+              <p className="font-medium text-foreground">{userContact?.fullName ?? "Nome não informado"}</p>
+              <p className="text-xs text-muted-foreground">{userContact?.email ?? "Email não informado"}</p>
+              <p className="text-xs text-muted-foreground">{userContact?.phone ?? "Telefone não informado"}</p>
+              {isContactMissing ? (
+                <p className="text-xs text-destructive">
+                  Atualize seu perfil com nome, email e telefone para concluir o resgate.
+                </p>
+              ) : null}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">CEP</label>
+                <Input
+                  value={deliveryData.cep}
+                  onChange={(event) => setDeliveryData((prev) => ({ ...prev, cep: event.target.value }))}
+                  placeholder="00000-000"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Estado</label>
+                <Input
+                  value={deliveryData.state}
+                  onChange={(event) => setDeliveryData((prev) => ({ ...prev, state: event.target.value }))}
+                  placeholder="UF"
+                  required
+                />
+              </div>
+              <div className="space-y-1 sm:col-span-2">
+                <label className="text-xs font-medium text-muted-foreground">Endereço</label>
+                <Input
+                  value={deliveryData.address}
+                  onChange={(event) => setDeliveryData((prev) => ({ ...prev, address: event.target.value }))}
+                  placeholder="Rua, avenida, etc."
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Número</label>
+                <Input
+                  value={deliveryData.number}
+                  onChange={(event) => setDeliveryData((prev) => ({ ...prev, number: event.target.value }))}
+                  placeholder="Número"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Bairro</label>
+                <Input
+                  value={deliveryData.neighborhood}
+                  onChange={(event) => setDeliveryData((prev) => ({ ...prev, neighborhood: event.target.value }))}
+                  placeholder="Bairro"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Cidade</label>
+                <Input
+                  value={deliveryData.city}
+                  onChange={(event) => setDeliveryData((prev) => ({ ...prev, city: event.target.value }))}
+                  placeholder="Cidade"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setRedeemDialogOpen(false)} disabled={redeeming}>
+              Voltar
+            </Button>
+            <Button onClick={handleConfirmRedeem} disabled={redeeming || isContactMissing || !isDeliveryComplete}>
+              {redeeming ? "Confirmando..." : "Confirmar resgate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
