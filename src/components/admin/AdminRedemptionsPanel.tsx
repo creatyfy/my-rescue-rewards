@@ -79,12 +79,35 @@ export function AdminRedemptionsPanel() {
     }
   };
 
+  const getStatusBadge = (status: AdminRedemption["status"]) => {
+    switch (status) {
+      case "completed":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
+            Concluído
+          </span>
+        );
+      case "cancelled":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
+            Cancelado
+          </span>
+        );
+      default:
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
+            Pendente
+          </span>
+        );
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
         <h2 className="font-display text-2xl font-bold text-foreground">Resgates</h2>
         <p className="text-sm text-muted-foreground">
-          Controle os resgates realizados pelos usuários e atualize o status de envio.
+          Central de controle de todos os resgates. Atualize o status conforme o andamento da entrega.
         </p>
       </div>
 
@@ -100,9 +123,9 @@ export function AdminRedemptionsPanel() {
                 <TableRow className="bg-muted/30 hover:bg-muted/30">
                   <TableHead className="font-semibold text-foreground whitespace-nowrap">Usuário</TableHead>
                   <TableHead className="font-semibold text-foreground whitespace-nowrap">Prêmio</TableHead>
+                  <TableHead className="font-semibold text-foreground whitespace-nowrap">Pontos</TableHead>
                   <TableHead className="font-semibold text-foreground whitespace-nowrap">Status</TableHead>
                   <TableHead className="font-semibold text-foreground whitespace-nowrap">Data</TableHead>
-                  <TableHead className="font-semibold text-foreground whitespace-nowrap">Entrega</TableHead>
                   <TableHead className="font-semibold text-foreground whitespace-nowrap">Ação</TableHead>
                 </TableRow>
               </TableHeader>
@@ -116,20 +139,26 @@ export function AdminRedemptionsPanel() {
                 ) : (
                   redemptions.map((redemption) => {
                     const userInfo = userLookup.get(redemption.user_id);
-                    const statusLabel =
-                      redemption.status === "completed"
-                        ? "Concluído"
-                        : redemption.status === "cancelled"
-                          ? "Cancelado"
-                          : "Pendente";
                     return (
                       <TableRow key={redemption.id} className="hover:bg-muted/20">
-                        <TableCell className="font-medium">
-                          {userInfo?.fullName ?? "Usuário"}
-                          <div className="text-xs text-muted-foreground">{userInfo?.email ?? "Sem email"}</div>
+                        <TableCell>
+                          <div className="space-y-0.5">
+                            <p className="font-medium text-foreground">
+                              {userInfo?.fullName ?? "Usuário"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{userInfo?.email ?? "Sem email"}</p>
+                            {userInfo?.phone && (
+                              <p className="text-xs text-muted-foreground">{userInfo.phone}</p>
+                            )}
+                          </div>
                         </TableCell>
-                        <TableCell>{redemption.product_name ?? "Prêmio resgatado"}</TableCell>
-                        <TableCell className="text-sm font-medium text-muted-foreground">{statusLabel}</TableCell>
+                        <TableCell className="font-medium">
+                          {redemption.product_name ?? "Prêmio resgatado"}
+                        </TableCell>
+                        <TableCell className="text-sm font-semibold tabular-nums">
+                          {redemption.points_spent.toLocaleString("pt-BR")}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(redemption.status)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                           {new Date(redemption.created_at).toLocaleString("pt-BR", {
                             day: "2-digit",
@@ -138,9 +167,6 @@ export function AdminRedemptionsPanel() {
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground whitespace-normal">
-                          —
                         </TableCell>
                         <TableCell>
                           <Select
