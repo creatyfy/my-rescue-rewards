@@ -237,27 +237,50 @@ export default function Store() {
                 </p>
               ) : null}
             </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Endereço de entrega <span className="text-destructive">*</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Todos os campos são obrigatórios para realizar o resgate.
+              </p>
+            </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">CEP</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  CEP <span className="text-destructive">*</span>
+                </label>
                 <Input
                   value={deliveryData.cep}
                   onChange={(event) => setDeliveryData((prev) => ({ ...prev, cep: event.target.value }))}
                   placeholder="00000-000"
                   required
+                  className={!isCepValid && deliveryData.cep.length > 0 ? "border-destructive" : ""}
                 />
+                {!isCepValid && deliveryData.cep.length > 0 && (
+                  <p className="text-xs text-destructive">CEP deve ter 8 dígitos</p>
+                )}
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Estado</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Estado <span className="text-destructive">*</span>
+                </label>
                 <Input
                   value={deliveryData.state}
-                  onChange={(event) => setDeliveryData((prev) => ({ ...prev, state: event.target.value }))}
+                  onChange={(event) => setDeliveryData((prev) => ({ ...prev, state: event.target.value.toUpperCase() }))}
                   placeholder="UF"
+                  maxLength={2}
                   required
+                  className={!isStateValid && deliveryData.state.length > 0 ? "border-destructive" : ""}
                 />
+                {!isStateValid && deliveryData.state.length > 0 && (
+                  <p className="text-xs text-destructive">Use a sigla do estado (2 letras)</p>
+                )}
               </div>
               <div className="space-y-1 sm:col-span-2">
-                <label className="text-xs font-medium text-muted-foreground">Endereço</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Endereço <span className="text-destructive">*</span>
+                </label>
                 <Input
                   value={deliveryData.address}
                   onChange={(event) => setDeliveryData((prev) => ({ ...prev, address: event.target.value }))}
@@ -266,7 +289,9 @@ export default function Store() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Número</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Número <span className="text-destructive">*</span>
+                </label>
                 <Input
                   value={deliveryData.number}
                   onChange={(event) => setDeliveryData((prev) => ({ ...prev, number: event.target.value }))}
@@ -275,7 +300,9 @@ export default function Store() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Bairro</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Bairro <span className="text-destructive">*</span>
+                </label>
                 <Input
                   value={deliveryData.neighborhood}
                   onChange={(event) => setDeliveryData((prev) => ({ ...prev, neighborhood: event.target.value }))}
@@ -284,7 +311,9 @@ export default function Store() {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Cidade</label>
+                <label className="text-xs font-medium text-muted-foreground">
+                  Cidade <span className="text-destructive">*</span>
+                </label>
                 <Input
                   value={deliveryData.city}
                   onChange={(event) => setDeliveryData((prev) => ({ ...prev, city: event.target.value }))}
@@ -293,6 +322,11 @@ export default function Store() {
                 />
               </div>
             </div>
+            {!isDeliveryComplete && (
+              <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 px-3 py-2 rounded-md">
+                Preencha todos os campos de endereço para habilitar o resgate.
+              </p>
+            )}
           </div>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setRedeemDialogOpen(false)} disabled={redeeming}>
