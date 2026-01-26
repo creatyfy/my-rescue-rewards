@@ -19,11 +19,9 @@ import { Link } from "react-router-dom";
 type TransactionStatus =
   | "approved"
   | "pending"
-  | "pendente"
   | "rejected"
-  | "em_andamento"
-  | "enviado"
-  | "concluido";
+  | "completed"
+  | "cancelled";
 
 type Transaction = {
   id: string;

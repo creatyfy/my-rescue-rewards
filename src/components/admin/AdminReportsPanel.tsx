@@ -205,10 +205,10 @@ export function AdminReportsPanel({
     const redemptionTotals = filteredRedemptions.reduce(
       (acc, redemption) => {
         acc.total += 1;
-        if (redemption.status === "concluido") {
+        if (redemption.status === "completed") {
           acc.completed += 1;
           acc.pointsSpent += redemption.points_spent;
-        } else if (redemption.status === "cancelado") {
+        } else if (redemption.status === "cancelled") {
           acc.cancelled += 1;
         } else {
           acc.pending += 1;
@@ -231,33 +231,19 @@ export function AdminReportsPanel({
 
   const getRedemptionStatusLabel = (status: AdminRedemption["status"]) => {
     switch (status) {
-      case "concluido":
+      case "completed":
         return { label: "Concluído", className: "text-success font-medium" };
-      case "cancelado":
+      case "cancelled":
         return { label: "Cancelado", className: "text-destructive font-medium" };
-      case "em_andamento":
-        return { label: "Em andamento", className: "text-pending font-medium" };
-      case "enviado":
-        return { label: "Enviado", className: "text-pending font-medium" };
-      case "pendente":
+      case "pending":
       default:
         return { label: "Pendente", className: "text-pending font-medium" };
     }
   };
 
-  const getDeliverySummary = (redemption: AdminRedemption) => {
-    const parts = [
-      [redemption.delivery_address, redemption.delivery_number].filter(Boolean).join(", "),
-      redemption.delivery_neighborhood,
-      [redemption.delivery_city, redemption.delivery_state].filter(Boolean).join("/"),
-      redemption.delivery_cep,
-    ].filter((value) => value && value.trim().length > 0);
-
-    if (parts.length === 0) {
-      return "Não informado";
-    }
-
-    return parts.join(" • ");
+  const getDeliverySummary = (_redemption: AdminRedemption) => {
+    // Endereço de entrega ainda não está no banco de dados
+    return "Não informado";
   };
 
   return (

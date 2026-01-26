@@ -81,31 +81,19 @@ export function AdminRedemptionsPanel() {
 
   const getStatusBadge = (status: AdminRedemption["status"]) => {
     switch (status) {
-      case "concluido":
+      case "completed":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
             Concluído
           </span>
         );
-      case "cancelado":
+      case "cancelled":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
             Cancelado
           </span>
         );
-      case "em_andamento":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
-            Em andamento
-          </span>
-        );
-      case "enviado":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
-            Enviado
-          </span>
-        );
-      case "pendente":
+      case "pending":
       default:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
@@ -115,19 +103,9 @@ export function AdminRedemptionsPanel() {
     }
   };
 
-  const getDeliverySummary = (redemption: AdminRedemption) => {
-    const parts = [
-      [redemption.delivery_address, redemption.delivery_number].filter(Boolean).join(", "),
-      redemption.delivery_neighborhood,
-      [redemption.delivery_city, redemption.delivery_state].filter(Boolean).join("/"),
-      redemption.delivery_cep,
-    ].filter((value) => value && value.trim().length > 0);
-
-    if (parts.length === 0) {
-      return "Não informado";
-    }
-
-    return parts.join(" • ");
+  const getDeliverySummary = (_redemption: AdminRedemption) => {
+    // Endereço de entrega ainda não está no banco de dados
+    return "Não informado";
   };
 
   return (
@@ -212,11 +190,9 @@ export function AdminRedemptionsPanel() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-popover border-border">
-                              <SelectItem value="pendente">Pendente</SelectItem>
-                              <SelectItem value="em_andamento">Em andamento</SelectItem>
-                              <SelectItem value="enviado">Enviado</SelectItem>
-                              <SelectItem value="cancelado">Cancelado</SelectItem>
-                              <SelectItem value="concluido">Concluído</SelectItem>
+                              <SelectItem value="pending">Pendente</SelectItem>
+                              <SelectItem value="completed">Concluído</SelectItem>
+                              <SelectItem value="cancelled">Cancelado</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
