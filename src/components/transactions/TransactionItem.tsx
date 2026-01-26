@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 
 export type TransactionStatus =
   | "pending"
+  | "pendente"
   | "approved"
   | "rejected"
   | "completed"
@@ -26,6 +27,11 @@ const statusConfig: Record<TransactionStatus, { icon: typeof Clock; label: strin
   pending: {
     icon: Clock,
     label: "Em análise",
+    className: "text-pending bg-pending/10",
+  },
+  pendente: {
+    icon: Clock,
+    label: "Pendente",
     className: "text-pending bg-pending/10",
   },
   approved: {

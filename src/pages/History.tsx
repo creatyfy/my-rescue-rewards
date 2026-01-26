@@ -8,6 +8,7 @@ type FilterType = "all" | "earn" | "redeem" | "rejected";
 type TransactionStatus =
   | "approved"
   | "pending"
+  | "pendente"
   | "rejected"
   | "solicitado"
   | "em andamento"

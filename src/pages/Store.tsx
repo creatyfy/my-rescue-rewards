@@ -122,6 +122,10 @@ export default function Store() {
       const redemption = await redeemProduct(selectedProductId, deliveryData);
 
       if (!redemption) {
+        console.error("Resposta inesperada ao resgatar produto:", {
+          productId: selectedProductId,
+          deliveryData,
+        });
         toast.error("Não foi possível realizar o resgate.");
         return;
       }
@@ -147,8 +151,12 @@ export default function Store() {
         state: "",
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Não foi possível realizar o resgate.";
-      toast.error(message);
+      console.error("Falha ao confirmar resgate:", {
+        productId: selectedProductId,
+        deliveryData,
+        error,
+      });
+      toast.error("Não foi possível realizar o resgate.");
     } finally {
       setRedeeming(false);
     }

@@ -25,13 +25,13 @@ type RedemptionResult = {
   points_spent: number;
   remaining_balance: number;
   stock_remaining: number;
-  status: "solicitado" | "em andamento" | "enviado" | "concluído";
+  status: "pendente" | "solicitado" | "em andamento" | "enviado" | "concluído";
 };
 
 type RedemptionHistory = {
   id: string;
   points_spent: number;
-  status: "solicitado" | "em andamento" | "enviado" | "concluído";
+  status: "pendente" | "solicitado" | "em andamento" | "enviado" | "concluído";
   created_at: string;
   products: {
     name: string | null;
@@ -76,7 +76,7 @@ type LedgerEntry = {
   amount: number;
   created_at: string;
   receipt_status: "pending" | "approved" | "rejected" | null;
-  redemption_status: "solicitado" | "em andamento" | "enviado" | "concluído" | null;
+  redemption_status: "pendente" | "solicitado" | "em andamento" | "enviado" | "concluído" | null;
   store_name: string | null;
   product_name: string | null;
   protocol_number: string | null;
@@ -197,6 +197,14 @@ export const redeemProduct = async (
   } as never);
 
   if (error) {
+    console.error("Erro ao resgatar produto:", {
+      productId,
+      deliveryData,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+    });
     throw error;
   }
 
