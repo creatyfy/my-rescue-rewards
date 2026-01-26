@@ -105,11 +105,15 @@ export default function Profile() {
       label: "Dados pessoais",
       path: "/profile/edit",
     },
-    {
-      icon: FileText,
-      label: "Relatório da conta",
-      path: "/profile/notifications",
-    },
+    ...(isAdmin
+      ? []
+      : [
+          {
+            icon: FileText,
+            label: "Relatório da conta",
+            path: "/profile/notifications",
+          },
+        ]),
     {
       icon: Shield,
       label: "Segurança",
@@ -166,26 +170,28 @@ export default function Profile() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
-            <p className="font-display font-bold text-xl text-foreground">
-              {isLoading ? "—" : stats.points.toLocaleString("pt-BR")}
-            </p>
-            <p className="text-xs text-muted-foreground">Pontos</p>
+        {!isAdmin && (
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
+              <p className="font-display font-bold text-xl text-foreground">
+                {isLoading ? "—" : stats.points.toLocaleString("pt-BR")}
+              </p>
+              <p className="text-xs text-muted-foreground">Pontos</p>
+            </div>
+            <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
+              <p className="font-display font-bold text-xl text-foreground">
+                {isLoading ? "—" : stats.receipts}
+              </p>
+              <p className="text-xs text-muted-foreground">Compras</p>
+            </div>
+            <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
+              <p className="font-display font-bold text-xl text-foreground">
+                {isLoading ? "—" : stats.redemptions}
+              </p>
+              <p className="text-xs text-muted-foreground">Resgates</p>
+            </div>
           </div>
-          <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
-            <p className="font-display font-bold text-xl text-foreground">
-              {isLoading ? "—" : stats.receipts}
-            </p>
-            <p className="text-xs text-muted-foreground">Compras</p>
-          </div>
-          <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
-            <p className="font-display font-bold text-xl text-foreground">
-              {isLoading ? "—" : stats.redemptions}
-            </p>
-            <p className="text-xs text-muted-foreground">Resgates</p>
-          </div>
-        </div>
+        )}
 
         {/* Menu */}
         <div className="bg-card rounded-2xl border border-border/50 shadow-soft overflow-hidden mb-6">
