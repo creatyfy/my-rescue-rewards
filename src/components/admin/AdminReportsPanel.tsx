@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -208,17 +207,19 @@ export function AdminReportsPanel({
     const redemptionTotals = filteredRedemptions.reduce(
       (acc, redemption) => {
         acc.total += 1;
-        if (redemption.status === "completed") {
+        if (redemption.status === "concluído") {
           acc.completed += 1;
           acc.pointsSpent += redemption.points_spent;
-        } else if (redemption.status === "cancelled") {
-          acc.cancelled += 1;
+        } else if (redemption.status === "em andamento") {
+          acc.inProgress += 1;
+        } else if (redemption.status === "enviado") {
+          acc.shipped += 1;
         } else {
-          acc.pending += 1;
+          acc.requested += 1;
         }
         return acc;
       },
-      { total: 0, completed: 0, cancelled: 0, pending: 0, pointsSpent: 0 },
+      { total: 0, completed: 0, requested: 0, inProgress: 0, shipped: 0, pointsSpent: 0 },
     );
 
     const activeProducts = filteredProducts.filter((product) => product.active).length;
@@ -232,16 +233,14 @@ export function AdminReportsPanel({
     };
   }, [filteredReceipts, filteredRedemptions, filteredProducts, filteredEstablishments]);
 
-  const handleMarkDelivered = async (redemptionId: string) => {
+  const handleUpdateStatus = async (redemptionId: string, status: AdminRedemption["status"]) => {
     try {
       setUpdatingRedemptionId(redemptionId);
-      await updateAdminRedemptionStatus(redemptionId, "completed");
+      await updateAdminRedemptionStatus(redemptionId, status);
       setRedemptions((prev) =>
-        prev.map((redemption) =>
-          redemption.id === redemptionId ? { ...redemption, status: "completed" } : redemption,
-        ),
+        prev.map((redemption) => (redemption.id === redemptionId ? { ...redemption, status } : redemption)),
       );
-      toast.success("Resgate marcado como entregue.");
+      toast.success("Status do resgate atualizado.");
     } catch (error) {
       console.error("Erro ao atualizar resgate:", error);
       toast.error("Não foi possível atualizar o resgate.");
@@ -453,12 +452,16 @@ export function AdminReportsPanel({
                   <TableCell className="text-right font-medium tabular-nums">{summary.receiptTotals.pending}</TableCell>
                 </TableRow>
                 <TableRow className="hover:bg-muted/20">
-                  <TableCell className="text-muted-foreground">Resgates pendentes</TableCell>
-                  <TableCell className="text-right font-medium tabular-nums">{summary.redemptionTotals.pending}</TableCell>
+                  <TableCell className="text-muted-foreground">Resgates solicitados</TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">{summary.redemptionTotals.requested}</TableCell>
                 </TableRow>
                 <TableRow className="hover:bg-muted/20">
-                  <TableCell className="text-muted-foreground">Resgates cancelados</TableCell>
-                  <TableCell className="text-right font-medium tabular-nums">{summary.redemptionTotals.cancelled}</TableCell>
+                  <TableCell className="text-muted-foreground">Resgates em andamento</TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">{summary.redemptionTotals.inProgress}</TableCell>
+                </TableRow>
+                <TableRow className="hover:bg-muted/20">
+                  <TableCell className="text-muted-foreground">Resgates enviados</TableCell>
+                  <TableCell className="text-right font-medium tabular-nums">{summary.redemptionTotals.shipped}</TableCell>
                 </TableRow>
               </TableBody>
             </Table>
@@ -484,6 +487,7 @@ export function AdminReportsPanel({
                       <TableHead className="font-semibold text-foreground whitespace-nowrap text-right">Pontos</TableHead>
                       <TableHead className="font-semibold text-foreground whitespace-nowrap">Data</TableHead>
                       <TableHead className="font-semibold text-foreground whitespace-nowrap">Estabelecimento</TableHead>
+                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Entrega</TableHead>
                       <TableHead className="font-semibold text-foreground whitespace-nowrap">Status</TableHead>
                       <TableHead className="font-semibold text-foreground whitespace-nowrap">Ação</TableHead>
                     </TableRow>
@@ -491,7 +495,7 @@ export function AdminReportsPanel({
                   <TableBody>
                     {filteredRedemptions.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={9} className="text-center py-8 text-sm text-muted-foreground">
+                        <TableCell colSpan={10} className="text-center py-8 text-sm text-muted-foreground">
                           Nenhum resgate encontrado para os filtros selecionados.
                         </TableCell>
                       </TableRow>
@@ -499,21 +503,35 @@ export function AdminReportsPanel({
                       filteredRedemptions.map((redemption) => {
                         const userInfo = userLookup.get(redemption.user_id);
                         const statusLabel =
-                          redemption.status === "completed"
-                            ? "Entregue"
-                            : redemption.status === "cancelled"
-                              ? "Cancelado"
-                              : "Pendente";
+                          redemption.status === "concluído"
+                            ? "Concluído"
+                            : redemption.status === "enviado"
+                              ? "Enviado"
+                              : redemption.status === "em andamento"
+                                ? "Em andamento"
+                                : "Solicitado";
                         const statusClass =
-                          redemption.status === "completed"
+                          redemption.status === "concluído"
                             ? "text-success font-medium"
-                            : redemption.status === "cancelled"
-                              ? "text-destructive font-medium"
-                              : "text-pending font-medium";
+                            : redemption.status === "enviado"
+                              ? "text-primary font-medium"
+                              : redemption.status === "em andamento"
+                                ? "text-pending font-medium"
+                                : "text-muted-foreground font-medium";
                         const establishmentLabel =
                           establishmentFilter === "all"
                             ? "—"
                             : establishmentLookup.get(establishmentFilter) ?? "—";
+                        const deliveryInfo = [
+                          redemption.delivery_address,
+                          redemption.delivery_number,
+                          redemption.delivery_neighborhood,
+                          redemption.delivery_city,
+                          redemption.delivery_state,
+                          redemption.delivery_cep ? `CEP ${redemption.delivery_cep}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ");
                         return (
                           <TableRow key={redemption.id} className="hover:bg-muted/20">
                             <TableCell className="font-medium">{userInfo?.fullName ?? "Usuário"}</TableCell>
@@ -533,21 +551,28 @@ export function AdminReportsPanel({
                               })}
                             </TableCell>
                             <TableCell className="text-muted-foreground">{establishmentLabel}</TableCell>
+                            <TableCell className="text-xs text-muted-foreground whitespace-normal">
+                              {deliveryInfo || "Endereço não informado"}
+                            </TableCell>
                             <TableCell className={statusClass}>{statusLabel}</TableCell>
                             <TableCell>
-                              {redemption.status === "pending" ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="whitespace-nowrap hover:bg-primary hover:text-primary-foreground transition-colors"
-                                  disabled={updatingRedemptionId === redemption.id}
-                                  onClick={() => handleMarkDelivered(redemption.id)}
-                                >
-                                  Marcar como entregue
-                                </Button>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">—</span>
-                              )}
+                              <Select
+                                value={redemption.status}
+                                onValueChange={(value) =>
+                                  handleUpdateStatus(redemption.id, value as AdminRedemption["status"])
+                                }
+                                disabled={updatingRedemptionId === redemption.id}
+                              >
+                                <SelectTrigger className="w-36">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover border-border">
+                                  <SelectItem value="solicitado">Solicitado</SelectItem>
+                                  <SelectItem value="em andamento">Em andamento</SelectItem>
+                                  <SelectItem value="enviado">Enviado</SelectItem>
+                                  <SelectItem value="concluído">Concluído</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </TableCell>
                           </TableRow>
                         );

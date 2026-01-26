@@ -25,13 +25,13 @@ type RedemptionResult = {
   points_spent: number;
   remaining_balance: number;
   stock_remaining: number;
-  status: "pending" | "completed" | "cancelled";
+  status: "solicitado" | "em andamento" | "enviado" | "concluído";
 };
 
 type RedemptionHistory = {
   id: string;
   points_spent: number;
-  status: "pending" | "completed" | "cancelled";
+  status: "solicitado" | "em andamento" | "enviado" | "concluído";
   created_at: string;
   products: {
     name: string | null;
@@ -76,10 +76,25 @@ type LedgerEntry = {
   amount: number;
   created_at: string;
   receipt_status: "pending" | "approved" | "rejected" | null;
-  redemption_status: "pending" | "completed" | "cancelled" | null;
+  redemption_status: "solicitado" | "em andamento" | "enviado" | "concluído" | null;
   store_name: string | null;
   product_name: string | null;
   protocol_number: string | null;
+};
+
+export type DeliveryData = {
+  cep: string;
+  address: string;
+  number: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+};
+
+export type UserContact = {
+  fullName: string | null;
+  email: string | null;
+  phone: string | null;
 };
 
 const FALLBACK_PRODUCT_IMAGE =
@@ -167,9 +182,18 @@ export const fetchCurrentUserPendingPoints = async (): Promise<number> => {
   }
 };
 
-export const redeemProduct = async (productId: string): Promise<RedemptionResult | null> => {
+export const redeemProduct = async (
+  productId: string,
+  deliveryData: DeliveryData,
+): Promise<RedemptionResult | null> => {
   const { data, error } = await supabase.rpc("redeem_product" as never, {
     p_product_id: productId,
+    p_delivery_cep: deliveryData.cep,
+    p_delivery_address: deliveryData.address,
+    p_delivery_number: deliveryData.number,
+    p_delivery_neighborhood: deliveryData.neighborhood,
+    p_delivery_city: deliveryData.city,
+    p_delivery_state: deliveryData.state,
   } as never);
 
   if (error) {
@@ -251,6 +275,47 @@ export const fetchCurrentUserProfileName = async (): Promise<string | null> => {
     return (data as { full_name: string | null } | null)?.full_name ?? null;
   } catch {
     return null;
+  }
+};
+
+export const fetchCurrentUserContact = async (): Promise<UserContact | null> => {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+
+  if (userError) {
+    throw userError;
+  }
+
+  if (!userData.user) {
+    return null;
+  }
+
+  try {
+    const { data, error } = await (supabase as any)
+      .from("profiles")
+      .select("full_name, phone")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("profiles table not available:", error.message);
+      return {
+        fullName: null,
+        email: userData.user.email ?? null,
+        phone: null,
+      };
+    }
+
+    return {
+      fullName: (data as { full_name: string | null } | null)?.full_name ?? null,
+      email: userData.user.email ?? null,
+      phone: (data as { phone: string | null } | null)?.phone ?? null,
+    };
+  } catch {
+    return {
+      fullName: null,
+      email: userData.user.email ?? null,
+      phone: null,
+    };
   }
 };
 
