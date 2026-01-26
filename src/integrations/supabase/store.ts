@@ -25,13 +25,22 @@ type RedemptionResult = {
   points_spent: number;
   remaining_balance: number;
   stock_remaining: number;
-  status: "pendente" | "solicitado" | "em andamento" | "enviado" | "concluído" | "pending" | "completed" | "cancelled";
+  status:
+    | "pendente"
+    | "solicitado"
+    | "em andamento"
+    | "enviado"
+    | "cancelado"
+    | "concluído"
+    | "pending"
+    | "completed"
+    | "cancelled";
 };
 
 type RedemptionHistory = {
   id: string;
   points_spent: number;
-  status: "pendente" | "solicitado" | "em andamento" | "enviado" | "concluído";
+  status: "pendente" | "solicitado" | "em andamento" | "enviado" | "cancelado" | "concluído";
   created_at: string;
   products: {
     name: string | null;
