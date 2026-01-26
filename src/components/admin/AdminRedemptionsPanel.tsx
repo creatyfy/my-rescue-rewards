@@ -93,12 +93,7 @@ export function AdminRedemptionsPanel() {
             Cancelado
           </span>
         );
-      case "pendente":
-        return (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
-            Pendente
-          </span>
-        );
+      case "pending":
       default:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
@@ -187,7 +182,6 @@ export function AdminRedemptionsPanel() {
                             </SelectTrigger>
                             <SelectContent className="bg-popover border-border">
                               <SelectItem value="pending">Pendente</SelectItem>
-                              <SelectItem value="pendente">Pendente (novo)</SelectItem>
                               <SelectItem value="completed">Concluído</SelectItem>
                               <SelectItem value="cancelled">Cancelado</SelectItem>
                             </SelectContent>
