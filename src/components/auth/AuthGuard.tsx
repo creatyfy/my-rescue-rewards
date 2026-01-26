@@ -52,23 +52,6 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
-  const adminRestrictedPaths = [
-    "/dashboard",
-    "/scan",
-    "/store",
-    "/history",
-    "/profile/notifications",
-  ];
-  const isAdmin = session.user?.role === "admin";
-  const shouldRedirectAdmin =
-    isAdmin &&
-    !location.pathname.startsWith("/admin") &&
-    adminRestrictedPaths.includes(location.pathname);
-
-  if (shouldRedirectAdmin) {
-    return <Navigate to="/admin/reports" replace />;
-  }
-
   return <>{children}</>;
 };
 

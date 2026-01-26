@@ -71,13 +71,14 @@ const normalizeReceiptStatus = (status?: string | null): ReceiptReviewStatus => 
 
 export const fetchAdminStatus = async (): Promise<boolean> => {
   try {
-    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const { data, error } = await supabase.rpc("is_admin");
 
-    if (userError) {
-      throw userError;
+    if (error) {
+      console.warn("is_admin function not available:", error.message);
+      return false;
     }
 
-    return userData.user?.role === "admin";
+    return Boolean(data);
   } catch {
     return false;
   }

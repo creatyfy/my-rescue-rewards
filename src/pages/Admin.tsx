@@ -36,7 +36,7 @@ export default function Admin() {
         content: <AdminUsersPanel />,
       },
       reports: {
-        label: "Visão Geral",
+        label: "Relatórios",
         content: <AdminReportsPanel />,
       },
     }),
@@ -105,7 +105,7 @@ export default function Admin() {
             <div>{currentSection.content}</div>
           </div>
         ) : (
-          <Navigate to="/admin/reports" replace />
+          <Navigate to="/admin/receipts" replace />
         )}
       </div>
     </AppLayout>

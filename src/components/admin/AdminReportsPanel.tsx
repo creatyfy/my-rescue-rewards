@@ -240,9 +240,9 @@ export function AdminReportsPanel() {
   };
 
   return (
-    <Card className="p-6 space-y-6">
-      <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold">Visão Geral</h2>
+    <Card className="p-6">
+      <div className="flex flex-col gap-1 mb-6">
+        <h2 className="text-lg font-semibold">Relatórios</h2>
         <p className="text-sm text-muted-foreground">
           Acompanhe indicadores e resgates com filtros personalizados.
         </p>
