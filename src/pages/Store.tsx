@@ -119,7 +119,7 @@ export default function Store() {
 
     try {
       setRedeeming(true);
-      const redemption = await redeemProduct(selectedProductId, deliveryData);
+      const redemption = await redeemProduct(selectedProductId, trimmedDelivery);
 
       if (!redemption) {
         console.error("Resposta inesperada ao resgatar produto:", {
