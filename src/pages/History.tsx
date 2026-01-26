@@ -8,12 +8,9 @@ type FilterType = "all" | "earn" | "redeem" | "rejected";
 type TransactionStatus =
   | "approved"
   | "pending"
-  | "pendente"
   | "rejected"
-  | "em_andamento"
-  | "enviado"
-  | "cancelado"
-  | "concluido";
+  | "completed"
+  | "cancelled";
 
 type Transaction = {
   id: string;

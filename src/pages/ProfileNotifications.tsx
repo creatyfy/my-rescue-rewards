@@ -59,7 +59,7 @@ export default function ProfileNotifications() {
         const approvedReceipts = receipts.filter((r) => r.status === "approved");
         const pendingReceipts = receipts.filter((r) => r.status === "pending");
         const rejectedReceipts = receipts.filter((r) => r.status === "rejected");
-        const completedRedemptions = redemptionsData.filter((r) => r.status === "concluido");
+        const completedRedemptions = redemptionsData.filter((r) => r.status === "completed");
 
         const totalPointsEarned = approvedReceipts.reduce((sum, r) => sum + r.points, 0);
         const totalPointsSpent = completedRedemptions.reduce((sum, r) => sum + r.points_spent, 0);

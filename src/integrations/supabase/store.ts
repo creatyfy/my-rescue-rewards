@@ -25,18 +25,13 @@ type RedemptionResult = {
   points_spent: number;
   remaining_balance: number;
   stock_remaining: number;
-  status:
-    | "pendente"
-    | "em_andamento"
-    | "enviado"
-    | "cancelado"
-    | "concluido";
+  status: "pending" | "completed" | "cancelled";
 };
 
 type RedemptionHistory = {
   id: string;
   points_spent: number;
-  status: "pendente" | "em_andamento" | "enviado" | "cancelado" | "concluido";
+  status: "pending" | "completed" | "cancelled";
   created_at: string;
   products: {
     name: string | null;
@@ -81,7 +76,7 @@ type LedgerEntry = {
   amount: number;
   created_at: string;
   receipt_status: "pending" | "approved" | "rejected" | null;
-  redemption_status: "pendente" | "em_andamento" | "enviado" | "concluido" | "cancelado" | null;
+  redemption_status: "pending" | "completed" | "cancelled" | null;
   store_name: string | null;
   product_name: string | null;
   protocol_number: string | null;
@@ -189,16 +184,12 @@ export const fetchCurrentUserPendingPoints = async (): Promise<number> => {
 
 export const redeemProduct = async (
   productId: string,
-  deliveryData: DeliveryData,
+  _deliveryData: DeliveryData,
 ): Promise<RedemptionResult | null> => {
+  // Nota: deliveryData não é enviado ao backend pois a RPC ainda não suporta.
+  // Quando a migração de endereço for executada, atualizar aqui.
   const { data, error } = await supabase.rpc("redeem_product", {
     p_product_id: productId,
-    p_delivery_cep: deliveryData.cep,
-    p_delivery_address: deliveryData.address,
-    p_delivery_number: deliveryData.number,
-    p_delivery_neighborhood: deliveryData.neighborhood,
-    p_delivery_city: deliveryData.city,
-    p_delivery_state: deliveryData.state,
   });
 
   if (error) {
