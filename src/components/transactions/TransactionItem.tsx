@@ -5,6 +5,8 @@ export type TransactionStatus =
   | "pending"
   | "approved"
   | "rejected"
+  | "completed"
+  | "cancelled"
   | "solicitado"
   | "em andamento"
   | "enviado"
@@ -20,7 +22,7 @@ interface TransactionItemProps {
   date: string;
 }
 
-const statusConfig = {
+const statusConfig: Record<TransactionStatus, { icon: typeof Clock; label: string; className: string }> = {
   pending: {
     icon: Clock,
     label: "Em análise",
@@ -34,6 +36,16 @@ const statusConfig = {
   rejected: {
     icon: XCircle,
     label: "Rejeitado",
+    className: "text-destructive bg-destructive/10",
+  },
+  completed: {
+    icon: CheckCircle,
+    label: "Concluído",
+    className: "text-success bg-success/10",
+  },
+  cancelled: {
+    icon: XCircle,
+    label: "Cancelado",
     className: "text-destructive bg-destructive/10",
   },
   solicitado: {
