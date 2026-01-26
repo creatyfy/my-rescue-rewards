@@ -46,6 +46,7 @@ const adminNavItems = [
   { label: "Estabelecimentos", path: "/admin/establishments" },
   { label: "Produtos", path: "/admin/products" },
   { label: "Usuários", path: "/admin/users" },
+  { label: "Resgates", path: "/admin/redemptions" },
   { label: "Relatórios", path: "/admin/reports" },
 ];
 

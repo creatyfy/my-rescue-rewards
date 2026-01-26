@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { AdminEstablishmentsPanel } from "@/components/admin/AdminEstablishmentsPanel";
 import { AdminProductsPanel } from "@/components/admin/AdminProductsPanel";
 import { AdminReceiptsPanel } from "@/components/admin/AdminReceiptsPanel";
+import { AdminRedemptionsPanel } from "@/components/admin/AdminRedemptionsPanel";
 import { AdminReportsPanel } from "@/components/admin/AdminReportsPanel";
 import { AdminUsersPanel } from "@/components/admin/AdminUsersPanel";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,10 @@ export default function Admin() {
       users: {
         label: "Usuários",
         content: <AdminUsersPanel />,
+      },
+      redemptions: {
+        label: "Resgates",
+        content: <AdminRedemptionsPanel />,
       },
       reports: {
         label: "Relatórios",

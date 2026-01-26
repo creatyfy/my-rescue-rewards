@@ -70,7 +70,22 @@ export default function Store() {
   const isContactMissing =
     !userContact?.fullName || !userContact?.email || !userContact?.phone;
 
-  const isDeliveryComplete = Object.values(deliveryData).every((value) => value.trim().length > 0);
+  const trimmedDelivery = useMemo(
+    () => ({
+      cep: deliveryData.cep.trim(),
+      address: deliveryData.address.trim(),
+      number: deliveryData.number.trim(),
+      neighborhood: deliveryData.neighborhood.trim(),
+      city: deliveryData.city.trim(),
+      state: deliveryData.state.trim(),
+    }),
+    [deliveryData],
+  );
+  const isDeliveryComplete = Object.values(trimmedDelivery).every((value) => value.length > 0);
+  const cepDigits = trimmedDelivery.cep.replace(/\D/g, "");
+  const isCepValid = cepDigits.length === 8;
+  const isStateValid = trimmedDelivery.state.length === 2;
+  const isDeliveryValid = isDeliveryComplete && isCepValid && isStateValid;
 
   const handleRedeem = (productId: string) => {
     setSelectedProductId(productId);
@@ -89,6 +104,16 @@ export default function Store() {
 
     if (!isDeliveryComplete) {
       toast.error("Preencha todos os dados de entrega para concluir o resgate.");
+      return;
+    }
+
+    if (!isCepValid) {
+      toast.error("Informe um CEP válido para concluir o resgate.");
+      return;
+    }
+
+    if (!isStateValid) {
+      toast.error("Informe o estado com a sigla de 2 letras.");
       return;
     }
 
@@ -273,7 +298,7 @@ export default function Store() {
             <Button variant="outline" onClick={() => setRedeemDialogOpen(false)} disabled={redeeming}>
               Voltar
             </Button>
-            <Button onClick={handleConfirmRedeem} disabled={redeeming || isContactMissing || !isDeliveryComplete}>
+            <Button onClick={handleConfirmRedeem} disabled={redeeming || isContactMissing || !isDeliveryValid}>
               {redeeming ? "Confirmando..." : "Confirmar resgate"}
             </Button>
           </DialogFooter>
