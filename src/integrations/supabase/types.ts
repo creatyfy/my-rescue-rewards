@@ -277,6 +277,12 @@ export type Database = {
       redemptions: {
         Row: {
           created_at: string
+          delivery_address: string | null
+          delivery_cep: string | null
+          delivery_city: string | null
+          delivery_neighborhood: string | null
+          delivery_number: string | null
+          delivery_state: string | null
           id: string
           points_spent: number
           product_id: string
@@ -286,6 +292,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delivery_address?: string | null
+          delivery_cep?: string | null
+          delivery_city?: string | null
+          delivery_neighborhood?: string | null
+          delivery_number?: string | null
+          delivery_state?: string | null
           id?: string
           points_spent: number
           product_id: string
@@ -295,6 +307,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delivery_address?: string | null
+          delivery_cep?: string | null
+          delivery_city?: string | null
+          delivery_neighborhood?: string | null
+          delivery_number?: string | null
+          delivery_state?: string | null
           id?: string
           points_spent?: number
           product_id?: string
@@ -397,18 +415,39 @@ export type Database = {
         Args: { p_target_user_id: string }
         Returns: boolean
       }
-      redeem_product: {
-        Args: { p_product_id: string }
-        Returns: {
-          points_spent: number
-          product_id: string
-          product_name: string
-          redemption_id: string
-          remaining_balance: number
-          status: Database["public"]["Enums"]["redemption_status"]
-          stock_remaining: number
-        }[]
-      }
+      redeem_product:
+        | {
+            Args: { p_product_id: string }
+            Returns: {
+              points_spent: number
+              product_id: string
+              product_name: string
+              redemption_id: string
+              remaining_balance: number
+              status: Database["public"]["Enums"]["redemption_status"]
+              stock_remaining: number
+            }[]
+          }
+        | {
+            Args: {
+              p_delivery_address?: string
+              p_delivery_cep?: string
+              p_delivery_city?: string
+              p_delivery_neighborhood?: string
+              p_delivery_number?: string
+              p_delivery_state?: string
+              p_product_id: string
+            }
+            Returns: {
+              points_spent: number
+              product_id: string
+              product_name: string
+              redemption_id: string
+              remaining_balance: number
+              status: Database["public"]["Enums"]["redemption_status"]
+              stock_remaining: number
+            }[]
+          }
       submit_receipt: {
         Args: {
           p_image_path: string

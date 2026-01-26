@@ -103,9 +103,21 @@ export function AdminRedemptionsPanel() {
     }
   };
 
-  const getDeliverySummary = (_redemption: AdminRedemption) => {
-    // Endereço de entrega ainda não está no banco de dados
-    return "Não informado";
+  const getDeliverySummary = (redemption: AdminRedemption) => {
+    if (!redemption.delivery_address) {
+      return "Não informado";
+    }
+
+    const parts = [
+      redemption.delivery_address,
+      redemption.delivery_number,
+      redemption.delivery_neighborhood,
+      redemption.delivery_city,
+      redemption.delivery_state,
+      redemption.delivery_cep,
+    ].filter(Boolean);
+
+    return parts.join(", ");
   };
 
   return (
