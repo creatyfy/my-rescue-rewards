@@ -46,7 +46,7 @@ const adminNavItems = [
   { label: "Estabelecimentos", path: "/admin/establishments" },
   { label: "Produtos", path: "/admin/products" },
   { label: "Usuários", path: "/admin/users" },
-  { label: "Relatórios", path: "/admin/reports" },
+  { label: "Visão Geral", path: "/admin/reports" },
 ];
 
 export function SidebarNav() {
@@ -61,7 +61,7 @@ export function SidebarNav() {
     const section = location.pathname.split("/")[2];
     return adminNavItems.some((item) => item.path.endsWith(`/${section}`))
       ? section
-      : "receipts";
+      : "reports";
   }, [location.pathname]);
 
   useEffect(() => {

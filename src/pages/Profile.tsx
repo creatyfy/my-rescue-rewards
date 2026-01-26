@@ -132,8 +132,12 @@ export default function Profile() {
     }
   };
 
+  const visibleMenuItems = isAdmin
+    ? menuItems.filter((item) => item.path !== "/profile/notifications")
+    : menuItems;
+
   return (
-    <AppLayout title="Perfil" showBack>
+    <AppLayout title="Perfil" showBack showNav={!isAdmin}>
       <div className="container px-4 py-6">
         {/* User Info Card */}
         <div className="bg-card rounded-2xl border border-border/50 shadow-soft p-6 mb-6">
@@ -165,38 +169,39 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
-            <p className="font-display font-bold text-xl text-foreground">
-              {isLoading ? "—" : stats.points.toLocaleString("pt-BR")}
-            </p>
-            <p className="text-xs text-muted-foreground">Pontos</p>
+        {!isAdmin && (
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
+              <p className="font-display font-bold text-xl text-foreground">
+                {isLoading ? "—" : stats.points.toLocaleString("pt-BR")}
+              </p>
+              <p className="text-xs text-muted-foreground">Pontos</p>
+            </div>
+            <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
+              <p className="font-display font-bold text-xl text-foreground">
+                {isLoading ? "—" : stats.receipts}
+              </p>
+              <p className="text-xs text-muted-foreground">Compras</p>
+            </div>
+            <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
+              <p className="font-display font-bold text-xl text-foreground">
+                {isLoading ? "—" : stats.redemptions}
+              </p>
+              <p className="text-xs text-muted-foreground">Resgates</p>
+            </div>
           </div>
-          <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
-            <p className="font-display font-bold text-xl text-foreground">
-              {isLoading ? "—" : stats.receipts}
-            </p>
-            <p className="text-xs text-muted-foreground">Compras</p>
-          </div>
-          <div className="bg-card rounded-xl border border-border/50 p-4 text-center">
-            <p className="font-display font-bold text-xl text-foreground">
-              {isLoading ? "—" : stats.redemptions}
-            </p>
-            <p className="text-xs text-muted-foreground">Resgates</p>
-          </div>
-        </div>
+        )}
 
         {/* Menu */}
         <div className="bg-card rounded-2xl border border-border/50 shadow-soft overflow-hidden mb-6">
-          {menuItems.map((item, index) => {
+          {visibleMenuItems.map((item, index) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-3 p-4 hover:bg-accent/50 transition-colors ${
-                  index !== menuItems.length - 1 ? "border-b border-border/50" : ""
+                  index !== visibleMenuItems.length - 1 ? "border-b border-border/50" : ""
                 }`}
               >
                 <div className="p-2 rounded-lg bg-accent">
