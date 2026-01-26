@@ -1,8 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Gift, QrCode, ShoppingBag, Star, ChevronRight, Sparkles } from "lucide-react";
+import { Gift, QrCode, Star, ChevronRight, Sparkles, Download, Check, Smartphone } from "lucide-react";
 import logoHorizontal from "@/assets/logo-horizontal.png";
+import { usePWAInstall } from "@/hooks/usePWAInstall";
+
 export default function Index() {
+  const { isInstallable, isInstalled, installApp } = usePWAInstall();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -19,9 +23,23 @@ export default function Index() {
               className="h-10 w-auto"
             />
           </Link>
-          <Button variant="ghost" asChild>
-            <Link to="/auth">Entrar</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            {isInstallable && (
+              <Button variant="outline" size="sm" onClick={installApp} className="gap-2">
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Instalar App</span>
+              </Button>
+            )}
+            {isInstalled && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/20 text-success text-sm font-medium">
+                <Check className="w-4 h-4" />
+                <span className="hidden sm:inline">Instalado</span>
+              </div>
+            )}
+            <Button variant="ghost" asChild>
+              <Link to="/auth">Entrar</Link>
+            </Button>
+          </div>
         </header>
 
         <div className="container px-4 py-16 md:py-24 relative">
@@ -53,6 +71,25 @@ export default function Index() {
                 <Link to="/auth">Já tenho conta</Link>
               </Button>
             </div>
+
+            {/* PWA Install Banner */}
+            {isInstallable && (
+              <div className="mt-8 p-4 rounded-2xl bg-card border border-border/50 shadow-soft max-w-md mx-auto animate-fade-in">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0">
+                    <Smartphone className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <div className="text-left flex-1 min-w-0">
+                    <p className="font-semibold text-foreground">Baixe o App</p>
+                    <p className="text-sm text-muted-foreground">Acesse mais rápido direto do seu celular</p>
+                  </div>
+                  <Button size="sm" onClick={installApp} className="flex-shrink-0">
+                    <Download className="w-4 h-4 mr-1" />
+                    Instalar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
