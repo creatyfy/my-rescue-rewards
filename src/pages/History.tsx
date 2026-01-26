@@ -10,11 +10,10 @@ type TransactionStatus =
   | "pending"
   | "pendente"
   | "rejected"
-  | "solicitado"
-  | "em andamento"
+  | "em_andamento"
   | "enviado"
   | "cancelado"
-  | "concluído";
+  | "concluido";
 
 type Transaction = {
   id: string;

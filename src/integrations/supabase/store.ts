@@ -27,20 +27,16 @@ type RedemptionResult = {
   stock_remaining: number;
   status:
     | "pendente"
-    | "solicitado"
-    | "em andamento"
+    | "em_andamento"
     | "enviado"
     | "cancelado"
-    | "concluído"
-    | "pending"
-    | "completed"
-    | "cancelled";
+    | "concluido";
 };
 
 type RedemptionHistory = {
   id: string;
   points_spent: number;
-  status: "pendente" | "solicitado" | "em andamento" | "enviado" | "cancelado" | "concluído";
+  status: "pendente" | "em_andamento" | "enviado" | "cancelado" | "concluido";
   created_at: string;
   products: {
     name: string | null;
@@ -85,7 +81,7 @@ type LedgerEntry = {
   amount: number;
   created_at: string;
   receipt_status: "pending" | "approved" | "rejected" | null;
-  redemption_status: "pendente" | "solicitado" | "em andamento" | "enviado" | "concluído" | null;
+  redemption_status: "pendente" | "em_andamento" | "enviado" | "concluido" | "cancelado" | null;
   store_name: string | null;
   product_name: string | null;
   protocol_number: string | null;

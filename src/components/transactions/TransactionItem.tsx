@@ -6,13 +6,10 @@ export type TransactionStatus =
   | "pendente"
   | "approved"
   | "rejected"
-  | "completed"
-  | "cancelled"
   | "cancelado"
-  | "solicitado"
-  | "em andamento"
+  | "em_andamento"
   | "enviado"
-  | "concluído";
+  | "concluido";
 export type TransactionType = "earn" | "redeem";
 
 interface TransactionItemProps {
@@ -45,27 +42,12 @@ const statusConfig: Record<TransactionStatus, { icon: typeof Clock; label: strin
     label: "Rejeitado",
     className: "text-destructive bg-destructive/10",
   },
-  completed: {
-    icon: CheckCircle,
-    label: "Concluído",
-    className: "text-success bg-success/10",
-  },
-  cancelled: {
-    icon: XCircle,
-    label: "Cancelado",
-    className: "text-destructive bg-destructive/10",
-  },
   cancelado: {
     icon: XCircle,
     label: "Cancelado",
     className: "text-destructive bg-destructive/10",
   },
-  solicitado: {
-    icon: Clock,
-    label: "Solicitado",
-    className: "text-muted-foreground bg-muted/60",
-  },
-  "em andamento": {
+  em_andamento: {
     icon: Clock,
     label: "Em andamento",
     className: "text-pending bg-pending/10",
@@ -75,7 +57,7 @@ const statusConfig: Record<TransactionStatus, { icon: typeof Clock; label: strin
     label: "Enviado",
     className: "text-primary bg-primary/10",
   },
-  concluído: {
+  concluido: {
     icon: CheckCircle,
     label: "Concluído",
     className: "text-success bg-success/10",

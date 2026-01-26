@@ -205,10 +205,10 @@ export function AdminReportsPanel({
     const redemptionTotals = filteredRedemptions.reduce(
       (acc, redemption) => {
         acc.total += 1;
-        if (redemption.status === "concluído" || redemption.status === "completed") {
+        if (redemption.status === "concluido") {
           acc.completed += 1;
           acc.pointsSpent += redemption.points_spent;
-        } else if (redemption.status === "cancelled" || redemption.status === "cancelado") {
+        } else if (redemption.status === "cancelado") {
           acc.cancelled += 1;
         } else {
           acc.pending += 1;
@@ -231,20 +231,15 @@ export function AdminReportsPanel({
 
   const getRedemptionStatusLabel = (status: AdminRedemption["status"]) => {
     switch (status) {
-      case "concluído":
-      case "completed":
+      case "concluido":
         return { label: "Concluído", className: "text-success font-medium" };
-      case "cancelled":
       case "cancelado":
         return { label: "Cancelado", className: "text-destructive font-medium" };
-      case "em andamento":
+      case "em_andamento":
         return { label: "Em andamento", className: "text-pending font-medium" };
       case "enviado":
         return { label: "Enviado", className: "text-pending font-medium" };
-      case "solicitado":
-        return { label: "Solicitado", className: "text-pending font-medium" };
       case "pendente":
-      case "pending":
       default:
         return { label: "Pendente", className: "text-pending font-medium" };
     }
