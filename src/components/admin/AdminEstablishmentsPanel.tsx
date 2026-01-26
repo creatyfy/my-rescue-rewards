@@ -224,67 +224,69 @@ export function AdminEstablishmentsPanel() {
           Nenhum estabelecimento cadastrado.
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Ativo</TableHead>
-              <TableHead>QR Code</TableHead>
-              <TableHead>Endereço</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => {
-              const qrUrl = qrMap.get(item.id) || "";
-              return (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.name}</TableCell>
-                  <TableCell>{item.active ? "Sim" : "Não"}</TableCell>
-                  <TableCell>
-                    {qrUrl ? (
-                      <div className="flex items-center gap-2" key={qrRefresh}>
-                        <img
-                          src={qrUrl}
-                          alt={`QR Code ${item.name}`}
-                          className="h-16 w-16 rounded border"
-                        />
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={qrUrl} download={`qr-${item.name}.png`}>
-                            <Download className="mr-1 h-4 w-4" />
-                            Download
-                          </a>
+        <div className="overflow-x-auto -mx-6 px-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="whitespace-nowrap">Nome</TableHead>
+                <TableHead className="whitespace-nowrap">Ativo</TableHead>
+                <TableHead className="whitespace-nowrap">QR Code</TableHead>
+                <TableHead className="whitespace-nowrap">Endereço</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => {
+                const qrUrl = qrMap.get(item.id) || "";
+                return (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium whitespace-nowrap">{item.name}</TableCell>
+                    <TableCell className="whitespace-nowrap">{item.active ? "Sim" : "Não"}</TableCell>
+                    <TableCell>
+                      {qrUrl ? (
+                        <div className="flex items-center gap-2" key={qrRefresh}>
+                          <img
+                            src={qrUrl}
+                            alt={`QR Code ${item.name}`}
+                            className="h-12 w-12 sm:h-16 sm:w-16 rounded border"
+                          />
+                          <Button variant="outline" size="sm" asChild>
+                            <a href={qrUrl} download={`qr-${item.name}.png`}>
+                              <Download className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Download</span>
+                            </a>
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Sem QR</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
+                      {item.address ?? "-"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => handleOpenEdit(item)}>
+                          <Pencil className="h-4 w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Editar</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                          onClick={() => handleDelete(item.id)}
+                        >
+                          <Trash2 className="h-4 w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Excluir</span>
                         </Button>
                       </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Sem QR</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {item.address ?? "-"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex flex-wrap justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleOpenEdit(item)}>
-                        <Pencil className="mr-1 h-4 w-4" />
-                        Editar
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-destructive/50 text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDelete(item.id)}
-                      >
-                        <Trash2 className="mr-1 h-4 w-4" />
-                        Excluir
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       <Dialog

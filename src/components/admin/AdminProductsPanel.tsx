@@ -198,62 +198,64 @@ export function AdminProductsPanel() {
           Nenhum produto cadastrado.
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Produto</TableHead>
-              <TableHead>Ativo</TableHead>
-              <TableHead>Pontos</TableHead>
-              <TableHead>Estoque</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>
-                  <div className="flex items-center gap-3">
-                    {item.image_url ? (
-                      <img
-                        src={item.image_url}
-                        alt={item.name}
-                        className="h-12 w-12 rounded-lg border object-cover"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 rounded-lg border bg-muted" />
-                    )}
-                    <div>
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-xs text-muted-foreground line-clamp-2">
-                        {item.description ?? "Sem descrição"}
-                      </p>
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>{item.active ? "Sim" : "Não"}</TableCell>
-                <TableCell>{formatPoints(item.points_cost)}</TableCell>
-                <TableCell>{item.stock}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex flex-wrap justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleOpenEdit(item)}>
-                      <Pencil className="mr-1 h-4 w-4" />
-                      Editar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-destructive/50 text-destructive hover:bg-destructive/10"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <Trash2 className="mr-1 h-4 w-4" />
-                      Excluir
-                    </Button>
-                  </div>
-                </TableCell>
+        <div className="overflow-x-auto -mx-6 px-6">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="whitespace-nowrap">Produto</TableHead>
+                <TableHead className="whitespace-nowrap">Ativo</TableHead>
+                <TableHead className="whitespace-nowrap">Pontos</TableHead>
+                <TableHead className="whitespace-nowrap">Estoque</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg border object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg border bg-muted flex-shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1 hidden sm:block">
+                          {item.description ?? "Sem descrição"}
+                        </p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">{item.active ? "Sim" : "Não"}</TableCell>
+                  <TableCell className="whitespace-nowrap">{formatPoints(item.points_cost)}</TableCell>
+                  <TableCell className="whitespace-nowrap">{item.stock}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleOpenEdit(item)}>
+                        <Pencil className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Editar</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDelete(item.id)}
+                      >
+                        <Trash2 className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">Excluir</span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
       <Dialog

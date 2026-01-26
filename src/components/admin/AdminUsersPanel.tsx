@@ -159,11 +159,11 @@ export function AdminUsersPanel() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Usuário</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Função</TableHead>
-                <TableHead>Cadastro</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className="whitespace-nowrap">Usuário</TableHead>
+                <TableHead className="whitespace-nowrap hidden sm:table-cell">Email</TableHead>
+                <TableHead className="whitespace-nowrap">Função</TableHead>
+                <TableHead className="whitespace-nowrap hidden md:table-cell">Cadastro</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -176,14 +176,19 @@ export function AdminUsersPanel() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         {isAdmin ? (
-                          <ShieldCheck className="h-4 w-4 text-primary" />
+                          <ShieldCheck className="h-4 w-4 text-primary flex-shrink-0" />
                         ) : (
-                          <User className="h-4 w-4 text-muted-foreground" />
+                          <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         )}
-                        {user.full_name || "—"}
+                        <div className="min-w-0">
+                          <span className="block truncate">{user.full_name || "—"}</span>
+                          <span className="block text-xs text-muted-foreground truncate sm:hidden">
+                            {user.email}
+                          </span>
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
+                    <TableCell className="text-muted-foreground hidden sm:table-cell">
                       {user.email}
                     </TableCell>
                     <TableCell>
@@ -191,7 +196,7 @@ export function AdminUsersPanel() {
                         {isAdmin ? "Admin" : "Usuário"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
+                    <TableCell className="text-muted-foreground text-sm hidden md:table-cell">
                       {format(new Date(user.created_at), "dd/MM/yyyy")}
                     </TableCell>
                     <TableCell className="text-right">
@@ -203,8 +208,8 @@ export function AdminUsersPanel() {
                           variant="outline"
                           onClick={() => handleOpenDemote(user)}
                         >
-                          <ShieldOff className="h-4 w-4 mr-1" />
-                          Rebaixar
+                          <ShieldOff className="h-4 w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Rebaixar</span>
                         </Button>
                       ) : (
                         <Button
@@ -212,8 +217,8 @@ export function AdminUsersPanel() {
                           variant="default"
                           onClick={() => handleOpenPromote(user)}
                         >
-                          <ShieldCheck className="h-4 w-4 mr-1" />
-                          Promover
+                          <ShieldCheck className="h-4 w-4 sm:mr-1" />
+                          <span className="hidden sm:inline">Promover</span>
                         </Button>
                       )}
                     </TableCell>
