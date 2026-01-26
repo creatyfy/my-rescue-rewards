@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/components/ui/sonner";
+import { cn } from "@/lib/utils";
 import {
   AdminProfile,
   AdminEstablishment,
@@ -24,7 +25,17 @@ import {
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
-export function AdminReportsPanel() {
+type AdminReportsPanelProps = {
+  title?: string;
+  description?: string;
+  className?: string;
+};
+
+export function AdminReportsPanel({
+  title = "Relatórios",
+  description = "Acompanhe indicadores e resgates com filtros personalizados.",
+  className,
+}: AdminReportsPanelProps) {
   const [receipts, setReceipts] = useState<AdminReceiptSummary[]>([]);
   const [redemptions, setRedemptions] = useState<AdminRedemption[]>([]);
   const [products, setProducts] = useState<AdminProduct[]>([]);
@@ -240,11 +251,11 @@ export function AdminReportsPanel() {
   };
 
   return (
-    <Card className="p-6">
-      <div className="flex flex-col gap-1 mb-6">
-        <h2 className="text-lg font-semibold">Relatórios</h2>
+    <Card className={cn("p-6 md:p-8", className)}>
+      <div className="flex flex-col gap-2 mb-8">
+        <h2 className="text-xl font-semibold">{title}</h2>
         <p className="text-sm text-muted-foreground">
-          Acompanhe indicadores e resgates com filtros personalizados.
+          {description}
         </p>
       </div>
 
