@@ -184,12 +184,16 @@ export const fetchCurrentUserPendingPoints = async (): Promise<number> => {
 
 export const redeemProduct = async (
   productId: string,
-  _deliveryData: DeliveryData,
+  deliveryData: DeliveryData,
 ): Promise<RedemptionResult | null> => {
-  // Nota: deliveryData não é enviado ao backend pois a RPC ainda não suporta.
-  // Quando a migração de endereço for executada, atualizar aqui.
   const { data, error } = await supabase.rpc("redeem_product", {
     p_product_id: productId,
+    p_delivery_cep: deliveryData.cep,
+    p_delivery_address: deliveryData.address,
+    p_delivery_number: deliveryData.number,
+    p_delivery_neighborhood: deliveryData.neighborhood,
+    p_delivery_city: deliveryData.city,
+    p_delivery_state: deliveryData.state,
   });
 
   if (error) {
