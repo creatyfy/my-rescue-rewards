@@ -183,6 +183,49 @@ export default function Dashboard() {
               <PointsCard balance={balance} pendingPoints={pendingPoints} />
             </div>
 
+            <section
+              aria-labelledby="dashboard-info-title"
+              className="mb-8 rounded-lg border border-muted bg-muted/30 p-4"
+            >
+              <h3
+                id="dashboard-info-title"
+                className="text-sm font-semibold text-foreground"
+              >
+                Como funciona sua pontuação
+              </h3>
+              <div className="mt-3 space-y-3 text-xs text-muted-foreground">
+                <div>
+                  <p className="font-medium text-foreground/80">
+                    Como os pontos são gerados
+                  </p>
+                  <p>
+                    Você acumula pontos ao enviar comprovantes de compras elegíveis
+                    ou ao participar de campanhas especiais. Após a validação da
+                    compra, os pontos são adicionados ao seu saldo.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground/80">
+                    Validade dos pontos
+                  </p>
+                  <p>
+                    A pontuação acumulada possui validade de 365 dias a partir da
+                    data de confirmação.
+                  </p>
+                </div>
+                <div>
+                  <p className="font-medium text-foreground/80">
+                    Troca por produtos ou serviços
+                  </p>
+                  <p>
+                    Você pode trocar seus pontos na área da Loja, disponível no menu
+                    lateral ou na página inicial. Lá estão listados os produtos e
+                    serviços disponíveis para resgate conforme o seu saldo.
+                  </p>
+                </div>
+              </div>
+            </section>
+
             {/* Quick Actions */}
             <div className="mb-8">
               <h2 className="font-display font-semibold text-base mb-3 text-foreground">
