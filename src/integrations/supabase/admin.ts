@@ -227,18 +227,12 @@ export const fetchAdminReceipts = async (params?: {
     const profileMap = new Map<string, AdminProfile>();
 
     if (userIds.length > 0) {
-      const { data: profilesData, error: profilesError } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, phone, created_at")
-        .in("user_id", userIds);
-
-      if (profilesError) {
-        console.warn("profiles lookup failed:", profilesError.message);
-      } else {
-        (profilesData ?? []).forEach((profile) => {
-          profileMap.set(profile.user_id, profile as AdminProfile);
+      const profilesData = await fetchAdminProfiles();
+      profilesData
+        .filter((profile) => userIds.includes(profile.user_id))
+        .forEach((profile) => {
+          profileMap.set(profile.user_id, profile);
         });
-      }
     }
 
     const items = (data ?? []).map((receipt) => ({
@@ -433,6 +427,44 @@ export const updateAdminReceipt = async (
   return true;
 };
 
+const getAuditEntriesFromAdminLogs = async (
+  receiptId: string,
+  adminMap: Map<string, string | null>,
+): Promise<ReceiptAuditEntry[]> => {
+  const { data, error } = await supabase
+    .from("admin_audit_logs")
+    .select("id, created_at, admin_id, details")
+    .eq("target_id", receiptId)
+    .eq("action", "receipt_update")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.warn("admin audit log fetch failed:", error.message);
+    return [];
+  }
+
+  return (data ?? []).flatMap((entry: any) => {
+    const details = entry.details as {
+      changes?: { field: string; oldValue?: string | null; newValue?: string | null }[];
+      changed_at?: string;
+    };
+    if (!details?.changes || !Array.isArray(details.changes)) {
+      return [];
+    }
+    const changedAt = details.changed_at ?? entry.created_at;
+    return details.changes.map((change, index) => ({
+      id: `${entry.id}-${index}`,
+      receipt_id: receiptId,
+      changed_at: changedAt,
+      admin_id: entry.admin_id ?? null,
+      admin_name: adminMap.get(entry.admin_id) ?? null,
+      field: change.field,
+      old_value: change.oldValue ?? null,
+      new_value: change.newValue ?? null,
+    }));
+  });
+};
+
 export const fetchReceiptAuditHistory = async (receiptId: string): Promise<ReceiptAuditEntry[]> => {
   try {
     const [users, { data, error }] = await Promise.all([
@@ -446,12 +478,12 @@ export const fetchReceiptAuditHistory = async (receiptId: string): Promise<Recei
 
     if (error) {
       console.warn("receipt audit log fetch failed:", error.message);
-      return [];
+      const adminMap = new Map(users.map((user) => [user.user_id, user.full_name ?? user.email]));
+      return await getAuditEntriesFromAdminLogs(receiptId, adminMap);
     }
 
     const adminMap = new Map(users.map((user) => [user.user_id, user.full_name ?? user.email]));
-
-    return (data ?? []).map((entry: any) => ({
+    const auditEntries = (data ?? []).map((entry: any) => ({
       id: entry.id,
       receipt_id: entry.receipt_id,
       changed_at: entry.changed_at,
@@ -461,6 +493,10 @@ export const fetchReceiptAuditHistory = async (receiptId: string): Promise<Recei
       old_value: entry.old_value ?? null,
       new_value: entry.new_value ?? null,
     }));
+    if (auditEntries.length > 0) {
+      return auditEntries;
+    }
+    return await getAuditEntriesFromAdminLogs(receiptId, adminMap);
   } catch (error) {
     console.warn("receipt audit log fetch failed:", error);
     return [];
