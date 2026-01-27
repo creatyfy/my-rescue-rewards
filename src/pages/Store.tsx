@@ -1,10 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProductCard } from "@/components/store/ProductCard";
-import { Search, Filter, Coins, Loader2 } from "lucide-react";
+import { Search, Filter, Coins, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
 import {
   DeliveryData,
@@ -25,6 +33,8 @@ export default function Store() {
   const [userPoints, setUserPoints] = useState(0);
   const [redeemDialogOpen, setRedeemDialogOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewProductId, setPreviewProductId] = useState<string | null>(null);
   const [deliveryData, setDeliveryData] = useState<DeliveryData>({
     cep: "",
     address: "",
@@ -35,6 +45,8 @@ export default function Store() {
   });
   const [userContact, setUserContact] = useState<UserContact | null>(null);
   const [redeeming, setRedeeming] = useState(false);
+  const previewTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const previewCloseButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const { loading: cepLoading, error: cepError, lookup: lookupCep, reset: resetCep } = useCepLookup();
 
@@ -68,6 +80,10 @@ export default function Store() {
   const selectedProduct = useMemo(
     () => products.find((product) => product.id === selectedProductId) ?? null,
     [products, selectedProductId],
+  );
+  const previewProduct = useMemo(
+    () => products.find((product) => product.id === previewProductId) ?? null,
+    [products, previewProductId],
   );
 
   const isContactMissing =
@@ -120,6 +136,12 @@ export default function Store() {
   const handleRedeem = (productId: string) => {
     setSelectedProductId(productId);
     setRedeemDialogOpen(true);
+  };
+
+  const handlePreviewImage = (productId: string, trigger: HTMLButtonElement) => {
+    previewTriggerRef.current = trigger;
+    setPreviewProductId(productId);
+    setPreviewDialogOpen(true);
   };
 
   const handleConfirmRedeem = async () => {
@@ -210,6 +232,12 @@ export default function Store() {
     }
   };
 
+  useEffect(() => {
+    if (!previewDialogOpen && previewTriggerRef.current) {
+      previewTriggerRef.current.focus();
+    }
+  }, [previewDialogOpen]);
+
   return (
     <AppLayout title="Loja" showBack>
       <div className="container px-4 py-6">
@@ -261,11 +289,69 @@ export default function Store() {
                 {...product}
                 userPoints={userPoints}
                 onRedeem={handleRedeem}
+                onPreviewImage={handlePreviewImage}
               />
             ))}
           </div>
         )}
       </div>
+
+      <Dialog
+        open={previewDialogOpen}
+        onOpenChange={(open) => {
+          setPreviewDialogOpen(open);
+          if (!open) {
+            setPreviewProductId(null);
+          }
+        }}
+      >
+        <DialogContent
+          showCloseButton={false}
+          closeLabel="Fechar imagem do produto"
+          className="w-[95vw] max-w-4xl h-[90vh] sm:h-auto sm:max-h-[90vh] p-0"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            previewCloseButtonRef.current?.focus();
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            previewTriggerRef.current?.focus();
+          }}
+        >
+          <div className="flex h-full flex-col bg-background">
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <DialogTitle className="text-sm font-semibold text-foreground">
+                {previewProduct?.name ?? "Produto"}
+              </DialogTitle>
+              <DialogClose asChild>
+                <Button
+                  ref={previewCloseButtonRef}
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  aria-label="Fechar imagem do produto"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </DialogClose>
+            </div>
+            <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
+              {previewProduct ? (
+                <img
+                  src={previewProduct.imageUrl}
+                  alt={`Imagem do produto ${previewProduct.name}`}
+                  loading="lazy"
+                  decoding="async"
+                  className="max-h-full max-w-full object-contain"
+                />
+              ) : (
+                <div className="text-sm text-muted-foreground">Imagem indisponível.</div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={redeemDialogOpen} onOpenChange={setRedeemDialogOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">

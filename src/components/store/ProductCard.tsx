@@ -10,6 +10,7 @@ interface ProductCardProps {
   stock: number;
   userPoints: number;
   onRedeem?: (id: string) => void;
+  onPreviewImage?: (id: string, trigger: HTMLButtonElement) => void;
 }
 
 export function ProductCard({
@@ -21,6 +22,7 @@ export function ProductCard({
   stock,
   userPoints,
   onRedeem,
+  onPreviewImage,
 }: ProductCardProps) {
   const canAfford = userPoints >= pointsCost;
   const isAvailable = stock > 0;
@@ -29,11 +31,19 @@ export function ProductCard({
   return (
     <div className="group bg-card rounded-2xl border border-border/50 shadow-soft overflow-hidden hover:shadow-medium transition-all duration-300 hover:-translate-y-1">
       <div className="relative aspect-square overflow-hidden bg-muted">
-        <img
-          src={imageUrl}
-          alt={name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-        />
+        <button
+          type="button"
+          onClick={(event) => onPreviewImage?.(id, event.currentTarget)}
+          className="h-full w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          aria-label={`Ampliar imagem do produto ${name}`}
+        >
+          <img
+            src={imageUrl}
+            alt={name}
+            loading="lazy"
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        </button>
         {!isAvailable && (
           <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
             <span className="font-semibold text-muted-foreground">Esgotado</span>
