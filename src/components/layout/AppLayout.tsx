@@ -22,14 +22,14 @@ export function AppLayout({ children, title, showNav = true, showBack = false }:
   };
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen>
       <Sidebar collapsible="offcanvas">
         <SidebarNav />
       </Sidebar>
       <SidebarInset>
         <div className="min-h-screen bg-background">
           <Header title={title} />
-          <main className={`pb-20 md:pb-8 ${showNav ? "" : ""}`}>
+          <div className={`pb-20 md:pb-8 ${showNav ? "" : ""}`}>
             {children}
             {showBack && (
               <div className="container px-4 pt-6 pb-4 flex justify-center">
@@ -39,7 +39,7 @@ export function AppLayout({ children, title, showNav = true, showBack = false }:
                 </Button>
               </div>
             )}
-          </main>
+          </div>
           {showNav && <MobileNav />}
         </div>
       </SidebarInset>

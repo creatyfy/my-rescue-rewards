@@ -18,6 +18,26 @@ const SIDEBAR_WIDTH = "16rem";
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
+const getSidebarCookieValue = () => {
+  if (typeof document === "undefined") {
+    return undefined;
+  }
+
+  const cookieValue = document.cookie
+    .split("; ")
+    .find((cookie) => cookie.startsWith(`${SIDEBAR_COOKIE_NAME}=`))
+    ?.split("=")[1];
+
+  if (cookieValue === "true") {
+    return true;
+  }
+
+  if (cookieValue === "false") {
+    return false;
+  }
+
+  return undefined;
+};
 
 type SidebarContext = {
   state: "expanded" | "collapsed";
@@ -53,7 +73,7 @@ const SidebarProvider = React.forwardRef<
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen);
+  const [_open, _setOpen] = React.useState(() => getSidebarCookieValue() ?? defaultOpen);
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
@@ -230,6 +250,7 @@ const SidebarTrigger = React.forwardRef<React.ElementRef<typeof Button>, React.C
         variant="ghost"
         size="icon"
         className={cn("h-7 w-7", className)}
+        aria-label="Alternar menu lateral"
         onClick={(event) => {
           onClick?.(event);
           toggleSidebar();
