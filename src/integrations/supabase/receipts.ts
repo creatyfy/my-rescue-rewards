@@ -19,6 +19,13 @@ type LegacySubmittedReceipt = {
   status?: "pending" | "approved" | "rejected" | null;
 };
 
+type EstablishmentOption = {
+  id: string;
+  name: string;
+  qr_code_token: string | null;
+  active?: boolean | null;
+};
+
 const shouldRetryLegacySubmit = (message: string) => {
   const normalized = message.toLowerCase();
   return (
@@ -148,5 +155,31 @@ export const submitReceiptForCurrentUser = async ({
     return null;
   } catch (err) {
     throw err;
+  }
+};
+
+export const fetchReceiptEstablishments = async (): Promise<
+  { id: string; name: string; qrCodeToken: string | null }[]
+> => {
+  try {
+    const { data, error } = await supabase
+      .from("establishments")
+      .select("id, name, qr_code_token, active")
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.warn("establishments table not available:", error.message);
+      return [];
+    }
+
+    return ((data ?? []) as EstablishmentOption[])
+      .filter((item) => item.active !== false)
+      .map((item) => ({
+        id: item.id,
+        name: item.name,
+        qrCodeToken: item.qr_code_token,
+      }));
+  } catch {
+    return [];
   }
 };
