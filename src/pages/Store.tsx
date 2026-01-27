@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProductCard } from "@/components/store/ProductCard";
+import { RedemptionSuccessModal } from "@/components/store/RedemptionSuccessModal";
 import { Search, Filter, Coins, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ export default function Store() {
   });
   const [userContact, setUserContact] = useState<UserContact | null>(null);
   const [redeeming, setRedeeming] = useState(false);
+  const [successModalOpen, setSuccessModalOpen] = useState(false);
   const previewTriggerRef = useRef<HTMLButtonElement | null>(null);
   const previewCloseButtonRef = useRef<HTMLButtonElement | null>(null);
 
@@ -191,7 +193,6 @@ export default function Store() {
         ),
       );
 
-      toast.success(`Resgate confirmado: ${redemption.product_name}.`);
       setRedeemDialogOpen(false);
       setSelectedProductId(null);
       setDeliveryData({
@@ -203,6 +204,8 @@ export default function Store() {
         state: "",
       });
       resetCep();
+      // Open success modal after successful redemption
+      setSuccessModalOpen(true);
     } catch (error) {
       const errorDetails = error as {
         message?: string;
@@ -489,6 +492,13 @@ export default function Store() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Success Modal - Only for regular users (already filtered by page access) */}
+      <RedemptionSuccessModal
+        open={successModalOpen}
+        onClose={() => setSuccessModalOpen(false)}
+        userName={userContact?.fullName ?? null}
+      />
     </AppLayout>
   );
 }
