@@ -27,8 +27,6 @@ export type AdminReceiptUser = {
 
 export type AdminReceiptDetails = AdminReceipt & {
   establishment_id: string | null;
-  purchase_date: string | null;
-  admin_note: string | null;
   user: AdminReceiptUser | null;
 };
 
@@ -48,8 +46,6 @@ export type ReceiptUpdateInput = {
   purchase_value?: number;
   points_earned?: number;
   status?: ReceiptReviewStatus;
-  purchase_date?: string | null;
-  admin_note?: string | null;
 };
 
 export type ReceiptFieldChange = {
@@ -269,28 +265,11 @@ export const fetchAdminReceipts = async (params?: {
 
 export const fetchAdminReceiptDetails = async (receiptId: string): Promise<AdminReceiptDetails | null> => {
   try {
-    const baseSelect =
-      "id, purchase_value, points_earned, status, image_path, created_at, user_id, establishment_id, establishments(name)";
-    const extendedSelect = `${baseSelect}, purchase_date, admin_note`;
-    const { data: extendedData, error: extendedError } = await (supabase as any)
+    const { data, error } = await supabase
       .from("receipts")
-      .select(extendedSelect)
+      .select("id, purchase_value, points_earned, status, image_path, created_at, user_id, establishment_id, establishments(name)")
       .eq("id", receiptId)
       .maybeSingle();
-
-    let data = extendedData;
-    let error = extendedError;
-
-    if (error) {
-      console.warn("receipt details extended query failed:", error.message);
-      const fallback = await (supabase as any)
-        .from("receipts")
-        .select(baseSelect)
-        .eq("id", receiptId)
-        .maybeSingle();
-      data = fallback.data;
-      error = fallback.error;
-    }
 
     if (error || !data) {
       console.warn("receipt details not available:", error?.message ?? "not found");
@@ -325,8 +304,6 @@ export const fetchAdminReceiptDetails = async (receiptId: string): Promise<Admin
       user_name: matchedProfile?.full_name ?? matchedUser?.full_name ?? null,
       store_name: data.establishments?.name ?? null,
       establishment_id: data.establishment_id ?? null,
-      purchase_date: "purchase_date" in data ? data.purchase_date ?? null : null,
-      admin_note: "admin_note" in data ? data.admin_note ?? null : null,
       user,
     };
   } catch (error) {
@@ -421,12 +398,27 @@ export const updateAdminReceipt = async (
     throw userError;
   }
 
-  const { error } = await (supabase as any)
+  // Only update columns that exist in the database schema
+  const dbUpdates: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (updates.establishment_id !== undefined) {
+    dbUpdates.establishment_id = updates.establishment_id;
+  }
+  if (updates.purchase_value !== undefined) {
+    dbUpdates.purchase_value = updates.purchase_value;
+  }
+  if (updates.points_earned !== undefined) {
+    dbUpdates.points_earned = updates.points_earned;
+  }
+  if (updates.status !== undefined) {
+    dbUpdates.status = updates.status;
+  }
+
+  const { error } = await supabase
     .from("receipts")
-    .update({
-      ...updates,
-      updated_at: new Date().toISOString(),
-    })
+    .update(dbUpdates)
     .eq("id", receiptId);
 
   if (error) {
