@@ -8,6 +8,7 @@ import { updateCurrentUserProfile } from "@/integrations/supabase/profile";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Phone, FileText } from "lucide-react";
 import logoHorizontal from "@/assets/logo-horizontal.png";
+import { getPhoneValidationError } from "@/lib/phone-utils";
 
 type AuthMode = "login" | "register";
 
@@ -40,14 +41,27 @@ export default function Auth() {
     }
   }, [searchParams]);
 
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setPhoneError(null);
 
     try {
       if (mode === "register" && formData.password !== formData.confirmPassword) {
         toast.error("As senhas não conferem.");
         return;
+      }
+
+      // Validate phone for registration
+      if (mode === "register" && formData.phone) {
+        const validationError = getPhoneValidationError(formData.phone);
+        if (validationError) {
+          setPhoneError(validationError);
+          toast.error(validationError);
+          return;
+        }
       }
 
       if (mode === "login") {
@@ -186,13 +200,19 @@ export default function Auth() {
                   id="phone"
                   name="phone"
                   type="tel"
-                  placeholder="(00) 00000-0000"
+                  placeholder="5511912345678"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="pl-10"
+                  className={`pl-10 ${phoneError ? "border-destructive" : ""}`}
                   required
                 />
               </div>
+              <p className="text-xs text-muted-foreground">
+                Inclua o código do país 55. Ex: 5511912345678
+              </p>
+              {phoneError && (
+                <p className="text-xs text-destructive">{phoneError}</p>
+              )}
             </div>
           )}
 
