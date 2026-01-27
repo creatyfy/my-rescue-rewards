@@ -38,7 +38,7 @@ export function PointsCard({ balance, pendingPoints = 0 }: PointsCardProps) {
 
         <div className="flex items-center justify-between text-sm">
           <span className="text-white/70">Válidos por 365 dias</span>
-          <span className="font-semibold">≈ R$ {(balance).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+          <span className="font-semibold">≈ R$ {(balance / 10).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
         </div>
       </div>
     </div>
