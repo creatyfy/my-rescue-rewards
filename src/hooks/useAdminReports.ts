@@ -118,14 +118,37 @@ export function useAdminReports() {
 
     setIsSearching(true);
     const query = userSearchQuery.toLowerCase().trim();
-    const results = Array.from(userLookup.values()).filter((user) => {
-      return (
-        user.full_name?.toLowerCase().includes(query) ||
-        user.email?.toLowerCase().includes(query) ||
-        user.cpf?.replace(/\D/g, "").includes(query.replace(/\D/g, "")) ||
-        user.phone?.replace(/\D/g, "").includes(query.replace(/\D/g, ""))
-      );
-    });
+    const queryDigits = query.replace(/\D/g, "");
+    
+    const results = Array.from(userLookup.values())
+      .map((user) => {
+        // Calculate relevance score for better sorting
+        let score = 0;
+        const nameLower = user.full_name?.toLowerCase() ?? "";
+        const emailLower = user.email?.toLowerCase() ?? "";
+        const cpfDigits = user.cpf?.replace(/\D/g, "") ?? "";
+        const phoneDigits = user.phone?.replace(/\D/g, "") ?? "";
+        
+        // Exact email match gets highest priority
+        if (emailLower === query) {
+          score = 100;
+        } else if (emailLower.includes(query)) {
+          score = 80;
+        } else if (nameLower === query) {
+          score = 70;
+        } else if (nameLower.includes(query)) {
+          score = 50;
+        } else if (queryDigits && cpfDigits.includes(queryDigits)) {
+          score = 40;
+        } else if (queryDigits && phoneDigits.includes(queryDigits)) {
+          score = 30;
+        }
+        
+        return { user, score };
+      })
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(({ user }) => user);
     
     // Simulate debounce effect
     setTimeout(() => setIsSearching(false), 200);
