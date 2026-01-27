@@ -692,7 +692,7 @@ export default function Scan() {
                 {purchaseValue && parseFloat(purchaseValue) >= 10 && (
                   <p className="text-xs text-success flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
-                    Você receberá {Math.floor(parseFloat(purchaseValue))} pontos
+                    Você receberá {Math.floor(parseFloat(purchaseValue) * 10).toLocaleString('pt-BR')} pontos
                   </p>
                 )}
                 {purchaseValue && parseFloat(purchaseValue) < 10 && (
