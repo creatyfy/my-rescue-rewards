@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Search, ShieldCheck, ShieldOff, User, Loader2 } from "lucide-react";
 import { format } from "date-fns";
+import { UserProfileModal } from "./UserProfileModal";
 
 export function AdminUsersPanel() {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -44,6 +45,10 @@ export function AdminUsersPanel() {
   const [targetUser, setTargetUser] = useState<AdminUser | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // User profile modal state
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const userModalTriggerRef = useRef<HTMLButtonElement>(null);
   const loadUsers = async () => {
     setLoading(true);
     try {
@@ -123,6 +128,11 @@ export function AdminUsersPanel() {
     );
   });
 
+  const handleOpenUserModal = (userId: string, trigger?: HTMLButtonElement | null) => {
+    userModalTriggerRef.current = trigger ?? null;
+    setSelectedUserId(userId);
+    setUserModalOpen(true);
+  };
   return (
     <Card className="p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -174,7 +184,12 @@ export function AdminUsersPanel() {
                 return (
                   <TableRow key={user.user_id}>
                     <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="flex items-center gap-2 text-left text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+                        aria-label={`Ver dados do usuário ${user.full_name ?? user.email}`}
+                        onClick={(event) => handleOpenUserModal(user.user_id, event.currentTarget)}
+                      >
                         {isAdmin ? (
                           <ShieldCheck className="h-4 w-4 text-primary flex-shrink-0" />
                         ) : (
@@ -186,7 +201,7 @@ export function AdminUsersPanel() {
                             {user.email}
                           </span>
                         </div>
-                      </div>
+                      </button>
                     </TableCell>
                     <TableCell className="text-muted-foreground hidden sm:table-cell">
                       {user.email}
@@ -260,6 +275,13 @@ export function AdminUsersPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <UserProfileModal
+        open={userModalOpen}
+        onOpenChange={setUserModalOpen}
+        userId={selectedUserId}
+        triggerRef={userModalTriggerRef}
+      />
     </Card>
   );
 }

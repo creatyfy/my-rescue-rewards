@@ -140,12 +140,12 @@ Phone must be in international format without + or special characters (e.g., `55
 
 ## Acceptance Criteria Checklist
 
-- [ ] Profile modal opens from Receipts panel
-- [ ] Profile modal opens from Redemptions panel  
-- [ ] Profile modal opens from Users panel (new)
-- [ ] WhatsApp button works in all three panels
-- [ ] Phone without 55 prefix cannot be saved during registration
-- [ ] Phone without 55 prefix cannot be saved during profile edit
-- [ ] Clear validation messages displayed to users
-- [ ] No code duplication between panels
-- [ ] Existing functionality remains intact
+- [x] Profile modal opens from Receipts panel
+- [x] Profile modal opens from Redemptions panel  
+- [x] Profile modal opens from Users panel (new)
+- [x] WhatsApp button works in all three panels
+- [x] Phone without 55 prefix cannot be saved during registration
+- [x] Phone without 55 prefix cannot be saved during profile edit
+- [x] Clear validation messages displayed to users
+- [x] No code duplication between panels
+- [x] Existing functionality remains intact

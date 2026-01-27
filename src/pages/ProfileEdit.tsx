@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { fetchCurrentUserProfile, updateCurrentUserProfile } from "@/integrations/supabase/profile";
+import { getPhoneValidationError } from "@/lib/phone-utils";
 
 export default function ProfileEdit() {
   const [form, setForm] = useState({
@@ -54,8 +55,22 @@ export default function ProfileEdit() {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    // Validate phone if provided
+    const phoneValue = form.phone.trim();
+    if (phoneValue) {
+      const validationError = getPhoneValidationError(phoneValue);
+      if (validationError) {
+        setPhoneError(validationError);
+        toast.error(validationError);
+        return;
+      }
+    }
+    setPhoneError(null);
 
     setIsSaving(true);
 
@@ -63,7 +78,7 @@ export default function ProfileEdit() {
       await updateCurrentUserProfile({
         fullName: form.fullName.trim() || null,
         cpf: form.cpf.trim() || null,
-        phone: form.phone.trim() || null,
+        phone: phoneValue || null,
       });
       toast.success("Dados atualizados com sucesso.");
     } catch (error) {
@@ -113,11 +128,18 @@ export default function ProfileEdit() {
               <Label htmlFor="phone">Telefone</Label>
               <Input
                 id="phone"
-                placeholder="(00) 00000-0000"
+                placeholder="5511912345678"
                 value={form.phone}
                 onChange={handleChange("phone")}
                 disabled={isLoading}
+                className={phoneError ? "border-destructive" : ""}
               />
+              <p className="text-xs text-muted-foreground">
+                Inclua o código do país 55. Ex: 5511912345678
+              </p>
+              {phoneError && (
+                <p className="text-xs text-destructive">{phoneError}</p>
+              )}
             </div>
             <Button type="submit" className="w-full" disabled={isLoading || isSaving}>
               {isSaving ? "Salvando..." : "Salvar alterações"}

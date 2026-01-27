@@ -13,18 +13,18 @@ import { createSignedReceiptUrl } from "@/integrations/supabase/storage";
 import {
   AdminReceipt,
   AdminReceiptDetails,
-  AdminReceiptUser,
   ReceiptAuditEntry,
   ReceiptReviewStatus,
   fetchAdminEstablishments,
   fetchAdminReceipts,
   fetchAdminReceiptDetails,
-  fetchAdminUserDetails,
   fetchReceiptAuditHistory,
   reviewReceipt,
   updateAdminReceipt,
 } from "@/integrations/supabase/admin";
 import { CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Eye, Pencil, Search, XCircle } from "lucide-react";
+import { buildWhatsAppUrl } from "@/lib/phone-utils";
+import { UserProfileModal } from "./UserProfileModal";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
@@ -40,17 +40,6 @@ const formatDateTime = (value?: string | null) => {
     hour: "2-digit",
     minute: "2-digit",
   });
-};
-
-const normalizePhoneForWhatsapp = (phone?: string | null) => {
-  if (!phone) {
-    return null;
-  }
-  const digits = phone.replace(/\D/g, "");
-  if (!digits) {
-    return null;
-  }
-  return digits.startsWith("55") ? digits : `55${digits}`;
 };
 
 export function AdminReceiptsPanel() {
@@ -73,12 +62,11 @@ export function AdminReceiptsPanel() {
   const [formError, setFormError] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [establishments, setEstablishments] = useState<Array<{ id: string; name: string }>>([]);
+  
+  // User profile modal state (for table clicks)
   const [userModalOpen, setUserModalOpen] = useState(false);
-  const [userModalLoading, setUserModalLoading] = useState(false);
-  const [userModalError, setUserModalError] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<AdminReceiptUser | null>(null);
-  const userModalTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const userModalFocusRef = useRef<HTMLButtonElement | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const userModalTriggerRef = useRef<HTMLButtonElement>(null);
 
   const [status, setStatus] = useState<ReceiptReviewStatus>("pending");
   const [query, setQuery] = useState("");
@@ -142,12 +130,6 @@ export function AdminReceiptsPanel() {
     setFormLoading(false);
   };
 
-  const resetUserModal = () => {
-    setSelectedUser(null);
-    setUserModalError(null);
-    setUserModalLoading(false);
-  };
-
   const populateFormState = (receipt: AdminReceiptDetails) => {
     setFormState({
       establishmentId: receipt.establishment_id ?? "",
@@ -197,26 +179,10 @@ export function AdminReceiptsPanel() {
     await loadReceiptDetails(receipt.id);
   };
 
-  const handleOpenUserModal = async (userId: string, trigger?: HTMLButtonElement | null) => {
+  const handleOpenUserModal = (userId: string, trigger?: HTMLButtonElement | null) => {
     userModalTriggerRef.current = trigger ?? null;
+    setSelectedUserId(userId);
     setUserModalOpen(true);
-    setUserModalLoading(true);
-    setUserModalError(null);
-    setSelectedUser(null);
-
-    try {
-      const user = await fetchAdminUserDetails(userId);
-      if (!user) {
-        setUserModalError("Não foi possível carregar os dados do usuário.");
-        return;
-      }
-      setSelectedUser(user);
-    } catch (error) {
-      console.error("Erro ao carregar dados do usuário:", error);
-      setUserModalError("Não foi possível carregar os dados do usuário.");
-    } finally {
-      setUserModalLoading(false);
-    }
   };
 
   const handleSaveReceipt = async () => {
@@ -314,19 +280,6 @@ export function AdminReceiptsPanel() {
     loadEstablishments();
   }, []);
 
-  useEffect(() => {
-    if (userModalOpen) {
-      const handle = window.setTimeout(() => {
-        userModalFocusRef.current?.focus();
-      }, 0);
-      return () => window.clearTimeout(handle);
-    }
-
-    if (userModalTriggerRef.current) {
-      userModalTriggerRef.current.focus();
-    }
-    return;
-  }, [userModalOpen]);
 
   return (
     <Card className="p-6">
@@ -538,28 +491,30 @@ export function AdminReceiptsPanel() {
                       </div>
                     </div>
                     <div className="mt-4">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        asChild
-                        disabled={!normalizePhoneForWhatsapp(selectedReceipt.user?.phone)}
-                      >
-                        <a
-                          href={
-                            normalizePhoneForWhatsapp(selectedReceipt.user?.phone)
-                              ? `https://wa.me/${normalizePhoneForWhatsapp(
-                                  selectedReceipt.user?.phone,
-                                )}?text=${encodeURIComponent(
-                                  `Olá ${selectedReceipt.user?.full_name ?? ""}, tudo bem?`,
-                                )}`
-                              : "#"
-                          }
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Abrir conversa no WhatsApp
-                        </a>
-                      </Button>
+                      {(() => {
+                        const whatsappUrl = buildWhatsAppUrl(
+                          selectedReceipt.user?.phone,
+                          `Olá ${selectedReceipt.user?.full_name ?? ""}, tudo bem?`
+                        );
+                        return (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            disabled={!whatsappUrl}
+                            className={!whatsappUrl ? "pointer-events-none opacity-50" : ""}
+                          >
+                            <a
+                              href={whatsappUrl ?? "#"}
+                              target="_blank"
+                              rel="noreferrer"
+                              aria-label="Abrir conversa no WhatsApp"
+                            >
+                              Abrir conversa no WhatsApp
+                            </a>
+                          </Button>
+                        );
+                      })()}
                     </div>
                   </div>
 
@@ -745,95 +700,12 @@ export function AdminReceiptsPanel() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <UserProfileModal
         open={userModalOpen}
-        onOpenChange={(open) => {
-          setUserModalOpen(open);
-          if (!open) {
-            resetUserModal();
-          }
-        }}
-      >
-        <DialogContent className="max-w-xl" role="dialog" aria-modal="true">
-          <DialogHeader>
-            <DialogTitle>Dados do usuário</DialogTitle>
-          </DialogHeader>
-
-          {userModalLoading ? (
-            <p className="text-sm text-muted-foreground">Carregando dados do usuário...</p>
-          ) : userModalError ? (
-            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
-              {userModalError}
-            </div>
-          ) : selectedUser ? (
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-xs text-muted-foreground">Nome completo</p>
-                <p className="text-sm font-medium">{selectedUser.full_name ?? "Não informado"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">CPF</p>
-                <p className="text-sm font-medium">{selectedUser.cpf ?? "Não informado"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">E-mail</p>
-                <p className="text-sm font-medium">{selectedUser.email ?? "Não informado"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Telefone</p>
-                <p className="text-sm font-medium">{selectedUser.phone ?? "Não informado"}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Data de cadastro</p>
-                <p className="text-sm font-medium">
-                  {selectedUser.created_at ? formatDateTime(selectedUser.created_at) : "Não informado"}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Status da conta</p>
-                <p className="text-sm font-medium">
-                  {selectedUser.role ? `Perfil: ${selectedUser.role}` : "Usuário"}
-                </p>
-              </div>
-            </div>
-          ) : null}
-
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            {selectedUser ? (
-              <Button
-                variant="outline"
-                size="sm"
-                asChild
-                disabled={!normalizePhoneForWhatsapp(selectedUser.phone)}
-              >
-                <a
-                  href={
-                    normalizePhoneForWhatsapp(selectedUser.phone)
-                      ? `https://wa.me/${normalizePhoneForWhatsapp(selectedUser.phone)}?text=${encodeURIComponent(
-                          `Olá ${selectedUser.full_name ?? ""}, tudo bem?`,
-                        )}`
-                      : "#"
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Abrir conversa no WhatsApp"
-                >
-                  Abrir conversa no WhatsApp
-                </a>
-              </Button>
-            ) : null}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              ref={userModalFocusRef}
-              onClick={() => setUserModalOpen(false)}
-            >
-              Fechar
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        onOpenChange={setUserModalOpen}
+        userId={selectedUserId}
+        triggerRef={userModalTriggerRef}
+      />
     </Card>
   );
 }
