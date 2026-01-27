@@ -584,14 +584,20 @@ export type AdminProfile = {
 
 export const fetchAdminProfiles = async (): Promise<AdminProfile[]> => {
   try {
-    const { data, error } = await supabase.from("profiles").select("user_id, full_name, phone, created_at");
+    // Use secure RPC function to bypass RLS and fetch profiles as admin
+    const { data, error } = await supabase.rpc("list_profiles_for_admin");
 
     if (error) {
-      console.warn("profiles table not available:", error.message);
+      console.warn("list_profiles_for_admin failed:", error.message);
       return [];
     }
 
-    return (data ?? []) as AdminProfile[];
+    return (data ?? []).map((profile: { user_id: string; full_name: string | null; phone: string | null; created_at: string | null }) => ({
+      user_id: profile.user_id,
+      full_name: profile.full_name,
+      phone: profile.phone,
+      created_at: profile.created_at,
+    })) as AdminProfile[];
   } catch {
     return [];
   }
