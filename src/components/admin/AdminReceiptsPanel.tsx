@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import { createSignedReceiptUrl } from "@/integrations/supabase/storage";
 import {
@@ -68,10 +67,8 @@ export function AdminReceiptsPanel() {
   const [formState, setFormState] = useState({
     establishmentId: "",
     purchaseValue: "",
-    purchaseDate: "",
     pointsEarned: "",
     status: "pending" as ReceiptReviewStatus,
-    adminNote: "",
   });
   const [formError, setFormError] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
@@ -155,10 +152,8 @@ export function AdminReceiptsPanel() {
     setFormState({
       establishmentId: receipt.establishment_id ?? "",
       purchaseValue: receipt.purchase_value ? String(receipt.purchase_value) : "",
-      purchaseDate: receipt.purchase_date ? receipt.purchase_date.slice(0, 10) : "",
       pointsEarned: receipt.points ? String(receipt.points) : "",
       status: receipt.status,
-      adminNote: receipt.admin_note ?? "",
     });
   };
 
@@ -275,21 +270,6 @@ export function AdminReceiptsPanel() {
         newValue: formState.status,
       });
     }
-    const purchaseDateNormalized = formState.purchaseDate ? `${formState.purchaseDate}T00:00:00` : null;
-    if ((selectedReceipt.purchase_date ?? "") !== (purchaseDateNormalized ?? "")) {
-      changes.push({
-        field: "Data da compra",
-        oldValue: selectedReceipt.purchase_date ?? "—",
-        newValue: purchaseDateNormalized ?? "—",
-      });
-    }
-    if ((selectedReceipt.admin_note ?? "") !== formState.adminNote) {
-      changes.push({
-        field: "Observação interna",
-        oldValue: selectedReceipt.admin_note ?? "—",
-        newValue: formState.adminNote || "—",
-      });
-    }
 
     if (changes.length === 0) {
       setFormError("Nenhuma alteração detectada.");
@@ -305,8 +285,6 @@ export function AdminReceiptsPanel() {
           purchase_value: purchaseValue,
           points_earned: pointsEarned,
           status: formState.status,
-          purchase_date: purchaseDateNormalized,
-          admin_note: formState.adminNote || null,
         },
         changes,
       );
@@ -641,19 +619,6 @@ export function AdminReceiptsPanel() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="purchase-date">Data da compra</Label>
-                        <Input
-                          id="purchase-date"
-                          type="date"
-                          value={formState.purchaseDate}
-                          onChange={(event) =>
-                            setFormState((prev) => ({ ...prev, purchaseDate: event.target.value }))
-                          }
-                          disabled={!isEditing}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
                         <Label htmlFor="points-earned">Pontos gerados</Label>
                         <Input
                           id="points-earned"
@@ -685,19 +650,6 @@ export function AdminReceiptsPanel() {
                             <SelectItem value="rejected">Rejeitado</SelectItem>
                           </SelectContent>
                         </Select>
-                      </div>
-
-                      <div className="space-y-2 sm:col-span-2">
-                        <Label htmlFor="admin-note">Observação interna do admin</Label>
-                        <Textarea
-                          id="admin-note"
-                          value={formState.adminNote}
-                          onChange={(event) =>
-                            setFormState((prev) => ({ ...prev, adminNote: event.target.value }))
-                          }
-                          disabled={!isEditing}
-                          rows={3}
-                        />
                       </div>
                     </div>
 
