@@ -560,8 +560,8 @@ export function AdminReceiptsPanel() {
                           value={formState.purchaseValue}
                           onChange={(event) => {
                             const value = event.target.value;
-                            // Sincronizar pontos com valor (1:1)
-                            const points = value ? String(Math.floor(Number(value))) : "";
+                            // Sincronizar pontos com valor (10:1) - 10 pontos por R$1
+                            const points = value ? String(Math.floor(Number(value) * 10)) : "";
                             setFormState((prev) => ({ ...prev, purchaseValue: value, pointsEarned: points }));
                           }}
                           disabled={!isEditing}
@@ -577,8 +577,9 @@ export function AdminReceiptsPanel() {
                           value={formState.pointsEarned}
                           onChange={(event) => {
                             const value = event.target.value;
-                            // Sincronizar valor com pontos (1:1)
-                            setFormState((prev) => ({ ...prev, pointsEarned: value, purchaseValue: value }));
+                            // Sincronizar valor com pontos (10:1) - 10 pontos por R$1
+                            const purchaseValue = value ? String(Number(value) / 10) : "";
+                            setFormState((prev) => ({ ...prev, pointsEarned: value, purchaseValue }));
                           }}
                           disabled={!isEditing}
                         />
