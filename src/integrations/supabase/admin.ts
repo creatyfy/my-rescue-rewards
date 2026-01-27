@@ -11,6 +11,7 @@ export type AdminReceipt = {
   receipt_image_url: string | null;
   created_at: string;
   user_id: string;
+  user_name: string | null;
   store_name: string | null;
 };
 
@@ -225,6 +226,24 @@ export const fetchAdminReceipts = async (params?: {
       return { items: [], total: 0, page, pageSize };
     }
 
+    const userIds = Array.from(new Set((data ?? []).map((receipt) => receipt.user_id).filter(Boolean)));
+    const profileMap = new Map<string, AdminProfile>();
+
+    if (userIds.length > 0) {
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, phone, created_at")
+        .in("user_id", userIds);
+
+      if (profilesError) {
+        console.warn("profiles lookup failed:", profilesError.message);
+      } else {
+        (profilesData ?? []).forEach((profile) => {
+          profileMap.set(profile.user_id, profile as AdminProfile);
+        });
+      }
+    }
+
     const items = (data ?? []).map((receipt) => ({
       id: receipt.id,
       purchase_value: receipt.purchase_value,
@@ -233,6 +252,7 @@ export const fetchAdminReceipts = async (params?: {
       receipt_image_url: receipt.image_path,
       created_at: receipt.created_at,
       user_id: receipt.user_id,
+      user_name: profileMap.get(receipt.user_id)?.full_name ?? null,
       store_name: receipt.establishments?.name ?? null,
     })) as AdminReceipt[];
 
@@ -249,13 +269,28 @@ export const fetchAdminReceipts = async (params?: {
 
 export const fetchAdminReceiptDetails = async (receiptId: string): Promise<AdminReceiptDetails | null> => {
   try {
-    const { data, error } = await (supabase as any)
+    const baseSelect =
+      "id, purchase_value, points_earned, status, image_path, created_at, user_id, establishment_id, establishments(name)";
+    const extendedSelect = `${baseSelect}, purchase_date, admin_note`;
+    const { data: extendedData, error: extendedError } = await (supabase as any)
       .from("receipts")
-      .select(
-        "id, purchase_value, points_earned, status, image_path, created_at, user_id, establishment_id, establishments(name), purchase_date, admin_note",
-      )
+      .select(extendedSelect)
       .eq("id", receiptId)
       .maybeSingle();
+
+    let data = extendedData;
+    let error = extendedError;
+
+    if (error) {
+      console.warn("receipt details extended query failed:", error.message);
+      const fallback = await (supabase as any)
+        .from("receipts")
+        .select(baseSelect)
+        .eq("id", receiptId)
+        .maybeSingle();
+      data = fallback.data;
+      error = fallback.error;
+    }
 
     if (error || !data) {
       console.warn("receipt details not available:", error?.message ?? "not found");
@@ -266,17 +301,18 @@ export const fetchAdminReceiptDetails = async (receiptId: string): Promise<Admin
     const matchedUser = users.find((user) => user.user_id === data.user_id) ?? null;
     const matchedProfile = profiles.find((profile) => profile.user_id === data.user_id) ?? null;
 
-    const user: AdminReceiptUser | null = matchedUser
-      ? {
-          user_id: matchedUser.user_id,
-          full_name: matchedUser.full_name ?? null,
-          document: null,
-          email: matchedUser.email ?? null,
-          phone: matchedProfile?.phone ?? null,
-          created_at: matchedUser.created_at ?? null,
-          role: matchedUser.role ?? null,
-        }
-      : null;
+    const user: AdminReceiptUser | null =
+      matchedUser || matchedProfile
+        ? {
+            user_id: data.user_id,
+            full_name: matchedProfile?.full_name ?? matchedUser?.full_name ?? null,
+            document: null,
+            email: matchedUser?.email ?? null,
+            phone: matchedProfile?.phone ?? null,
+            created_at: matchedUser?.created_at ?? matchedProfile?.created_at ?? null,
+            role: matchedUser?.role ?? null,
+          }
+        : null;
 
     return {
       id: data.id,
@@ -286,14 +322,40 @@ export const fetchAdminReceiptDetails = async (receiptId: string): Promise<Admin
       receipt_image_url: data.image_path ?? null,
       created_at: data.created_at,
       user_id: data.user_id,
+      user_name: matchedProfile?.full_name ?? matchedUser?.full_name ?? null,
       store_name: data.establishments?.name ?? null,
       establishment_id: data.establishment_id ?? null,
-      purchase_date: data.purchase_date ?? null,
-      admin_note: data.admin_note ?? null,
+      purchase_date: "purchase_date" in data ? data.purchase_date ?? null : null,
+      admin_note: "admin_note" in data ? data.admin_note ?? null : null,
       user,
     };
   } catch (error) {
     console.warn("receipt details fetch failed:", error);
+    return null;
+  }
+};
+
+export const fetchAdminUserDetails = async (userId: string): Promise<AdminReceiptUser | null> => {
+  try {
+    const [users, profiles] = await Promise.all([fetchAdminUsers(), fetchAdminProfiles()]);
+    const matchedUser = users.find((user) => user.user_id === userId) ?? null;
+    const matchedProfile = profiles.find((profile) => profile.user_id === userId) ?? null;
+
+    if (!matchedUser && !matchedProfile) {
+      return null;
+    }
+
+    return {
+      user_id: userId,
+      full_name: matchedProfile?.full_name ?? matchedUser?.full_name ?? null,
+      document: null,
+      email: matchedUser?.email ?? null,
+      phone: matchedProfile?.phone ?? null,
+      created_at: matchedUser?.created_at ?? matchedProfile?.created_at ?? null,
+      role: matchedUser?.role ?? null,
+    };
+  } catch (error) {
+    console.warn("admin user details fetch failed:", error);
     return null;
   }
 };
@@ -525,11 +587,12 @@ export type AdminProfile = {
   user_id: string;
   full_name: string | null;
   phone: string | null;
+  created_at: string | null;
 };
 
 export const fetchAdminProfiles = async (): Promise<AdminProfile[]> => {
   try {
-    const { data, error } = await supabase.from("profiles").select("user_id, full_name, phone");
+    const { data, error } = await supabase.from("profiles").select("user_id, full_name, phone, created_at");
 
     if (error) {
       console.warn("profiles table not available:", error.message);
