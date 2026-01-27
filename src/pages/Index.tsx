@@ -135,9 +135,7 @@ export default function Index() {
             <h3 className="font-display font-semibold text-lg text-foreground mb-2">
               2. Acumule pontos
             </h3>
-            <p className="text-sm text-muted-foreground">
-              Envie o comprovante e ganhe 1 ponto para cada R$1 gasto. Simples assim!
-            </p>
+            <p className="text-sm text-muted-foreground">Envie o comprovante e ganhe 10 pontos para cada R$1 gasto. Simples assim!</p>
           </div>
 
           <div className="group p-6 rounded-2xl bg-card border border-border/50 shadow-soft hover:shadow-medium transition-all duration-300 hover:-translate-y-1">
