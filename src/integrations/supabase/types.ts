@@ -392,6 +392,16 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      list_profiles_for_admin: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          created_at: string
+          full_name: string
+          phone: string
+          user_id: string
+        }[]
+      }
       list_users_for_admin: {
         Args: never
         Returns: {
