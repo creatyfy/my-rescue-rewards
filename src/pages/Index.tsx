@@ -4,18 +4,15 @@ import { Gift, QrCode, Star, ChevronRight, Sparkles, Download, Check, Smartphone
 import logoHorizontal from "@/assets/logo-horizontal.png";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 export default function Index() {
-  const { isInstallable, isInstalled, isIOSDevice, installApp } = usePWAInstall();
+  const {
+    isInstallable,
+    isInstalled,
+    isIOSDevice,
+    installApp
+  } = usePWAInstall();
   const [showIOSInstructions, setShowIOSInstructions] = useState(false);
-
   const handleInstallClick = async () => {
     if (isIOSDevice) {
       setShowIOSInstructions(true);
@@ -23,9 +20,7 @@ export default function Index() {
       await installApp();
     }
   };
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 gradient-hero" />
@@ -34,26 +29,18 @@ export default function Index() {
 
         <header className="container px-4 py-4 flex items-center justify-between relative">
           <Link to="/" className="flex items-center">
-            <img 
-              src={logoHorizontal} 
-              alt="Meu Resgate" 
-              className="h-10 w-auto"
-            />
+            <img src={logoHorizontal} alt="Meu Resgate" className="h-10 w-auto" />
           </Link>
           <div className="flex items-center gap-2">
-            {isInstallable && !isInstalled && (
-              <Button variant="outline" size="sm" onClick={handleInstallClick} className="gap-2">
+            {isInstallable && !isInstalled && <Button variant="outline" size="sm" onClick={handleInstallClick} className="gap-2">
                 <Download className="w-4 h-4" />
                 <span className="hidden sm:inline">Instalar App</span>
                 <span className="sm:hidden">Instalar</span>
-              </Button>
-            )}
-            {isInstalled && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/20 text-success text-sm font-medium">
+              </Button>}
+            {isInstalled && <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-success/20 text-success text-sm font-medium">
                 <Check className="w-4 h-4" />
                 <span className="hidden sm:inline">Instalado</span>
-              </div>
-            )}
+              </div>}
             <Button variant="ghost" asChild>
               <Link to="/auth">Entrar</Link>
             </Button>
@@ -91,8 +78,7 @@ export default function Index() {
             </div>
 
             {/* PWA Install Banner */}
-            {isInstallable && !isInstalled && (
-              <div className="mt-8 p-4 rounded-2xl bg-card border border-border/50 shadow-soft max-w-md mx-auto animate-fade-in">
+            {isInstallable && !isInstalled && <div className="mt-8 p-4 rounded-2xl bg-card border border-border/50 shadow-soft max-w-md mx-auto animate-fade-in">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl gradient-primary flex items-center justify-center flex-shrink-0">
                     <Smartphone className="w-6 h-6 text-primary-foreground" />
@@ -100,27 +86,20 @@ export default function Index() {
                   <div className="text-left flex-1 min-w-0">
                     <p className="font-semibold text-foreground">Baixe o App</p>
                     <p className="text-sm text-muted-foreground">
-                      {isIOSDevice 
-                        ? "Adicione à tela inicial do seu iPhone" 
-                        : "Acesse mais rápido direto do seu celular"}
+                      {isIOSDevice ? "Adicione à tela inicial do seu iPhone" : "Acesse mais rápido direto do seu celular"}
                     </p>
                   </div>
                   <Button size="sm" onClick={handleInstallClick} className="flex-shrink-0">
-                    {isIOSDevice ? (
-                      <>
+                    {isIOSDevice ? <>
                         <Share className="w-4 h-4 mr-1" />
                         Ver como
-                      </>
-                    ) : (
-                      <>
+                      </> : <>
                         <Download className="w-4 h-4 mr-1" />
                         Instalar
-                      </>
-                    )}
+                      </>}
                   </Button>
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
         </div>
       </div>
@@ -202,15 +181,9 @@ export default function Index() {
       <footer className="container px-4 py-8 border-t border-border/50">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <Link to="/" className="flex items-center">
-            <img 
-              src={logoHorizontal} 
-              alt="Meu Resgate" 
-              className="h-8 w-auto"
-            />
+            <img src={logoHorizontal} alt="Meu Resgate" className="h-8 w-auto" />
           </Link>
-          <p className="text-sm text-muted-foreground">
-            © 2024 Meu Resgate. Todos os direitos reservados.
-          </p>
+          <p className="text-sm text-muted-foreground">© 2026 Meu Resgate. Todos os direitos reservados.</p>
         </div>
       </footer>
 
@@ -266,6 +239,5 @@ export default function Index() {
           </Button>
         </DialogContent>
       </Dialog>
-    </div>
-  );
+    </div>;
 }
