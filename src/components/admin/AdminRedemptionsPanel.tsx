@@ -47,6 +47,7 @@ export function AdminRedemptionsPanel() {
   const [profiles, setProfiles] = useState<AdminProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingRedemptionId, setUpdatingRedemptionId] = useState<string | null>(null);
+  const [activeStatus, setActiveStatus] = useState<AdminRedemption["status"]>("pending");
 
   const [userModalOpen, setUserModalOpen] = useState(false);
   const [userModalLoading, setUserModalLoading] = useState(false);
@@ -160,7 +161,7 @@ export function AdminRedemptionsPanel() {
       default:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
-            Pendente
+            Em análise
           </span>
         );
     }
@@ -182,6 +183,33 @@ export function AdminRedemptionsPanel() {
 
     return parts.join(", ");
   };
+
+  const filteredRedemptions = useMemo(
+    () => redemptions.filter((redemption) => redemption.status === activeStatus),
+    [activeStatus, redemptions],
+  );
+
+  const statusTabs: Array<{
+    value: AdminRedemption["status"];
+    label: string;
+    emptyMessage: string;
+  }> = [
+    {
+      value: "pending",
+      label: "Em análise",
+      emptyMessage: "Nenhum resgate em análise no momento.",
+    },
+    {
+      value: "completed",
+      label: "Concluído",
+      emptyMessage: "Nenhum resgate concluído no momento.",
+    },
+    {
+      value: "cancelled",
+      label: "Cancelado",
+      emptyMessage: "Nenhum resgate cancelado no momento.",
+    },
+  ];
 
   useEffect(() => {
     if (userModalOpen) {
@@ -212,6 +240,20 @@ export function AdminRedemptionsPanel() {
         </Card>
       ) : (
         <Card className="overflow-hidden border-border/60">
+          <div className="flex flex-wrap items-center gap-2 border-b border-border/60 px-4 py-3">
+            {statusTabs.map((tab) => (
+              <Button
+                key={tab.value}
+                type="button"
+                size="sm"
+                variant={activeStatus === tab.value ? "default" : "outline"}
+                onClick={() => setActiveStatus(tab.value)}
+                className="min-w-[120px]"
+              >
+                {tab.label}
+              </Button>
+            ))}
+          </div>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -226,14 +268,15 @@ export function AdminRedemptionsPanel() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {redemptions.length === 0 ? (
+                {filteredRedemptions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-sm text-muted-foreground">
-                      Nenhum resgate encontrado.
+                      {statusTabs.find((tab) => tab.value === activeStatus)?.emptyMessage ??
+                        "Nenhum resgate encontrado."}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  redemptions.map((redemption) => {
+                  filteredRedemptions.map((redemption) => {
                     const userInfo = userLookup.get(redemption.user_id);
                     return (
                       <TableRow key={redemption.id} className="hover:bg-muted/20">
@@ -283,7 +326,7 @@ export function AdminRedemptionsPanel() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-popover border-border">
-                              <SelectItem value="pending">Pendente</SelectItem>
+                              <SelectItem value="pending">Em análise</SelectItem>
                               <SelectItem value="completed">Concluído</SelectItem>
                               <SelectItem value="cancelled">Cancelado</SelectItem>
                             </SelectContent>
