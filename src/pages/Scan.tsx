@@ -791,7 +791,7 @@ export default function Scan() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Pontos estimados:</span>
                 <span className="font-display font-bold text-lg text-foreground">
-                  +{Math.floor(parseFloat(purchaseValue))} pts
+                  +{Math.floor(parseFloat(purchaseValue) * 10).toLocaleString('pt-BR')} pts
                 </span>
               </div>
             </div>
