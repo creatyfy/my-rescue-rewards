@@ -229,34 +229,6 @@ export function AdminReportsPanel({
     };
   }, [filteredReceipts, filteredRedemptions, filteredProducts, filteredEstablishments]);
 
-  const getRedemptionStatusLabel = (status: AdminRedemption["status"]) => {
-    switch (status) {
-      case "completed":
-        return { label: "Concluído", className: "text-success font-medium" };
-      case "cancelled":
-        return { label: "Cancelado", className: "text-destructive font-medium" };
-      case "pending":
-      default:
-        return { label: "Pendente", className: "text-pending font-medium" };
-    }
-  };
-
-  const getDeliverySummary = (redemption: AdminRedemption) => {
-    if (!redemption.delivery_address) {
-      return "Não informado";
-    }
-
-    const parts = [
-      redemption.delivery_address,
-      redemption.delivery_number,
-      redemption.delivery_neighborhood,
-      redemption.delivery_city,
-      redemption.delivery_state,
-      redemption.delivery_cep,
-    ].filter(Boolean);
-
-    return parts.join(", ");
-  };
 
   return (
     <div className={cn("space-y-6", className)}>
@@ -476,79 +448,6 @@ export function AdminReportsPanel({
             </Table>
           </Card>
 
-          {/* Redemptions Section */}
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <h3 className="font-display text-lg font-semibold text-foreground">Resgates</h3>
-              <p className="text-sm text-muted-foreground">
-                Lista completa de resgates com status e dados do usuário.
-              </p>
-            </div>
-            <Card className="overflow-hidden border-border/60">
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/30 hover:bg-muted/30">
-                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Usuário</TableHead>
-                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Email</TableHead>
-                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Telefone</TableHead>
-                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Prêmio</TableHead>
-                      <TableHead className="font-semibold text-foreground whitespace-nowrap text-right">Pontos</TableHead>
-                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Data</TableHead>
-                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Estabelecimento</TableHead>
-                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Entrega</TableHead>
-                      <TableHead className="font-semibold text-foreground whitespace-nowrap">Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredRedemptions.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={9} className="text-center py-8 text-sm text-muted-foreground">
-                          Nenhum resgate encontrado para os filtros selecionados.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredRedemptions.map((redemption) => {
-                        const userInfo = userLookup.get(redemption.user_id);
-                        const { label: statusLabel, className: statusClass } = getRedemptionStatusLabel(
-                          redemption.status,
-                        );
-                        const establishmentLabel =
-                          establishmentFilter === "all"
-                            ? "—"
-                            : establishmentLookup.get(establishmentFilter) ?? "—";
-                        return (
-                          <TableRow key={redemption.id} className="hover:bg-muted/20">
-                            <TableCell className="font-medium">{userInfo?.fullName ?? "Usuário"}</TableCell>
-                            <TableCell className="text-muted-foreground">{userInfo?.email ?? "Não informado"}</TableCell>
-                            <TableCell className="text-muted-foreground">{userInfo?.phone ?? "Não informado"}</TableCell>
-                            <TableCell>{redemption.product_name ?? "Prêmio resgatado"}</TableCell>
-                            <TableCell className="text-right font-medium tabular-nums">
-                              {redemption.points_spent.toLocaleString("pt-BR")}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground whitespace-nowrap">
-                              {new Date(redemption.created_at).toLocaleString("pt-BR", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                year: "numeric",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">{establishmentLabel}</TableCell>
-                            <TableCell className="text-xs text-muted-foreground whitespace-normal">
-                              {getDeliverySummary(redemption)}
-                            </TableCell>
-                            <TableCell className={statusClass}>{statusLabel}</TableCell>
-                          </TableRow>
-                        );
-                      })
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </Card>
-          </div>
         </div>
       )}
     </div>
