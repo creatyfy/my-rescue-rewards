@@ -23,7 +23,7 @@ import {
   updateAdminReceipt,
 } from "@/integrations/supabase/admin";
 import { CheckCircle, ChevronDown, ChevronLeft, ChevronRight, Eye, Pencil, Search, XCircle } from "lucide-react";
-import { buildWhatsAppUrl } from "@/lib/phone-utils";
+import { buildWhatsAppUrl, openWhatsApp } from "@/lib/phone-utils";
 import { UserProfileModal } from "./UserProfileModal";
 
 const formatCurrency = (value: number) =>
@@ -492,26 +492,18 @@ export function AdminReceiptsPanel() {
                     </div>
                     <div className="mt-4">
                       {(() => {
-                        const whatsappUrl = buildWhatsAppUrl(
-                          selectedReceipt.user?.phone,
-                          `Olá ${selectedReceipt.user?.full_name ?? ""}, tudo bem?`
-                        );
+                        const message = `Olá ${selectedReceipt.user?.full_name ?? ""}, tudo bem?`;
+                        const whatsappUrl = buildWhatsAppUrl(selectedReceipt.user?.phone, message);
                         return (
                           <Button
                             variant="outline"
                             size="sm"
-                            asChild
+                            type="button"
                             disabled={!whatsappUrl}
                             className={!whatsappUrl ? "pointer-events-none opacity-50" : ""}
+                            onClick={() => openWhatsApp(selectedReceipt.user?.phone, message)}
                           >
-                            <a
-                              href={whatsappUrl ?? "#"}
-                              target="_blank"
-                              rel="noreferrer"
-                              aria-label="Abrir conversa no WhatsApp"
-                            >
-                              Abrir conversa no WhatsApp
-                            </a>
+                            {whatsappUrl ? "Abrir conversa no WhatsApp" : "Usuário sem telefone cadastrado"}
                           </Button>
                         );
                       })()}
