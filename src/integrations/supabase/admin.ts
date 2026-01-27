@@ -18,6 +18,7 @@ export type AdminReceipt = {
 export type AdminReceiptUser = {
   user_id: string;
   full_name: string | null;
+  cpf: string | null;
   document: string | null;
   email: string | null;
   phone: string | null;
@@ -285,6 +286,7 @@ export const fetchAdminReceiptDetails = async (receiptId: string): Promise<Admin
         ? {
             user_id: data.user_id,
             full_name: matchedProfile?.full_name ?? matchedUser?.full_name ?? null,
+            cpf: matchedProfile?.cpf ?? null,
             document: null,
             email: matchedUser?.email ?? null,
             phone: matchedProfile?.phone ?? null,
@@ -325,6 +327,7 @@ export const fetchAdminUserDetails = async (userId: string): Promise<AdminReceip
     return {
       user_id: userId,
       full_name: matchedProfile?.full_name ?? matchedUser?.full_name ?? null,
+      cpf: matchedProfile?.cpf ?? null,
       document: null,
       email: matchedUser?.email ?? null,
       phone: matchedProfile?.phone ?? null,
@@ -578,6 +581,7 @@ export const fetchAdminRedemptions = async (): Promise<AdminRedemption[]> => {
 export type AdminProfile = {
   user_id: string;
   full_name: string | null;
+  cpf: string | null;
   phone: string | null;
   created_at: string | null;
 };
@@ -592,9 +596,10 @@ export const fetchAdminProfiles = async (): Promise<AdminProfile[]> => {
       return [];
     }
 
-    return (data ?? []).map((profile: { user_id: string; full_name: string | null; phone: string | null; created_at: string | null }) => ({
+    return (data ?? []).map((profile: { user_id: string; full_name: string | null; cpf: string | null; phone: string | null; created_at: string | null }) => ({
       user_id: profile.user_id,
       full_name: profile.full_name,
+      cpf: profile.cpf,
       phone: profile.phone,
       created_at: profile.created_at,
     })) as AdminProfile[];

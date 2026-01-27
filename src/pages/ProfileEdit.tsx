@@ -9,6 +9,7 @@ import { fetchCurrentUserProfile, updateCurrentUserProfile } from "@/integration
 export default function ProfileEdit() {
   const [form, setForm] = useState({
     fullName: "",
+    cpf: "",
     phone: "",
   });
   const [email, setEmail] = useState("");
@@ -28,6 +29,7 @@ export default function ProfileEdit() {
 
         setForm({
           fullName: profile.fullName ?? "",
+          cpf: profile.cpf ?? "",
           phone: profile.phone ?? "",
         });
         setEmail(profile.email ?? "");
@@ -48,7 +50,7 @@ export default function ProfileEdit() {
     };
   }, []);
 
-  const handleChange = (field: "fullName" | "phone") => (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (field: "fullName" | "cpf" | "phone") => (event: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
@@ -60,6 +62,7 @@ export default function ProfileEdit() {
     try {
       await updateCurrentUserProfile({
         fullName: form.fullName.trim() || null,
+        cpf: form.cpf.trim() || null,
         phone: form.phone.trim() || null,
       });
       toast.success("Dados atualizados com sucesso.");
@@ -95,6 +98,16 @@ export default function ProfileEdit() {
               <p className="text-xs text-muted-foreground">
                 O e-mail é usado para login e não pode ser alterado aqui.
               </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cpf">CPF</Label>
+              <Input
+                id="cpf"
+                placeholder="000.000.000-00"
+                value={form.cpf}
+                onChange={handleChange("cpf")}
+                disabled={isLoading}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Telefone</Label>
