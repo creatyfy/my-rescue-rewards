@@ -101,109 +101,118 @@ export function SidebarNav() {
 
   return (
     <SidebarContent>
-      <SidebarGroup className="pt-4">
-        <SidebarGroupLabel>Menu</SidebarGroupLabel>
-        <SidebarMenu className="gap-1">
-          {navItems.map((item) => {
-            if (
-              isAdmin &&
-              item.label !== "Início" &&
-              item.label !== "Perfil"
-            ) {
-              return null;
-            }
-            const isActive = item.matchPrefix
-              ? location.pathname.startsWith(item.path)
-              : location.pathname === item.path;
-            const Icon = item.icon;
-            const label =
-              isAdmin && item.label === "Início" ? "Visão Geral" : item.label;
+      {/* A11y: a navegação principal recebe label e estrutura semântica para leitores de tela. */}
+      <nav aria-label="Menu principal">
+        <SidebarGroup className="pt-4">
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarMenu className="gap-1">
+            {navItems.map((item) => {
+              if (
+                isAdmin &&
+                item.label !== "Início" &&
+                item.label !== "Perfil"
+              ) {
+                return null;
+              }
+              const isActive = item.matchPrefix
+                ? location.pathname.startsWith(item.path)
+                : location.pathname === item.path;
+              const Icon = item.icon;
+              const label =
+                isAdmin && item.label === "Início" ? "Visão Geral" : item.label;
 
-            return (
-              <SidebarMenuItem key={item.path}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={isActive}
-                  tooltip={label}
-                >
-                  <Link
-                    to={item.path}
-                    className={cn("flex items-center gap-2")}
+              return (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    tooltip={label}
                   >
-                    <Icon className="h-4 w-4" />
-                    <span>{label}</span>
-                  </Link>
+                    <Link
+                      to={item.path}
+                      aria-current={isActive ? "page" : undefined}
+                      className={cn("flex items-center gap-2")}
+                    >
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                      <span>{label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              );
+            })}
+            {isAdmin && (
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => setAdminMenuOpen((open) => !open)}
+                  isActive={isAdminPath}
+                  tooltip="Painel Administrativo"
+                  aria-expanded={adminMenuOpen}
+                  aria-controls="admin-menu"
+                  aria-haspopup="true"
+                >
+                  <span className="flex flex-1 items-center gap-2">
+                    <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                    <span>Painel Administrativo</span>
+                  </span>
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-muted-foreground transition-transform",
+                      adminMenuOpen ? "rotate-180" : "rotate-0",
+                    )}
+                    aria-hidden="true"
+                  />
                 </SidebarMenuButton>
+                {adminMenuOpen && (
+                  <SidebarMenuSub id="admin-menu">
+                    {adminNavItems.map((item) => {
+                      const itemSection = item.path.split("/")[2];
+                      const isActive = isAdminPath && adminSection === itemSection;
+                      return (
+                        <SidebarMenuSubItem key={item.path}>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={isActive}
+                          >
+                            <Link to={item.path} aria-current={isActive ? "page" : undefined}>
+                              <span>{item.label}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                )}
               </SidebarMenuItem>
-            );
-          })}
-          {isAdmin && (
+            )}
+          </SidebarMenu>
+        </SidebarGroup>
+        <SidebarGroup>
+          <SidebarGroupLabel>Preferências</SidebarGroupLabel>
+          <SidebarMenu className="gap-1">
             <SidebarMenuItem>
-              <SidebarMenuButton
-                onClick={() => setAdminMenuOpen((open) => !open)}
-                isActive={isAdminPath}
-                tooltip="Painel Administrativo"
-                aria-expanded={adminMenuOpen}
-              >
-                <span className="flex flex-1 items-center gap-2">
-                  <ShieldCheck className="h-4 w-4" />
-                  <span>Painel Administrativo</span>
+              <div className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground">
+                <span className="flex items-center gap-2">
+                  <Moon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                  <span>Modo escuro</span>
                 </span>
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 text-muted-foreground transition-transform",
-                    adminMenuOpen ? "rotate-180" : "rotate-0",
-                  )}
+                <Switch
+                  checked={isDarkMode}
+                  onCheckedChange={(checked) =>
+                    setTheme(checked ? "dark" : "light")
+                  }
+                  aria-label="Alternar modo escuro"
                 />
-              </SidebarMenuButton>
-              {adminMenuOpen && (
-                <SidebarMenuSub>
-                  {adminNavItems.map((item) => {
-                    const itemSection = item.path.split("/")[2];
-                    return (
-                      <SidebarMenuSubItem key={item.path}>
-                        <SidebarMenuSubButton
-                          asChild
-                          isActive={isAdminPath && adminSection === itemSection}
-                        >
-                          <Link to={item.path}>
-                            <span>{item.label}</span>
-                          </Link>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    );
-                  })}
-                </SidebarMenuSub>
-              )}
+              </div>
             </SidebarMenuItem>
-          )}
-        </SidebarMenu>
-      </SidebarGroup>
-      <SidebarGroup>
-        <SidebarGroupLabel>Preferências</SidebarGroupLabel>
-        <SidebarMenu className="gap-1">
-          <SidebarMenuItem>
-            <div className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground">
-              <span className="flex items-center gap-2">
-                <Moon className="h-4 w-4 text-muted-foreground" />
-                <span>Modo escuro</span>
-              </span>
-              <Switch
-                checked={isDarkMode}
-                onCheckedChange={(checked) =>
-                  setTheme(checked ? "dark" : "light")
-                }
-              />
-            </div>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout} tooltip="Sair da conta">
-              <LogOut className="h-4 w-4" />
-              <span>Sair da conta</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarGroup>
+            <SidebarMenuItem>
+              <SidebarMenuButton onClick={handleLogout} tooltip="Sair da conta">
+                <LogOut className="h-4 w-4" aria-hidden="true" />
+                <span>Sair da conta</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarGroup>
+      </nav>
     </SidebarContent>
   );
 }
