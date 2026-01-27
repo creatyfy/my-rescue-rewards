@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Loader2, MessageCircle } from "lucide-react";
 import { fetchAdminUserDetails, type AdminReceiptUser } from "@/integrations/supabase/admin";
-import { buildWhatsAppUrl } from "@/lib/phone-utils";
+import { buildWhatsAppUrl, openWhatsApp } from "@/lib/phone-utils";
 
 const formatDateTime = (value?: string | null) => {
   if (!value) {
@@ -79,7 +79,8 @@ export function UserProfileModal({ open, onOpenChange, userId, triggerRef }: Use
     setError(null);
   };
 
-  const whatsappUrl = user ? buildWhatsAppUrl(user.phone, `Olá ${user.full_name ?? ""}, tudo bem?`) : null;
+  const message = user ? `Olá ${user.full_name ?? ""}, tudo bem?` : "";
+  const whatsappUrl = user ? buildWhatsAppUrl(user.phone, message) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -133,19 +134,13 @@ export function UserProfileModal({ open, onOpenChange, userId, triggerRef }: Use
             <Button
               variant="outline"
               size="sm"
-              asChild
+              type="button"
               disabled={!whatsappUrl}
               className={!whatsappUrl ? "pointer-events-none opacity-50" : ""}
+              onClick={() => openWhatsApp(user.phone, message)}
             >
-              <a
-                href={whatsappUrl ?? "#"}
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Abrir conversa no WhatsApp"
-              >
-                <MessageCircle className="h-4 w-4 mr-1.5" />
-                Abrir conversa no WhatsApp
-              </a>
+              <MessageCircle className="h-4 w-4 mr-1.5" />
+              {whatsappUrl ? "Abrir conversa no WhatsApp" : "Usuário sem telefone cadastrado"}
             </Button>
           )}
           <Button

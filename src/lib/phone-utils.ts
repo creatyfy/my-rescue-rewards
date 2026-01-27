@@ -37,7 +37,7 @@ export function validateBrazilianPhone(phone: string): boolean {
  */
 export function buildWhatsAppUrl(phone?: string | null, message?: string): string | null {
   const normalized = normalizePhoneForWhatsapp(phone);
-  if (!normalized) {
+  if (!normalized || !validateBrazilianPhone(normalized)) {
     return null;
   }
   
@@ -46,6 +46,21 @@ export function buildWhatsAppUrl(phone?: string | null, message?: string): strin
     return `${baseUrl}?text=${encodeURIComponent(message)}`;
   }
   return baseUrl;
+}
+
+/**
+ * Open WhatsApp conversation in a new tab/window.
+ * @param phone - Phone number (will be validated and normalized)
+ * @param message - Optional pre-filled message
+ * @returns true if the window was opened successfully
+ */
+export function openWhatsApp(phone?: string | null, message?: string): boolean {
+  const whatsappUrl = buildWhatsAppUrl(phone, message);
+  if (!whatsappUrl) {
+    return false;
+  }
+  window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+  return true;
 }
 
 /**
