@@ -3,6 +3,7 @@ import { getPublicUrl, uploadAvatarForCurrentUser } from "./storage";
 
 type ProfileRecord = {
   full_name: string | null;
+  cpf: string | null;
   phone: string | null;
   avatar_url: string | null;
   created_at: string;
@@ -11,6 +12,7 @@ type ProfileRecord = {
 export type UserProfile = {
   fullName: string;
   email: string;
+  cpf: string | null;
   phone: string | null;
   avatarUrl: string | null;
   createdAt: string;
@@ -18,6 +20,7 @@ export type UserProfile = {
 
 type ProfileUpdateInput = {
   fullName?: string | null;
+  cpf?: string | null;
   phone?: string | null;
   avatarUrl?: string | null;
 };
@@ -37,6 +40,7 @@ const mapProfile = (
   return {
     fullName,
     email: user.email ?? "",
+    cpf: profile?.cpf ?? (metadata.cpf as string | undefined) ?? null,
     phone: profile?.phone ?? (metadata.phone as string | undefined) ?? null,
     avatarUrl: profile?.avatar_url ?? (metadata.avatar_url as string | undefined) ?? null,
     createdAt: profile?.created_at ?? user.created_at,
@@ -57,7 +61,7 @@ export const fetchCurrentUserProfile = async (): Promise<UserProfile | null> => 
   try {
     const { data, error } = await (supabase as any)
       .from("profiles")
-      .select("full_name, phone, avatar_url, created_at")
+      .select("full_name, cpf, phone, avatar_url, created_at")
       .eq("user_id", userData.user.id)
       .maybeSingle();
 
@@ -86,6 +90,7 @@ export const updateCurrentUserProfile = async (input: ProfileUpdateInput): Promi
   const payload: {
     user_id: string;
     full_name?: string | null;
+    cpf?: string | null;
     phone?: string | null;
     avatar_url?: string | null;
   } = {
@@ -94,6 +99,10 @@ export const updateCurrentUserProfile = async (input: ProfileUpdateInput): Promi
 
   if (typeof input.fullName !== "undefined") {
     payload.full_name = input.fullName;
+  }
+
+  if (typeof input.cpf !== "undefined") {
+    payload.cpf = input.cpf;
   }
 
   if (typeof input.phone !== "undefined") {
@@ -107,7 +116,7 @@ export const updateCurrentUserProfile = async (input: ProfileUpdateInput): Promi
   const { data, error } = await (supabase as any)
     .from("profiles")
     .upsert(payload, { onConflict: "user_id" })
-    .select("full_name, phone, avatar_url, created_at")
+    .select("full_name, cpf, phone, avatar_url, created_at")
     .single();
 
   if (error) {

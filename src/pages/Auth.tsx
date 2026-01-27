@@ -6,7 +6,7 @@ import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { updateCurrentUserProfile } from "@/integrations/supabase/profile";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Phone } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Phone, FileText } from "lucide-react";
 import logoHorizontal from "@/assets/logo-horizontal.png";
 
 type AuthMode = "login" | "register";
@@ -20,6 +20,7 @@ export default function Auth() {
 
   const [formData, setFormData] = useState({
     name: "",
+    cpf: "",
     phone: "",
     email: "",
     password: "",
@@ -70,6 +71,7 @@ export default function Auth() {
           emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             full_name: formData.name,
+            cpf: formData.cpf,
             phone: formData.phone,
           },
         },
@@ -82,6 +84,7 @@ export default function Auth() {
       if (data.session) {
         await updateCurrentUserProfile({
           fullName: formData.name,
+          cpf: formData.cpf,
           phone: formData.phone,
         });
         navigate("/dashboard");
@@ -147,6 +150,25 @@ export default function Auth() {
                   type="text"
                   placeholder="Seu nome"
                   value={formData.name}
+                  onChange={handleChange}
+                  className="pl-10"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          {mode === "register" && (
+            <div className="space-y-2">
+              <Label htmlFor="cpf">CPF</Label>
+              <div className="relative">
+                <FileText className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="cpf"
+                  name="cpf"
+                  type="text"
+                  placeholder="000.000.000-00"
+                  value={formData.cpf}
                   onChange={handleChange}
                   className="pl-10"
                   required

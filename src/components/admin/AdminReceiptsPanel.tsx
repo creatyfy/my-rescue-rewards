@@ -419,7 +419,7 @@ export function AdminReceiptsPanel() {
                       aria-label={`Ver dados do usuário ${receipt.user_name ?? receipt.user_id}`}
                       onClick={(event) => handleOpenUserModal(receipt.user_id, event.currentTarget)}
                     >
-                      {receipt.user_name ?? "Usuário sem nome"}
+                      {receipt.user_name || "Sem nome cadastrado"}
                     </button>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{formatCurrency(Number(receipt.purchase_value))}</TableCell>
@@ -511,8 +511,8 @@ export function AdminReceiptsPanel() {
                         <p className="text-sm font-medium">{selectedReceipt.user?.full_name ?? "Não informado"}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">CPF / Documento</p>
-                        <p className="text-sm font-medium">{selectedReceipt.user?.document ?? "Não informado"}</p>
+                        <p className="text-xs text-muted-foreground">CPF</p>
+                        <p className="text-sm font-medium">{selectedReceipt.user?.cpf ?? "Não informado"}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">E-mail</p>
@@ -611,9 +611,12 @@ export function AdminReceiptsPanel() {
                           type="number"
                           inputMode="decimal"
                           value={formState.purchaseValue}
-                          onChange={(event) =>
-                            setFormState((prev) => ({ ...prev, purchaseValue: event.target.value }))
-                          }
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            // Sincronizar pontos com valor (1:1)
+                            const points = value ? String(Math.floor(Number(value))) : "";
+                            setFormState((prev) => ({ ...prev, purchaseValue: value, pointsEarned: points }));
+                          }}
                           disabled={!isEditing}
                         />
                       </div>
@@ -625,9 +628,11 @@ export function AdminReceiptsPanel() {
                           type="number"
                           inputMode="numeric"
                           value={formState.pointsEarned}
-                          onChange={(event) =>
-                            setFormState((prev) => ({ ...prev, pointsEarned: event.target.value }))
-                          }
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            // Sincronizar valor com pontos (1:1)
+                            setFormState((prev) => ({ ...prev, pointsEarned: value, purchaseValue: value }));
+                          }}
                           disabled={!isEditing}
                         />
                       </div>
@@ -765,6 +770,10 @@ export function AdminReceiptsPanel() {
               <div>
                 <p className="text-xs text-muted-foreground">Nome completo</p>
                 <p className="text-sm font-medium">{selectedUser.full_name ?? "Não informado"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">CPF</p>
+                <p className="text-sm font-medium">{selectedUser.cpf ?? "Não informado"}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">E-mail</p>
