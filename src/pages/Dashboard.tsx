@@ -183,6 +183,7 @@ export default function Dashboard() {
               <PointsCard balance={balance} pendingPoints={pendingPoints} />
             </div>
 
+            {/* Informational Block - Only for regular users */}
             <section
               aria-labelledby="dashboard-info-title"
               className="mb-8 rounded-lg border border-muted bg-muted/30 p-4"
