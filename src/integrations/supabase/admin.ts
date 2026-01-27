@@ -106,24 +106,6 @@ export type AdminReceiptSummary = {
   user_id: string;
 };
 
-export type AdminReportsSummary = {
-  receipts_total: number;
-  receipts_approved: number;
-  receipts_rejected: number;
-  receipts_pending: number;
-  receipts_purchase_value: number;
-  receipts_points_earned: number;
-  redemptions_total: number;
-  redemptions_completed: number;
-  redemptions_pending: number;
-  redemptions_cancelled: number;
-  redemptions_points_spent: number;
-  active_products: number;
-  active_establishments: number;
-  distinct_users: number;
-  total_transactions: number;
-};
-
 const normalizeReceiptStatus = (status?: string | null): ReceiptReviewStatus => {
   if (status === "approved" || status === "rejected") {
     return status;
@@ -593,52 +575,6 @@ export const fetchAdminReceiptsSummary = async (): Promise<AdminReceiptSummary[]
     })) as AdminReceiptSummary[];
   } catch {
     return [];
-  }
-};
-
-export const fetchAdminReportsSummary = async (params?: {
-  establishmentId?: string | null;
-  search?: string | null;
-  startDate?: string | null;
-  endDate?: string | null;
-}): Promise<AdminReportsSummary | null> => {
-  try {
-    const { data, error } = await supabase.rpc("fetch_admin_reports_summary", {
-      p_establishment_id: params?.establishmentId ?? null,
-      p_search: params?.search ?? null,
-      p_start_date: params?.startDate ?? null,
-      p_end_date: params?.endDate ?? null,
-    });
-
-    if (error) {
-      console.warn("fetch_admin_reports_summary failed:", error.message);
-      return null;
-    }
-
-    const summary = Array.isArray(data) ? data[0] : data;
-    if (!summary) {
-      return null;
-    }
-
-    return {
-      receipts_total: Number(summary.receipts_total ?? 0),
-      receipts_approved: Number(summary.receipts_approved ?? 0),
-      receipts_rejected: Number(summary.receipts_rejected ?? 0),
-      receipts_pending: Number(summary.receipts_pending ?? 0),
-      receipts_purchase_value: Number(summary.receipts_purchase_value ?? 0),
-      receipts_points_earned: Number(summary.receipts_points_earned ?? 0),
-      redemptions_total: Number(summary.redemptions_total ?? 0),
-      redemptions_completed: Number(summary.redemptions_completed ?? 0),
-      redemptions_pending: Number(summary.redemptions_pending ?? 0),
-      redemptions_cancelled: Number(summary.redemptions_cancelled ?? 0),
-      redemptions_points_spent: Number(summary.redemptions_points_spent ?? 0),
-      active_products: Number(summary.active_products ?? 0),
-      active_establishments: Number(summary.active_establishments ?? 0),
-      distinct_users: Number(summary.distinct_users ?? 0),
-      total_transactions: Number(summary.total_transactions ?? 0),
-    };
-  } catch {
-    return null;
   }
 };
 
