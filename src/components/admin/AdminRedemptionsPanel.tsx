@@ -1,17 +1,45 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/components/ui/sonner";
 import {
   AdminProfile,
   AdminRedemption,
+  AdminReceiptUser,
   AdminUser,
   fetchAdminProfiles,
   fetchAdminRedemptions,
   fetchAdminUsers,
+  fetchAdminUserDetails,
   updateAdminRedemptionStatus,
 } from "@/integrations/supabase/admin";
+
+const formatDateTime = (value?: string | null) => {
+  if (!value) {
+    return "—";
+  }
+  return new Date(value).toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const normalizePhoneForWhatsapp = (phone?: string | null) => {
+  if (!phone) {
+    return null;
+  }
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) {
+    return null;
+  }
+  return digits.startsWith("55") ? digits : `55${digits}`;
+};
 
 export function AdminRedemptionsPanel() {
   const [redemptions, setRedemptions] = useState<AdminRedemption[]>([]);
@@ -19,6 +47,13 @@ export function AdminRedemptionsPanel() {
   const [profiles, setProfiles] = useState<AdminProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingRedemptionId, setUpdatingRedemptionId] = useState<string | null>(null);
+
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [userModalLoading, setUserModalLoading] = useState(false);
+  const [userModalError, setUserModalError] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminReceiptUser | null>(null);
+  const userModalTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const userModalFocusRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     const loadRedemptions = async () => {
@@ -62,6 +97,34 @@ export function AdminRedemptionsPanel() {
     });
     return map;
   }, [users, profiles]);
+
+  const resetUserModal = () => {
+    setSelectedUser(null);
+    setUserModalError(null);
+    setUserModalLoading(false);
+  };
+
+  const handleOpenUserModal = async (userId: string, trigger?: HTMLButtonElement | null) => {
+    userModalTriggerRef.current = trigger ?? null;
+    setUserModalOpen(true);
+    setUserModalLoading(true);
+    setUserModalError(null);
+    setSelectedUser(null);
+
+    try {
+      const user = await fetchAdminUserDetails(userId);
+      if (!user) {
+        setUserModalError("Não foi possível carregar os dados do usuário.");
+        return;
+      }
+      setSelectedUser(user);
+    } catch (error) {
+      console.error("Erro ao carregar dados do usuário:", error);
+      setUserModalError("Não foi possível carregar os dados do usuário.");
+    } finally {
+      setUserModalLoading(false);
+    }
+  };
 
   const handleUpdateStatus = async (redemptionId: string, status: AdminRedemption["status"]) => {
     try {
@@ -120,6 +183,20 @@ export function AdminRedemptionsPanel() {
     return parts.join(", ");
   };
 
+  useEffect(() => {
+    if (userModalOpen) {
+      const handle = window.setTimeout(() => {
+        userModalFocusRef.current?.focus();
+      }, 0);
+      return () => window.clearTimeout(handle);
+    }
+
+    if (userModalTriggerRef.current) {
+      userModalTriggerRef.current.focus();
+    }
+    return;
+  }, [userModalOpen]);
+
   return (
     <div className="space-y-6">
       <div className="space-y-1">
@@ -161,15 +238,19 @@ export function AdminRedemptionsPanel() {
                     return (
                       <TableRow key={redemption.id} className="hover:bg-muted/20">
                         <TableCell>
-                          <div className="space-y-0.5">
-                            <p className="font-medium text-foreground">
-                              {userInfo?.fullName ?? "Usuário"}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{userInfo?.email ?? "Sem email"}</p>
-                            {userInfo?.phone && (
-                              <p className="text-xs text-muted-foreground">{userInfo.phone}</p>
-                            )}
-                          </div>
+                          <button
+                            type="button"
+                            className="text-left text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+                            aria-label={`Ver dados do usuário ${userInfo?.fullName ?? redemption.user_id}`}
+                            onClick={(event) => handleOpenUserModal(redemption.user_id, event.currentTarget)}
+                          >
+                            <div className="space-y-0.5">
+                              <p className="font-medium">
+                                {userInfo?.fullName ?? "Sem nome cadastrado"}
+                              </p>
+                              <p className="text-xs text-muted-foreground">{userInfo?.email ?? "Sem email"}</p>
+                            </div>
+                          </button>
                         </TableCell>
                         <TableCell className="font-medium">
                           {redemption.product_name ?? "Prêmio resgatado"}
@@ -217,6 +298,96 @@ export function AdminRedemptionsPanel() {
           </div>
         </Card>
       )}
+
+      <Dialog
+        open={userModalOpen}
+        onOpenChange={(open) => {
+          setUserModalOpen(open);
+          if (!open) {
+            resetUserModal();
+          }
+        }}
+      >
+        <DialogContent className="max-w-xl" role="dialog" aria-modal="true">
+          <DialogHeader>
+            <DialogTitle>Dados do usuário</DialogTitle>
+          </DialogHeader>
+
+          {userModalLoading ? (
+            <p className="text-sm text-muted-foreground">Carregando dados do usuário...</p>
+          ) : userModalError ? (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+              {userModalError}
+            </div>
+          ) : selectedUser ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Nome completo</p>
+                <p className="text-sm font-medium">{selectedUser.full_name ?? "Não informado"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">CPF</p>
+                <p className="text-sm font-medium">{selectedUser.cpf ?? "Não informado"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">E-mail</p>
+                <p className="text-sm font-medium">{selectedUser.email ?? "Não informado"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Telefone</p>
+                <p className="text-sm font-medium">{selectedUser.phone ?? "Não informado"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Data de cadastro</p>
+                <p className="text-sm font-medium">
+                  {selectedUser.created_at ? formatDateTime(selectedUser.created_at) : "Não informado"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Status da conta</p>
+                <p className="text-sm font-medium">
+                  {selectedUser.role ? `Perfil: ${selectedUser.role}` : "Usuário"}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {selectedUser ? (
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                disabled={!normalizePhoneForWhatsapp(selectedUser.phone)}
+              >
+                <a
+                  href={
+                    normalizePhoneForWhatsapp(selectedUser.phone)
+                      ? `https://wa.me/${normalizePhoneForWhatsapp(selectedUser.phone)}?text=${encodeURIComponent(
+                          `Olá ${selectedUser.full_name ?? ""}, tudo bem?`,
+                        )}`
+                      : "#"
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Abrir conversa no WhatsApp"
+                >
+                  Abrir conversa no WhatsApp
+                </a>
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              ref={userModalFocusRef}
+              onClick={() => setUserModalOpen(false)}
+            >
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
