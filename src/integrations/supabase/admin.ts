@@ -14,6 +14,49 @@ export type AdminReceipt = {
   store_name: string | null;
 };
 
+export type AdminReceiptUser = {
+  user_id: string;
+  full_name: string | null;
+  document: string | null;
+  email: string | null;
+  phone: string | null;
+  created_at: string | null;
+  role: string | null;
+};
+
+export type AdminReceiptDetails = AdminReceipt & {
+  establishment_id: string | null;
+  purchase_date: string | null;
+  admin_note: string | null;
+  user: AdminReceiptUser | null;
+};
+
+export type ReceiptAuditEntry = {
+  id: string;
+  receipt_id: string;
+  changed_at: string;
+  admin_id: string | null;
+  admin_name: string | null;
+  field: string;
+  old_value: string | null;
+  new_value: string | null;
+};
+
+export type ReceiptUpdateInput = {
+  establishment_id?: string | null;
+  purchase_value?: number;
+  points_earned?: number;
+  status?: ReceiptReviewStatus;
+  purchase_date?: string | null;
+  admin_note?: string | null;
+};
+
+export type ReceiptFieldChange = {
+  field: string;
+  oldValue: string | null;
+  newValue: string | null;
+};
+
 export type AdminEstablishment = {
   id: string;
   name: string;
@@ -201,6 +244,169 @@ export const fetchAdminReceipts = async (params?: {
     };
   } catch {
     return { items: [], total: 0, page, pageSize };
+  }
+};
+
+export const fetchAdminReceiptDetails = async (receiptId: string): Promise<AdminReceiptDetails | null> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from("receipts")
+      .select(
+        "id, purchase_value, points_earned, status, image_path, created_at, user_id, establishment_id, establishments(name), purchase_date, admin_note",
+      )
+      .eq("id", receiptId)
+      .maybeSingle();
+
+    if (error || !data) {
+      console.warn("receipt details not available:", error?.message ?? "not found");
+      return null;
+    }
+
+    const [users, profiles] = await Promise.all([fetchAdminUsers(), fetchAdminProfiles()]);
+    const matchedUser = users.find((user) => user.user_id === data.user_id) ?? null;
+    const matchedProfile = profiles.find((profile) => profile.user_id === data.user_id) ?? null;
+
+    const user: AdminReceiptUser | null = matchedUser
+      ? {
+          user_id: matchedUser.user_id,
+          full_name: matchedUser.full_name ?? null,
+          document: null,
+          email: matchedUser.email ?? null,
+          phone: matchedProfile?.phone ?? null,
+          created_at: matchedUser.created_at ?? null,
+          role: matchedUser.role ?? null,
+        }
+      : null;
+
+    return {
+      id: data.id,
+      purchase_value: data.purchase_value,
+      points: data.points_earned,
+      status: normalizeReceiptStatus(data.status),
+      receipt_image_url: data.image_path ?? null,
+      created_at: data.created_at,
+      user_id: data.user_id,
+      store_name: data.establishments?.name ?? null,
+      establishment_id: data.establishment_id ?? null,
+      purchase_date: data.purchase_date ?? null,
+      admin_note: data.admin_note ?? null,
+      user,
+    };
+  } catch (error) {
+    console.warn("receipt details fetch failed:", error);
+    return null;
+  }
+};
+
+const recordReceiptAuditEntries = async (
+  receiptId: string,
+  changes: ReceiptFieldChange[],
+  adminId: string | null,
+) => {
+  if (changes.length === 0) {
+    return;
+  }
+
+  const changedAt = new Date().toISOString();
+  try {
+    const { error } = await (supabase as any)
+      .from("receipt_audit_logs")
+      .insert(
+        changes.map((change) => ({
+          receipt_id: receiptId,
+          changed_at: changedAt,
+          admin_id: adminId,
+          field: change.field,
+          old_value: change.oldValue,
+          new_value: change.newValue,
+        })),
+      );
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.warn("receipt audit insert failed, using admin log fallback:", error);
+    try {
+      await supabase.rpc("log_admin_action", {
+        p_action: "receipt_update",
+        p_target_table: "receipts",
+        p_target_id: receiptId,
+        p_details: {
+          changes,
+          changed_at: changedAt,
+          admin_id: adminId,
+        },
+      });
+    } catch (fallbackError) {
+      console.warn("log_admin_action fallback failed:", fallbackError);
+    }
+  }
+};
+
+export const updateAdminReceipt = async (
+  receiptId: string,
+  updates: ReceiptUpdateInput,
+  changes: ReceiptFieldChange[],
+) => {
+  const isAdmin = await fetchAdminStatus();
+  if (!isAdmin) {
+    throw new Error("Usuário sem permissão de admin.");
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) {
+    throw userError;
+  }
+
+  const { error } = await (supabase as any)
+    .from("receipts")
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", receiptId);
+
+  if (error) {
+    throw error;
+  }
+
+  await recordReceiptAuditEntries(receiptId, changes, userData.user?.id ?? null);
+
+  return true;
+};
+
+export const fetchReceiptAuditHistory = async (receiptId: string): Promise<ReceiptAuditEntry[]> => {
+  try {
+    const [users, { data, error }] = await Promise.all([
+      fetchAdminUsers(),
+      (supabase as any)
+        .from("receipt_audit_logs")
+        .select("id, receipt_id, changed_at, admin_id, field, old_value, new_value")
+        .eq("receipt_id", receiptId)
+        .order("changed_at", { ascending: true }),
+    ]);
+
+    if (error) {
+      console.warn("receipt audit log fetch failed:", error.message);
+      return [];
+    }
+
+    const adminMap = new Map(users.map((user) => [user.user_id, user.full_name ?? user.email]));
+
+    return (data ?? []).map((entry: any) => ({
+      id: entry.id,
+      receipt_id: entry.receipt_id,
+      changed_at: entry.changed_at,
+      admin_id: entry.admin_id ?? null,
+      admin_name: adminMap.get(entry.admin_id) ?? null,
+      field: entry.field,
+      old_value: entry.old_value ?? null,
+      new_value: entry.new_value ?? null,
+    }));
+  } catch (error) {
+    console.warn("receipt audit log fetch failed:", error);
+    return [];
   }
 };
 
