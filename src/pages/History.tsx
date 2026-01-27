@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { TransactionItem } from "@/components/transactions/TransactionItem";
 import { Button } from "@/components/ui/button";
 import { fetchCurrentUserId, fetchReceiptHistory, fetchRedemptionHistory } from "@/integrations/supabase/store";
+import { Link } from "react-router-dom";
 
 type FilterType = "all" | "earn" | "redeem" | "rejected";
 type TransactionStatus =
@@ -102,6 +103,17 @@ export default function History() {
   return (
     <AppLayout title="Histórico" showBack>
       <div className="container px-4 py-6 md:py-8">
+        <div className="flex flex-col gap-3 rounded-xl border border-border/50 bg-accent/40 p-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Comprovantes pendentes</p>
+            <p className="text-xs text-muted-foreground">
+              Envie o comprovante quando for mais conveniente.
+            </p>
+          </div>
+          <Button asChild size="sm">
+            <Link to="/scan?manual=1">Enviar comprovante</Link>
+          </Button>
+        </div>
         {/* Filter Tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:gap-3 md:overflow-visible md:pb-0 scrollbar-hide">
           <Button
