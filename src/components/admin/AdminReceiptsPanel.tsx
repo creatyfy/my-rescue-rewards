@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -14,11 +14,13 @@ import { createSignedReceiptUrl } from "@/integrations/supabase/storage";
 import {
   AdminReceipt,
   AdminReceiptDetails,
+  AdminReceiptUser,
   ReceiptAuditEntry,
   ReceiptReviewStatus,
   fetchAdminEstablishments,
   fetchAdminReceipts,
   fetchAdminReceiptDetails,
+  fetchAdminUserDetails,
   fetchReceiptAuditHistory,
   reviewReceipt,
   updateAdminReceipt,
@@ -74,6 +76,12 @@ export function AdminReceiptsPanel() {
   const [formError, setFormError] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [establishments, setEstablishments] = useState<Array<{ id: string; name: string }>>([]);
+  const [userModalOpen, setUserModalOpen] = useState(false);
+  const [userModalLoading, setUserModalLoading] = useState(false);
+  const [userModalError, setUserModalError] = useState<string | null>(null);
+  const [selectedUser, setSelectedUser] = useState<AdminReceiptUser | null>(null);
+  const userModalTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const userModalFocusRef = useRef<HTMLButtonElement | null>(null);
 
   const [status, setStatus] = useState<ReceiptReviewStatus>("pending");
   const [query, setQuery] = useState("");
@@ -137,6 +145,12 @@ export function AdminReceiptsPanel() {
     setFormLoading(false);
   };
 
+  const resetUserModal = () => {
+    setSelectedUser(null);
+    setUserModalError(null);
+    setUserModalLoading(false);
+  };
+
   const populateFormState = (receipt: AdminReceiptDetails) => {
     setFormState({
       establishmentId: receipt.establishment_id ?? "",
@@ -184,8 +198,30 @@ export function AdminReceiptsPanel() {
 
   const handleOpenReceipt = async (receipt: AdminReceipt, editMode = false) => {
     setSelectedReceiptId(receipt.id);
-    await loadReceiptDetails(receipt.id);
     setIsEditing(editMode);
+    await loadReceiptDetails(receipt.id);
+  };
+
+  const handleOpenUserModal = async (userId: string, trigger?: HTMLButtonElement | null) => {
+    userModalTriggerRef.current = trigger ?? null;
+    setUserModalOpen(true);
+    setUserModalLoading(true);
+    setUserModalError(null);
+    setSelectedUser(null);
+
+    try {
+      const user = await fetchAdminUserDetails(userId);
+      if (!user) {
+        setUserModalError("Não foi possível carregar os dados do usuário.");
+        return;
+      }
+      setSelectedUser(user);
+    } catch (error) {
+      console.error("Erro ao carregar dados do usuário:", error);
+      setUserModalError("Não foi possível carregar os dados do usuário.");
+    } finally {
+      setUserModalLoading(false);
+    }
   };
 
   const handleSaveReceipt = async () => {
@@ -300,6 +336,20 @@ export function AdminReceiptsPanel() {
     loadEstablishments();
   }, []);
 
+  useEffect(() => {
+    if (userModalOpen) {
+      const handle = window.setTimeout(() => {
+        userModalFocusRef.current?.focus();
+      }, 0);
+      return () => window.clearTimeout(handle);
+    }
+
+    if (userModalTriggerRef.current) {
+      userModalTriggerRef.current.focus();
+    }
+    return;
+  }, [userModalOpen]);
+
   return (
     <Card className="p-6">
       <div className="flex flex-col gap-1 mb-6">
@@ -385,7 +435,14 @@ export function AdminReceiptsPanel() {
                   <TableCell className="font-medium whitespace-nowrap">{receipt.id.slice(0, 8)}</TableCell>
                   <TableCell className="whitespace-nowrap">{receipt.store_name ?? "Loja parceira"}</TableCell>
                   <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {receipt.user_id.slice(0, 8)}...
+                    <button
+                      type="button"
+                      className="text-primary underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+                      aria-label={`Ver dados do usuário ${receipt.user_name ?? receipt.user_id}`}
+                      onClick={(event) => handleOpenUserModal(receipt.user_id, event.currentTarget)}
+                    >
+                      {receipt.user_name ?? "Usuário sem nome"}
+                    </button>
                   </TableCell>
                   <TableCell className="whitespace-nowrap">{formatCurrency(Number(receipt.purchase_value))}</TableCell>
                   <TableCell className="whitespace-nowrap">{receipt.points}</TableCell>
@@ -399,11 +456,21 @@ export function AdminReceiptsPanel() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex flex-wrap justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleOpenReceipt(receipt)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenReceipt(receipt)}
+                        aria-label="Ver comprovante"
+                      >
                         <Eye className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Ver</span>
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => handleOpenReceipt(receipt, true)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleOpenReceipt(receipt, true)}
+                        aria-label="Editar comprovante"
+                      >
                         <Pencil className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Editar</span>
                       </Button>
@@ -411,6 +478,7 @@ export function AdminReceiptsPanel() {
                         variant="default"
                         size="sm"
                         onClick={() => handleReview(receipt.id, "approved")}
+                        aria-label="Aprovar comprovante"
                       >
                         <CheckCircle className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Aprovar</span>
@@ -420,6 +488,7 @@ export function AdminReceiptsPanel() {
                         size="sm"
                         className="border-destructive/50 text-destructive hover:bg-destructive/10"
                         onClick={() => handleReview(receipt.id, "rejected")}
+                        aria-label="Rejeitar comprovante"
                       >
                         <XCircle className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Rejeitar</span>
@@ -716,6 +785,92 @@ export function AdminReceiptsPanel() {
               </div>
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={userModalOpen}
+        onOpenChange={(open) => {
+          setUserModalOpen(open);
+          if (!open) {
+            resetUserModal();
+          }
+        }}
+      >
+        <DialogContent className="max-w-xl" role="dialog" aria-modal="true">
+          <DialogHeader>
+            <DialogTitle>Dados do usuário</DialogTitle>
+          </DialogHeader>
+
+          {userModalLoading ? (
+            <p className="text-sm text-muted-foreground">Carregando dados do usuário...</p>
+          ) : userModalError ? (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+              {userModalError}
+            </div>
+          ) : selectedUser ? (
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs text-muted-foreground">Nome completo</p>
+                <p className="text-sm font-medium">{selectedUser.full_name ?? "Não informado"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">E-mail</p>
+                <p className="text-sm font-medium">{selectedUser.email ?? "Não informado"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Telefone</p>
+                <p className="text-sm font-medium">{selectedUser.phone ?? "Não informado"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Data de cadastro</p>
+                <p className="text-sm font-medium">
+                  {selectedUser.created_at ? formatDateTime(selectedUser.created_at) : "Não informado"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Status da conta</p>
+                <p className="text-sm font-medium">
+                  {selectedUser.role ? `Perfil: ${selectedUser.role}` : "Usuário"}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            {selectedUser ? (
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                disabled={!normalizePhoneForWhatsapp(selectedUser.phone)}
+              >
+                <a
+                  href={
+                    normalizePhoneForWhatsapp(selectedUser.phone)
+                      ? `https://wa.me/${normalizePhoneForWhatsapp(selectedUser.phone)}?text=${encodeURIComponent(
+                          `Olá ${selectedUser.full_name ?? ""}, tudo bem?`,
+                        )}`
+                      : "#"
+                  }
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Abrir conversa no WhatsApp"
+                >
+                  Abrir conversa no WhatsApp
+                </a>
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              ref={userModalFocusRef}
+              onClick={() => setUserModalOpen(false)}
+            >
+              Fechar
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </Card>
