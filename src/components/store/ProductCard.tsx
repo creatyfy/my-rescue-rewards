@@ -10,6 +10,7 @@ interface ProductCardProps {
   pointsCost: number;
   stock: number;
   userPoints: number;
+  isAdmin?: boolean;
   onRedeem?: (id: string) => void;
   onPreviewImage?: (id: string, trigger: HTMLButtonElement) => void;
 }
@@ -22,6 +23,7 @@ export function ProductCard({
   pointsCost,
   stock,
   userPoints,
+  isAdmin = false,
   onRedeem,
   onPreviewImage,
 }: ProductCardProps) {
@@ -76,9 +78,11 @@ export function ProductCard({
                 {pointsCost.toLocaleString('pt-BR')}
               </span>
             </div>
-            <span className="text-[10px] sm:text-xs text-muted-foreground ml-0.5">
-              Equivale a {formatCurrency(equivalentValue)}
-            </span>
+            {isAdmin && (
+              <span className="text-[10px] sm:text-xs text-muted-foreground ml-0.5">
+                Equivale a {formatCurrency(equivalentValue)}
+              </span>
+            )}
           </div>
 
           <Button
