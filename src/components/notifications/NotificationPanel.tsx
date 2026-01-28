@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, Check, CheckCheck } from "lucide-react";
+import { Bell, Check, CheckCheck, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -7,7 +7,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -15,10 +14,12 @@ import {
   fetchUnreadCount,
   markNotificationAsRead,
   markAllNotificationsAsRead,
+  archiveAllNotifications,
   type Notification,
 } from "@/integrations/supabase/notifications";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { toast } from "@/components/ui/sonner";
 
 export function NotificationPanel() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -80,6 +81,18 @@ export function NotificationPanel() {
     if (success) {
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
       setUnreadCount(0);
+      toast.success("Todas as notificações foram marcadas como lidas");
+    }
+  };
+
+  const handleArchiveAll = async () => {
+    const success = await archiveAllNotifications();
+    if (success) {
+      setNotifications([]);
+      setUnreadCount(0);
+      toast.success("Notificações arquivadas com sucesso");
+    } else {
+      toast.error("Erro ao arquivar notificações");
     }
   };
 
@@ -97,6 +110,19 @@ export function NotificationPanel() {
     }
   };
 
+  const getNotificationIcon = (tipo: Notification["tipo"]) => {
+    switch (tipo) {
+      case "comprovante_aprovado":
+        return "✅";
+      case "comprovante_recusado":
+        return "❌";
+      case "resgate_aprovado":
+        return "🎁";
+      default:
+        return "📢";
+    }
+  };
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
@@ -110,17 +136,30 @@ export function NotificationPanel() {
       <PopoverContent className="w-80 p-0" align="end">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h3 className="font-semibold text-sm">Notificações</h3>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs gap-1"
-              onClick={handleMarkAllAsRead}
-            >
-              <CheckCheck className="w-3.5 h-3.5" />
-              Marcar todas como lidas
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={handleMarkAllAsRead}
+                title="Marcar todas como lidas"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+              </Button>
+            )}
+            {notifications.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1 text-muted-foreground hover:text-destructive"
+                onClick={handleArchiveAll}
+                title="Limpar notificações"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
         </div>
 
         <ScrollArea className="h-[300px]">
@@ -145,14 +184,9 @@ export function NotificationPanel() {
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start gap-3">
-                    <div
-                      className={cn(
-                        "w-2 h-2 rounded-full mt-2 flex-shrink-0",
-                        notification.is_read
-                          ? "bg-muted-foreground/30"
-                          : "bg-primary"
-                      )}
-                    />
+                    <div className="text-lg flex-shrink-0">
+                      {getNotificationIcon(notification.tipo)}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p
                         className={cn(
@@ -178,6 +212,30 @@ export function NotificationPanel() {
             </div>
           )}
         </ScrollArea>
+
+        {notifications.length > 0 && (
+          <div className="p-2 border-t border-border flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs"
+              onClick={handleMarkAllAsRead}
+              disabled={unreadCount === 0}
+            >
+              <CheckCheck className="w-3 h-3 mr-1" />
+              Marcar lidas
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs text-muted-foreground hover:text-destructive"
+              onClick={handleArchiveAll}
+            >
+              <Trash2 className="w-3 h-3 mr-1" />
+              Limpar
+            </Button>
+          </div>
+        )}
       </PopoverContent>
     </Popover>
   );
