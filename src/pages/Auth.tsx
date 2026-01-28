@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,15 @@ import { getPhoneValidationError } from "@/lib/phone-utils";
 import { getDuplicateFieldMessage } from "@/lib/duplicate-errors";
 
 type AuthMode = "login" | "register";
+type UniqueFieldKey = "cpf" | "email" | "phone";
+type ValidationStatus = "idle" | "loading" | "valid" | "invalid";
+type UniqueFieldValidation = Record<
+  UniqueFieldKey,
+  {
+    status: ValidationStatus;
+    message: string;
+  }
+>;
 
 export default function Auth() {
   const [mode, setMode] = useState<AuthMode>("login");
@@ -43,6 +52,26 @@ export default function Auth() {
   }, [searchParams]);
 
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [fieldValidation, setFieldValidation] = useState<UniqueFieldValidation>({
+    cpf: { status: "idle", message: "" },
+    email: { status: "idle", message: "" },
+    phone: { status: "idle", message: "" },
+  });
+  const validationRequestId = useRef({
+    cpf: 0,
+    email: 0,
+    phone: 0,
+  });
+
+  useEffect(() => {
+    if (mode === "login") {
+      setFieldValidation({
+        cpf: { status: "idle", message: "" },
+        email: { status: "idle", message: "" },
+        phone: { status: "idle", message: "" },
+      });
+    }
+  }, [mode]);
 
   const formatCpf = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -73,6 +102,151 @@ export default function Auth() {
     return digits.startsWith("55") ? digits.slice(2, 13) : digits.slice(0, 11);
   };
 
+  const getNormalizedValue = (field: UniqueFieldKey, value: string) => {
+    if (field === "cpf") {
+      return getCpfDigits(value);
+    }
+
+    if (field === "phone") {
+      const digits = getPhoneDigits(value);
+      return digits ? `55${digits}` : "";
+    }
+
+    return value.trim().toLowerCase();
+  };
+
+  const shouldValidateField = (field: UniqueFieldKey, value: string) => {
+    if (field === "cpf") {
+      return getCpfDigits(value).length === 11;
+    }
+
+    if (field === "phone") {
+      const digits = getPhoneDigits(value);
+      return digits.length >= 10;
+    }
+
+    return value.includes("@");
+  };
+
+  const setFieldValidationState = (
+    field: UniqueFieldKey,
+    status: ValidationStatus,
+    message = "",
+  ) => {
+    setFieldValidation((prev) => ({
+      ...prev,
+      [field]: { status, message },
+    }));
+  };
+
+  const getValidationMessage = (field: UniqueFieldKey) => {
+    if (field === "cpf") {
+      return "Este CPF já está vinculado a outra conta.";
+    }
+
+    if (field === "phone") {
+      return "Este telefone já está vinculado a outro usuário.";
+    }
+
+    return "Este e-mail já está em uso.";
+  };
+
+  const validateUniqueField = async (field: UniqueFieldKey, value: string) => {
+    if (!shouldValidateField(field, value)) {
+      setFieldValidationState(field, "idle");
+      return;
+    }
+
+    const normalizedValue = getNormalizedValue(field, value);
+    const requestId = ++validationRequestId.current[field];
+    setFieldValidationState(field, "loading");
+
+    try {
+      const { data, error } = await supabase.functions.invoke("validar-unicidade", {
+        body: {
+          tipo: field === "phone" ? "telefone" : field,
+          valor: normalizedValue,
+        },
+      });
+
+      if (requestId !== validationRequestId.current[field]) {
+        return;
+      }
+
+      if (error) {
+        setFieldValidationState(field, "idle");
+        toast.error("Não foi possível validar este campo agora.");
+        return;
+      }
+
+      if (data?.disponivel) {
+        setFieldValidationState(field, "valid", "Disponível");
+      } else {
+        setFieldValidationState(field, "invalid", getValidationMessage(field));
+      }
+    } catch (validationError) {
+      if (requestId !== validationRequestId.current[field]) {
+        return;
+      }
+
+      setFieldValidationState(field, "idle");
+      const message =
+        validationError instanceof Error ? validationError.message : "";
+      toast.error(message || "Não foi possível validar este campo agora.");
+    }
+  };
+
+  useEffect(() => {
+    if (mode !== "register") {
+      return;
+    }
+
+    if (!shouldValidateField("cpf", formData.cpf)) {
+      setFieldValidationState("cpf", "idle");
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void validateUniqueField("cpf", formData.cpf);
+    }, 600);
+
+    return () => window.clearTimeout(timeout);
+  }, [formData.cpf, mode]);
+
+  useEffect(() => {
+    if (mode !== "register") {
+      return;
+    }
+
+    if (!shouldValidateField("email", formData.email)) {
+      setFieldValidationState("email", "idle");
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void validateUniqueField("email", formData.email);
+    }, 600);
+
+    return () => window.clearTimeout(timeout);
+  }, [formData.email, mode]);
+
+  useEffect(() => {
+    if (mode !== "register") {
+      return;
+    }
+
+    if (!shouldValidateField("phone", formData.phone)) {
+      setFieldValidationState("phone", "idle");
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void validateUniqueField("phone", formData.phone);
+    }, 600);
+
+    return () => window.clearTimeout(timeout);
+  }, [formData.phone, mode]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -87,6 +261,26 @@ export default function Auth() {
 
       if (mode === "register" && formData.password !== formData.confirmPassword) {
         toast.error("As senhas não conferem.");
+        return;
+      }
+
+      if (
+        mode === "register" &&
+        (fieldValidation.cpf.status === "loading" ||
+          fieldValidation.email.status === "loading" ||
+          fieldValidation.phone.status === "loading")
+      ) {
+        toast.error("Aguarde a validação dos campos.");
+        return;
+      }
+
+      if (
+        mode === "register" &&
+        (fieldValidation.cpf.status === "invalid" ||
+          fieldValidation.email.status === "invalid" ||
+          fieldValidation.phone.status === "invalid")
+      ) {
+        toast.error("Corrija os campos antes de continuar.");
         return;
       }
 
@@ -161,17 +355,47 @@ export default function Auth() {
     if (name === "cpf") {
       const digits = getCpfDigits(value);
       setFormData({ ...formData, cpf: formatCpf(digits) });
+      setFieldValidationState("cpf", "idle");
       return;
     }
 
     if (name === "phone") {
       const digits = value.replace(/\D/g, "").slice(0, 11);
       setFormData({ ...formData, phone: digits ? `55${digits}` : "" });
+      setFieldValidationState("phone", "idle");
       return;
+    }
+
+    if (name === "email") {
+      setFieldValidationState("email", "idle");
     }
 
     setFormData({ ...formData, [name]: value });
   };
+
+  const handleUniqueFieldBlur = (field: UniqueFieldKey) => {
+    if (mode !== "register") {
+      return;
+    }
+
+    if (!shouldValidateField(field, formData[field])) {
+      setFieldValidationState(field, "idle");
+      return;
+    }
+
+    void validateUniqueField(field, formData[field]);
+  };
+
+  const shouldDisableSubmit =
+    isLoading ||
+    (mode === "register" &&
+      (phoneError !== null ||
+        fieldValidation.cpf.status === "loading" ||
+        fieldValidation.email.status === "loading" ||
+        fieldValidation.phone.status === "loading" ||
+        fieldValidation.cpf.status === "invalid" ||
+        fieldValidation.email.status === "invalid" ||
+        fieldValidation.phone.status === "invalid"));
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -237,11 +461,29 @@ export default function Auth() {
                   placeholder="000.000.000-00"
                   value={formData.cpf}
                   onChange={handleChange}
-                  className="pl-10"
+                  onBlur={() => handleUniqueFieldBlur("cpf")}
+                  className={`pl-10 ${
+                    fieldValidation.cpf.status === "invalid"
+                      ? "border-destructive"
+                      : ""
+                  }`}
                   maxLength={14}
                   required
                 />
               </div>
+              {fieldValidation.cpf.status === "loading" && (
+                <p className="text-xs text-muted-foreground">Validando CPF...</p>
+              )}
+              {fieldValidation.cpf.status === "valid" && (
+                <p className="text-xs text-emerald-600">
+                  {fieldValidation.cpf.message}
+                </p>
+              )}
+              {fieldValidation.cpf.status === "invalid" && (
+                <p className="text-xs text-destructive">
+                  {fieldValidation.cpf.message}
+                </p>
+              )}
             </div>
           )}
 
@@ -260,7 +502,12 @@ export default function Auth() {
                   placeholder="35988925480"
                   value={getPhoneDigits(formData.phone)}
                   onChange={handleChange}
-                  className={`pl-16 ${phoneError ? "border-destructive" : ""}`}
+                  onBlur={() => handleUniqueFieldBlur("phone")}
+                  className={`pl-16 ${
+                    phoneError || fieldValidation.phone.status === "invalid"
+                      ? "border-destructive"
+                      : ""
+                  }`}
                   inputMode="numeric"
                   maxLength={11}
                   required
@@ -271,6 +518,21 @@ export default function Auth() {
               </p>
               {phoneError && (
                 <p className="text-xs text-destructive">{phoneError}</p>
+              )}
+              {fieldValidation.phone.status === "loading" && (
+                <p className="text-xs text-muted-foreground">
+                  Validando telefone...
+                </p>
+              )}
+              {fieldValidation.phone.status === "valid" && (
+                <p className="text-xs text-emerald-600">
+                  {fieldValidation.phone.message}
+                </p>
+              )}
+              {fieldValidation.phone.status === "invalid" && (
+                <p className="text-xs text-destructive">
+                  {fieldValidation.phone.message}
+                </p>
               )}
             </div>
           )}
@@ -286,10 +548,30 @@ export default function Auth() {
                 placeholder="seu@email.com"
                 value={formData.email}
                 onChange={handleChange}
-                className="pl-10"
+                onBlur={() => handleUniqueFieldBlur("email")}
+                className={`pl-10 ${
+                  fieldValidation.email.status === "invalid"
+                    ? "border-destructive"
+                    : ""
+                }`}
                 required
               />
             </div>
+            {mode === "register" && fieldValidation.email.status === "loading" && (
+              <p className="text-xs text-muted-foreground">
+                Validando e-mail...
+              </p>
+            )}
+            {mode === "register" && fieldValidation.email.status === "valid" && (
+              <p className="text-xs text-emerald-600">
+                {fieldValidation.email.message}
+              </p>
+            )}
+            {mode === "register" && fieldValidation.email.status === "invalid" && (
+              <p className="text-xs text-destructive">
+                {fieldValidation.email.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -350,7 +632,12 @@ export default function Auth() {
             </div>
           )}
 
-          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={shouldDisableSubmit}
+          >
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
