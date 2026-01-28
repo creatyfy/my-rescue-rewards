@@ -404,6 +404,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin: { Args: never; Returns: boolean }
+      is_unique_field_available: {
+        Args: { field_type: string; field_value: string }
+        Returns: boolean
+      }
       list_profiles_for_admin: {
         Args: never
         Returns: {
