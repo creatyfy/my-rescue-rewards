@@ -353,3 +353,18 @@ export const fetchCurrentUserId = async (): Promise<string | null> => {
 
   return data.user?.id ?? null;
 };
+
+export const checkCurrentUserIsAdmin = async (): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.rpc("is_admin");
+
+    if (error) {
+      console.warn("is_admin function not available:", error.message);
+      return false;
+    }
+
+    return Boolean(data);
+  } catch {
+    return false;
+  }
+};

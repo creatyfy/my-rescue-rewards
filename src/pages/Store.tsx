@@ -18,6 +18,7 @@ import { toast } from "@/components/ui/sonner";
 import {
   DeliveryData,
   UserContact,
+  checkCurrentUserIsAdmin,
   fetchCurrentUserBalance,
   fetchCurrentUserContact,
   fetchProducts,
@@ -32,6 +33,7 @@ export default function Store() {
     Array<{ id: string; name: string; description: string; imageUrl: string; pointsCost: number; stock: number }>
   >([]);
   const [userPoints, setUserPoints] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [redeemDialogOpen, setRedeemDialogOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
@@ -56,15 +58,17 @@ export default function Store() {
     const loadStoreData = async () => {
       setLoading(true);
       try {
-        const [productsData, balance, contact] = await Promise.all([
+        const [productsData, balance, contact, adminStatus] = await Promise.all([
           fetchProducts(),
           fetchCurrentUserBalance(),
           fetchCurrentUserContact(),
+          checkCurrentUserIsAdmin(),
         ]);
 
         setProducts(productsData);
         setUserPoints(balance);
         setUserContact(contact);
+        setIsAdmin(adminStatus);
       } catch (error) {
         console.error("Erro ao carregar loja:", error);
       } finally {
@@ -291,6 +295,7 @@ export default function Store() {
                 key={product.id}
                 {...product}
                 userPoints={userPoints}
+                isAdmin={isAdmin}
                 onRedeem={handleRedeem}
                 onPreviewImage={handlePreviewImage}
               />
