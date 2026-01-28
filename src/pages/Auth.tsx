@@ -43,20 +43,54 @@ export default function Auth() {
 
   const [phoneError, setPhoneError] = useState<string | null>(null);
 
+  const formatCpf = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 11);
+    const part1 = digits.slice(0, 3);
+    const part2 = digits.slice(3, 6);
+    const part3 = digits.slice(6, 9);
+    const part4 = digits.slice(9, 11);
+
+    if (!part2) {
+      return part1;
+    }
+
+    if (!part3) {
+      return `${part1}.${part2}`;
+    }
+
+    if (!part4) {
+      return `${part1}.${part2}.${part3}`;
+    }
+
+    return `${part1}.${part2}.${part3}-${part4}`;
+  };
+
+  const getCpfDigits = (value: string) => value.replace(/\D/g, "").slice(0, 11);
+
+  const getPhoneDigits = (value: string) => {
+    const digits = value.replace(/\D/g, "");
+    return digits.startsWith("55") ? digits.slice(2, 13) : digits.slice(0, 11);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setPhoneError(null);
 
     try {
+      const cpfDigits = getCpfDigits(formData.cpf);
+      const formattedCpf = formatCpf(cpfDigits);
+      const phoneDigits = getPhoneDigits(formData.phone);
+      const normalizedPhone = phoneDigits ? `55${phoneDigits}` : "";
+
       if (mode === "register" && formData.password !== formData.confirmPassword) {
         toast.error("As senhas não conferem.");
         return;
       }
 
       // Validate phone for registration
-      if (mode === "register" && formData.phone) {
-        const validationError = getPhoneValidationError(formData.phone);
+      if (mode === "register" && normalizedPhone) {
+        const validationError = getPhoneValidationError(normalizedPhone);
         if (validationError) {
           setPhoneError(validationError);
           toast.error(validationError);
@@ -78,6 +112,34 @@ export default function Auth() {
         return;
       }
 
+      if (mode === "register") {
+        if (cpfDigits) {
+          const { data: cpfMatches, error: cpfError } = await (supabase as any)
+            .from("profiles")
+            .select("user_id")
+            .or(`cpf.eq.${formattedCpf},cpf.eq.${cpfDigits}`)
+            .limit(1);
+
+          if (!cpfError && cpfMatches?.length) {
+            toast.error("CPF já cadastrado.");
+            return;
+          }
+        }
+
+        if (normalizedPhone) {
+          const { data: phoneMatches, error: phoneErrorCheck } = await (supabase as any)
+            .from("profiles")
+            .select("user_id")
+            .or(`phone.eq.${normalizedPhone},phone.eq.${phoneDigits}`)
+            .limit(1);
+
+          if (!phoneErrorCheck && phoneMatches?.length) {
+            toast.error("Telefone já cadastrado.");
+            return;
+          }
+        }
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -85,8 +147,8 @@ export default function Auth() {
           emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             full_name: formData.name,
-            cpf: formData.cpf,
-            phone: formData.phone,
+            cpf: formattedCpf,
+            phone: normalizedPhone,
           },
         },
       });
@@ -98,26 +160,41 @@ export default function Auth() {
       if (data.session) {
         await updateCurrentUserProfile({
           fullName: formData.name,
-          cpf: formData.cpf,
-          phone: formData.phone,
+          cpf: formattedCpf,
+          phone: normalizedPhone,
         });
         navigate("/dashboard");
       } else {
         toast.success("Conta criada! Verifique seu e-mail para confirmar.");
       }
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Não foi possível autenticar. Tente novamente.";
-      toast.error(message);
+      const message = error instanceof Error ? error.message : "";
+      if (message.toLowerCase().includes("user already registered")) {
+        toast.error("E-mail já cadastrado.");
+      } else {
+        toast.error(message || "Não foi possível autenticar. Tente novamente.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    if (name === "cpf") {
+      const digits = getCpfDigits(value);
+      setFormData({ ...formData, cpf: formatCpf(digits) });
+      return;
+    }
+
+    if (name === "phone") {
+      const digits = value.replace(/\D/g, "").slice(0, 11);
+      setFormData({ ...formData, phone: digits ? `55${digits}` : "" });
+      return;
+    }
+
+    setFormData({ ...formData, [name]: value });
   };
 
   return (
@@ -185,6 +262,7 @@ export default function Auth() {
                   value={formData.cpf}
                   onChange={handleChange}
                   className="pl-10"
+                  maxLength={14}
                   required
                 />
               </div>
@@ -196,19 +274,24 @@ export default function Auth() {
               <Label htmlFor="phone">Telefone</Label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <span className="absolute left-10 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
+                  55
+                </span>
                 <Input
                   id="phone"
                   name="phone"
                   type="tel"
-                  placeholder="5511912345678"
-                  value={formData.phone}
+                  placeholder="35988925480"
+                  value={getPhoneDigits(formData.phone)}
                   onChange={handleChange}
-                  className={`pl-10 ${phoneError ? "border-destructive" : ""}`}
+                  className={`pl-16 ${phoneError ? "border-destructive" : ""}`}
+                  inputMode="numeric"
+                  maxLength={11}
                   required
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Inclua o código do país 55. Ex: 5511912345678
+                O código do país 55 já está incluso. Digite DDD + número (11 dígitos).
               </p>
               {phoneError && (
                 <p className="text-xs text-destructive">{phoneError}</p>
