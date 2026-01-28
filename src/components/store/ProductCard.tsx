@@ -1,5 +1,6 @@
 import { Coins } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { calculateProductValue, formatCurrency } from "@/lib/points-config";
 
 interface ProductCardProps {
   id: string;
@@ -27,6 +28,7 @@ export function ProductCard({
   const canAfford = userPoints >= pointsCost;
   const isAvailable = stock > 0;
   const canRedeem = canAfford && isAvailable;
+  const equivalentValue = calculateProductValue(pointsCost);
 
   return (
     <div className="group bg-card rounded-2xl border border-border/50 shadow-soft overflow-hidden hover:shadow-medium transition-all duration-300 hover:-translate-y-1">
@@ -65,12 +67,17 @@ export function ProductCard({
         </p>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-1.5">
-            <div className="p-1 sm:p-1.5 rounded-lg gradient-gold flex-shrink-0">
-              <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-points-gold-foreground" />
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-1.5">
+              <div className="p-1 sm:p-1.5 rounded-lg gradient-gold flex-shrink-0">
+                <Coins className="w-3 h-3 sm:w-4 sm:h-4 text-points-gold-foreground" />
+              </div>
+              <span className="font-bold text-base sm:text-lg text-foreground">
+                {pointsCost.toLocaleString('pt-BR')}
+              </span>
             </div>
-            <span className="font-bold text-base sm:text-lg text-foreground">
-              {pointsCost.toLocaleString('pt-BR')}
+            <span className="text-[10px] sm:text-xs text-muted-foreground ml-0.5">
+              Equivale a {formatCurrency(equivalentValue)}
             </span>
           </div>
 

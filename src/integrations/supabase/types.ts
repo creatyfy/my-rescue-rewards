@@ -163,7 +163,10 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          points_calculated: number | null
           points_cost: number
+          points_manual_edit: boolean | null
+          prize_value_reais: number | null
           stock: number
           updated_at: string
         }
@@ -174,7 +177,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          points_calculated?: number | null
           points_cost: number
+          points_manual_edit?: boolean | null
+          prize_value_reais?: number | null
           stock?: number
           updated_at?: string
         }
@@ -185,7 +191,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          points_calculated?: number | null
           points_cost?: number
+          points_manual_edit?: boolean | null
+          prize_value_reais?: number | null
           stock?: number
           updated_at?: string
         }
