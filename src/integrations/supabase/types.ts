@@ -488,29 +488,12 @@ export type Database = {
           status: Database["public"]["Enums"]["receipt_status"]
         }[]
       }
-      update_redemption_status_admin: {
-        Args: { p_new_status: string; p_redemption_id: string }
-        Returns: {
-          id: string
-          status: Database["public"]["Enums"]["redemption_status"]
-          user_id: string
-        }[]
-      }
     }
     Enums: {
       app_role: "admin" | "user"
       ledger_type: "earn" | "redeem" | "expire" | "adjustment"
       receipt_status: "pending" | "approved" | "rejected"
-      redemption_status:
-        | "pending"
-        | "completed"
-        | "cancelled"
-        | "pendente"
-        | "em_andamento"
-        | "enviado"
-        | "concluido"
-        | "cancelado"
-        | "em_analise"
+      redemption_status: "pending" | "completed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -641,17 +624,7 @@ export const Constants = {
       app_role: ["admin", "user"],
       ledger_type: ["earn", "redeem", "expire", "adjustment"],
       receipt_status: ["pending", "approved", "rejected"],
-      redemption_status: [
-        "pending",
-        "completed",
-        "cancelled",
-        "pendente",
-        "em_andamento",
-        "enviado",
-        "concluido",
-        "cancelado",
-        "em_analise",
-      ],
+      redemption_status: ["pending", "completed", "cancelled"],
     },
   },
 } as const
