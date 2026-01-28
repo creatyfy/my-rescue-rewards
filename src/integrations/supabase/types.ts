@@ -488,6 +488,10 @@ export type Database = {
           status: Database["public"]["Enums"]["receipt_status"]
         }[]
       }
+      update_redemption_status_admin: {
+        Args: { p_new_status: string; p_redemption_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
