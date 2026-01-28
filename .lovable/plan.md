@@ -1,151 +1,238 @@
 
-# Plan: Reusable User Profile Modal with WhatsApp and Phone Validation
 
-## Overview
-This plan addresses three key requirements:
-1. Create a reusable profile modal component to eliminate code duplication
-2. Add mandatory phone validation requiring country code 55 during registration and editing
-3. Integrate the modal into the Users admin panel
+# Plano de Implementação: Nova Regra de Pontos para Produtos (1 Real = 600 Pontos)
 
----
+## Resumo Executivo
 
-## 1. Create Shared Phone Utility Functions
+Este plano implementa uma mudança significativa no sistema de pontos para **produtos/prêmios**, onde o administrador informa o valor em reais e o sistema calcula automaticamente os pontos necessários usando a fórmula **valor x 600**.
 
-**File: `src/lib/phone-utils.ts` (new)**
-
-Create centralized utility functions for phone handling:
-- `normalizePhoneForWhatsapp(phone)` - Normalize phone number for WhatsApp links
-- `validateBrazilianPhone(phone)` - Validate phone includes country code 55
-- `buildWhatsAppUrl(phone, message?)` - Generate complete WhatsApp URL
-
-This eliminates the duplicated `normalizePhoneForWhatsapp` function currently in both admin panels.
+**Nota importante**: Esta regra de 600 pontos/real é específica para **definição de preço de produtos (prêmios)**. A regra atual de 10 pontos/real para **comprovantes de compra** permanece inalterada, pois são regras de negócio distintas:
+- **Comprovantes**: Usuário ganha 10 pontos por R$1 gasto
+- **Produtos**: Custo em pontos = valor do prêmio x 600
 
 ---
 
-## 2. Create Reusable User Profile Modal Component
+## Fases de Implementação
 
-**File: `src/components/admin/UserProfileModal.tsx` (new)**
+### Fase 1: Configuração Centralizada do Multiplicador
 
-A standalone, accessible modal component displaying:
-- Full name
-- CPF
-- Email
-- Phone
-- Registration date
-- Account role/status
-- WhatsApp button (disabled when no phone available)
+Criar um arquivo de configuração centralizado para evitar "hardcode" espalhado no sistema.
 
-**Props:**
-```text
-- open: boolean
-- onOpenChange: (open: boolean) => void  
-- userId: string | null
-- triggerRef?: RefObject (for focus management)
+**Arquivo novo**: `src/lib/points-config.ts`
+- Constante `PRODUCT_POINTS_MULTIPLIER = 600`
+- Constante `RECEIPT_POINTS_MULTIPLIER = 10` (já existente, para referência)
+- Funções utilitárias:
+  - `calculateProductPoints(valueInReais: number): number`
+  - `calculateProductValue(points: number): number`
+
+---
+
+### Fase 2: Atualização do Schema do Banco de Dados
+
+**Tabela `products`** - Adicionar novas colunas:
+
+| Coluna | Tipo | Descrição |
+|--------|------|-----------|
+| `prize_value_reais` | `numeric` | Valor do prêmio em reais informado pelo admin |
+| `points_calculated` | `integer` | Pontos calculados automaticamente (valor x 600) |
+| `points_manual_edit` | `boolean` | Flag indicando se o admin editou manualmente |
+
+**Nota**: A coluna `points_cost` existente continuará sendo a fonte da verdade para o custo final em pontos (seja calculado ou editado).
+
+---
+
+### Fase 3: Reformulação do Formulário de Produtos
+
+**Arquivo**: `src/components/admin/AdminProductsPanel.tsx`
+
+**Novo fluxo do formulário**:
+
+1. **Campo "Valor do prêmio (R$)"** (novo campo principal)
+   - Input numérico para valor em reais
+   - Ao digitar, calcula automaticamente os pontos
+
+2. **Campo "Custo em pontos"** (campo existente, modificado)
+   - Inicialmente em modo somente leitura
+   - Exibe o valor calculado automaticamente
+   - Mostra mensagem de confirmação
+
+3. **Bloco de confirmação** (novo)
+   - Mensagem: "Com base no valor do prêmio informado, este produto exigirá X pontos para resgate. Deseja confirmar ou editar esse valor?"
+   - Botões: "Confirmar" e "Editar pontos"
+
+4. **Comportamento dos botões**:
+   - **Confirmar**: Mantém valor calculado, campo permanece bloqueado
+   - **Editar pontos**: Libera o campo para edição manual
+
+**Estado do formulário atualizado**:
+```
+type ProductFormState = {
+  id?: string;
+  name: string;
+  description: string;
+  prizeValueReais: string;      // NOVO
+  pointsCost: string;           // existente
+  pointsManualEdit: boolean;    // NOVO
+  pointsConfirmed: boolean;     // NOVO (controle de UI)
+  stock: string;
+  imageUrl: string;
+  imageFile: File | null;
+  active: boolean;
+};
 ```
 
-The component will:
-- Fetch user details via `fetchAdminUserDetails` when opened
-- Handle loading and error states
-- Include accessible `role="dialog"` and `aria-modal="true"` attributes
-- Manage focus correctly on open/close
+---
+
+### Fase 4: Atualização das Funções de Backend (Admin)
+
+**Arquivo**: `src/integrations/supabase/admin.ts`
+
+**Alterações em `createProduct`**:
+- Aceitar novos parâmetros: `prizeValueReais`, `pointsManualEdit`
+- Salvar todos os campos no banco
+
+**Alterações em `updateProduct`**:
+- Mesma lógica de create
+- Preservar histórico de edições manuais
+
+**Tipo `AdminProduct` atualizado**:
+```
+type AdminProduct = {
+  id: string;
+  name: string;
+  description: string | null;
+  image_url: string | null;
+  points_cost: number;
+  prize_value_reais: number | null;  // NOVO
+  points_calculated: number | null;   // NOVO
+  points_manual_edit: boolean;        // NOVO
+  stock: number;
+  active: boolean;
+  created_at: string;
+};
+```
 
 ---
 
-## 3. Update Phone Validation in Registration and Profile Edit
+### Fase 5: Validações
 
-### Auth.tsx (Registration)
-- Add phone field validation before form submission
-- Check that phone number starts with `55` (after removing non-digits)
-- Display clear error message: "O telefone deve incluir o código do país 55. Exemplo: 5511912345678"
-- Add helper text below the phone input field explaining the requirement
+**No formulário (frontend)**:
+- Valor do prêmio deve ser maior que 0
+- Pontos finais devem ser maior que 0
+- Não permitir salvar sem pontos definidos/confirmados
 
-### ProfileEdit.tsx (Profile Editing)
-- Apply the same validation rule when saving profile changes
-- Show validation error if phone doesn't include country code 55
-- Add helper text below the phone input field
-
----
-
-## 4. Integrate Modal into AdminUsersPanel
-
-**File: `src/components/admin/AdminUsersPanel.tsx`**
-
-Changes:
-- Import the new `UserProfileModal` component
-- Make the user name in the table a clickable button (matching Receipts/Redemptions panels)
-- Add state for modal control: `userModalOpen`, `selectedUserId`
-- Add ref for focus management
-- Render the `UserProfileModal` component
+**Fluxo de validação**:
+1. Admin informa valor em reais
+2. Sistema calcula pontos automaticamente
+3. Admin deve clicar "Confirmar" ou "Editar pontos"
+4. Só após confirmação/edição o botão "Salvar" é habilitado
 
 ---
 
-## 5. Refactor Existing Panels to Use Shared Components
+### Fase 6: Exibição na Interface do Usuário
 
-### AdminReceiptsPanel.tsx
-- Remove local `normalizePhoneForWhatsapp` function
-- Import from `src/lib/phone-utils.ts`
-- Replace inline user modal with `UserProfileModal` component
-- Remove related state variables that are now handled by the shared component
+**Arquivos afetados**:
+- `src/components/store/ProductCard.tsx` - Exibir valor equivalente em R$
+- `src/pages/Store.tsx` - Mostrar conversão para usuário
 
-### AdminRedemptionsPanel.tsx
-- Remove local `normalizePhoneForWhatsapp` function  
-- Import from `src/lib/phone-utils.ts`
-- Replace inline user modal with `UserProfileModal` component
-- Remove related state variables that are now handled by the shared component
+**Adicionar na loja**:
+- Abaixo do custo em pontos: "Equivale a R$ X,XX" (usando a fórmula inversa: pontos / 600)
 
 ---
 
-## Files to Create
+## Detalhes Técnicos
 
-| File | Description |
-|------|-------------|
-| `src/lib/phone-utils.ts` | Centralized phone validation and WhatsApp utilities |
-| `src/components/admin/UserProfileModal.tsx` | Reusable profile modal component |
+### Migration SQL para o Banco de Dados
 
-## Files to Modify
+```sql
+-- Adicionar novas colunas à tabela products
+ALTER TABLE public.products 
+ADD COLUMN IF NOT EXISTS prize_value_reais numeric DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS points_calculated integer DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS points_manual_edit boolean DEFAULT false;
 
-| File | Changes |
-|------|---------|
-| `src/pages/Auth.tsx` | Add phone validation requiring 55 prefix |
-| `src/pages/ProfileEdit.tsx` | Add phone validation requiring 55 prefix |
-| `src/components/admin/AdminUsersPanel.tsx` | Add clickable names + profile modal |
-| `src/components/admin/AdminReceiptsPanel.tsx` | Use shared modal and phone utils |
-| `src/components/admin/AdminRedemptionsPanel.tsx` | Use shared modal and phone utils |
+-- Comentários para documentação
+COMMENT ON COLUMN public.products.prize_value_reais IS 'Valor do prêmio em reais informado pelo administrador';
+COMMENT ON COLUMN public.products.points_calculated IS 'Pontos calculados automaticamente (valor x 600)';
+COMMENT ON COLUMN public.products.points_manual_edit IS 'Indica se o custo em pontos foi editado manualmente';
+```
 
----
+### Arquivo de Configuração
 
-## Technical Details
+```typescript
+// src/lib/points-config.ts
 
-### Phone Validation Logic
-```text
-function validateBrazilianPhone(phone: string): boolean {
-  const digits = phone.replace(/\D/g, "");
-  return digits.startsWith("55") && digits.length >= 12;
+// Multiplicadores centralizados
+export const PRODUCT_POINTS_MULTIPLIER = 600;
+export const RECEIPT_POINTS_MULTIPLIER = 10;
+
+// Funções utilitárias para produtos
+export function calculateProductPoints(valueInReais: number): number {
+  return Math.floor(valueInReais * PRODUCT_POINTS_MULTIPLIER);
+}
+
+export function calculateProductValue(points: number): number {
+  return points / PRODUCT_POINTS_MULTIPLIER;
+}
+
+// Funções utilitárias para comprovantes (já existentes no sistema)
+export function calculateReceiptPoints(valueInReais: number): number {
+  return Math.floor(valueInReais * RECEIPT_POINTS_MULTIPLIER);
 }
 ```
 
-### WhatsApp URL Format
-```text
-https://wa.me/{PHONE_DIGITS}?text={ENCODED_MESSAGE}
-```
-Phone must be in international format without + or special characters (e.g., `5511912345678`).
+---
 
-### Accessibility Requirements
-- Modal: `role="dialog"`, `aria-modal="true"`
-- Clickable names: `aria-label` describing the action
-- WhatsApp button: `aria-label="Abrir conversa no WhatsApp"`
-- Disabled state with visual indicator when phone is missing
+## Arquivos a Serem Modificados
+
+| Arquivo | Tipo de Alteração |
+|---------|-------------------|
+| `src/lib/points-config.ts` | **Criar** - Configuração centralizada |
+| `src/components/admin/AdminProductsPanel.tsx` | **Modificar** - Novo formulário |
+| `src/integrations/supabase/admin.ts` | **Modificar** - Tipos e funções CRUD |
+| `src/components/store/ProductCard.tsx` | **Modificar** - Exibir equivalente em R$ |
+| `src/pages/Store.tsx` | **Modificar** - Conversão visual |
+| Migration SQL | **Criar** - Novas colunas na tabela products |
 
 ---
 
-## Acceptance Criteria Checklist
+## Fluxo Visual do Novo Formulário
 
-- [x] Profile modal opens from Receipts panel
-- [x] Profile modal opens from Redemptions panel  
-- [x] Profile modal opens from Users panel (new)
-- [x] WhatsApp button works in all three panels
-- [x] Phone without 55 prefix cannot be saved during registration
-- [x] Phone without 55 prefix cannot be saved during profile edit
-- [x] Clear validation messages displayed to users
-- [x] No code duplication between panels
-- [x] Existing functionality remains intact
+```text
++--------------------------------------------------+
+|  NOVO PRODUTO                                     |
++--------------------------------------------------+
+|  Nome: [____________________]                     |
+|  Descrição: [_______________]                     |
+|                                                   |
+|  Valor do prêmio (R$): [500.00]                  |
+|                                                   |
+|  Custo em pontos: [300.000] (somente leitura)    |
+|                                                   |
+|  +----------------------------------------------+ |
+|  | Com base no valor informado, este produto    | |
+|  | exigirá 300.000 pontos para resgate.        | |
+|  |                                              | |
+|  | Deseja confirmar ou editar esse valor?       | |
+|  |                                              | |
+|  | [Confirmar]  [Editar pontos]                 | |
+|  +----------------------------------------------+ |
+|                                                   |
+|  Estoque: [____]                                  |
+|  Imagem: [Selecionar arquivo]                    |
+|  [x] Produto ativo                               |
+|                                                   |
+|  [Cancelar]  [Salvar]                            |
++--------------------------------------------------+
+```
+
+---
+
+## Considerações de Compatibilidade
+
+1. **Produtos existentes**: Produtos já cadastrados terão `prize_value_reais` e `points_calculated` como NULL, e `points_manual_edit` como FALSE. O sistema continuará funcionando normalmente usando `points_cost`.
+
+2. **Migração gradual**: Ao editar um produto existente, o admin pode optar por informar o valor em reais e recalcular, ou manter o custo em pontos atual.
+
+3. **Futuro**: O multiplicador 600 está centralizado em `points-config.ts`, permitindo alteração fácil sem refatoração do sistema.
+
