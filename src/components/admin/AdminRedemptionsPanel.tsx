@@ -265,7 +265,9 @@ export function AdminRedemptionsPanel() {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-popover border-border">
-                              <SelectItem value="em_analise">Em análise</SelectItem>
+                              <SelectItem value="em_analise" disabled>
+                                Em análise
+                              </SelectItem>
                               <SelectItem value="concluido">Concluído</SelectItem>
                               <SelectItem value="cancelado">Cancelado</SelectItem>
                             </SelectContent>
