@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { fetchCurrentUserProfile, updateCurrentUserProfile } from "@/integrations/supabase/profile";
 import { getPhoneValidationError } from "@/lib/phone-utils";
+import { getDuplicateFieldMessage } from "@/lib/duplicate-errors";
 
 export default function ProfileEdit() {
   const [form, setForm] = useState({
@@ -83,7 +84,8 @@ export default function ProfileEdit() {
       toast.success("Dados atualizados com sucesso.");
     } catch (error) {
       console.error("Erro ao atualizar perfil:", error);
-      toast.error("Não foi possível salvar as alterações.");
+      const duplicateMessage = getDuplicateFieldMessage(error);
+      toast.error(duplicateMessage ?? "Não foi possível salvar as alterações.");
     } finally {
       setIsSaving(false);
     }

@@ -11,11 +11,12 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (user_id, full_name, phone, avatar_url)
+  insert into public.profiles (user_id, full_name, phone, cpf, avatar_url)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name'),
     new.raw_user_meta_data->>'phone',
+    new.raw_user_meta_data->>'cpf',
     new.raw_user_meta_data->>'avatar_url'
   )
   on conflict (user_id) do nothing;
