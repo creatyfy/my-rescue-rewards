@@ -25,13 +25,13 @@ type RedemptionResult = {
   points_spent: number;
   remaining_balance: number;
   stock_remaining: number;
-  status: "pending" | "completed" | "cancelled";
+  status: RedemptionStatus;
 };
 
 type RedemptionHistory = {
   id: string;
   points_spent: number;
-  status: "pending" | "completed" | "cancelled";
+  status: RedemptionStatus;
   created_at: string;
   products: {
     name: string | null;
@@ -70,13 +70,28 @@ const normalizeReceiptStatus = (status?: string | null): ReceiptHistory["status"
   return "pending";
 };
 
+export type RedemptionStatus = "em_analise" | "concluido" | "cancelado";
+
+const normalizeRedemptionStatus = (status?: string | null): RedemptionStatus => {
+  if (status === "concluido" || status === "cancelado" || status === "em_analise") {
+    return status;
+  }
+  if (status === "completed") {
+    return "concluido";
+  }
+  if (status === "cancelled") {
+    return "cancelado";
+  }
+  return "em_analise";
+};
+
 type LedgerEntry = {
   ledger_id: string;
   ledger_type: "earn" | "redeem" | "expire" | "adjustment";
   amount: number;
   created_at: string;
   receipt_status: "pending" | "approved" | "rejected" | null;
-  redemption_status: "pending" | "completed" | "cancelled" | null;
+  redemption_status: RedemptionStatus | null;
   store_name: string | null;
   product_name: string | null;
   protocol_number: string | null;
@@ -208,7 +223,15 @@ export const redeemProduct = async (
   }
 
   const result = data as RedemptionResult[] | null;
-  return result?.[0] ?? null;
+  const redemption = result?.[0];
+  if (!redemption) {
+    return null;
+  }
+
+  return {
+    ...redemption,
+    status: normalizeRedemptionStatus(redemption.status),
+  };
 };
 
 export const fetchRedemptionHistory = async (userId: string): Promise<RedemptionHistory[]> => {
@@ -224,7 +247,10 @@ export const fetchRedemptionHistory = async (userId: string): Promise<Redemption
       return [];
     }
 
-    return (data ?? []) as RedemptionHistory[];
+    return (data ?? []).map((redemption: RedemptionHistory) => ({
+      ...redemption,
+      status: normalizeRedemptionStatus(redemption.status),
+    }));
   } catch {
     return [];
   }
@@ -338,7 +364,10 @@ export const fetchUserLedger = async (userId: string, limit = 5): Promise<Ledger
       return [];
     }
 
-    return (data ?? []) as LedgerEntry[];
+    return (data ?? []).map((entry: LedgerEntry) => ({
+      ...entry,
+      redemption_status: entry.redemption_status ? normalizeRedemptionStatus(entry.redemption_status) : null,
+    }));
   } catch {
     return [];
   }

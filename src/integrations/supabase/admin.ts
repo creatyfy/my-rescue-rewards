@@ -85,7 +85,7 @@ export type AdminProduct = {
 
 export type AdminRedemption = {
   id: string;
-  status: "pending" | "completed" | "cancelled";
+  status: RedemptionStatus;
   points_spent: number;
   created_at: string;
   user_id: string;
@@ -117,6 +117,21 @@ const normalizeReceiptStatus = (status?: string | null): ReceiptReviewStatus => 
     return "pending";
   }
   return "pending";
+};
+
+export type RedemptionStatus = "em_analise" | "concluido" | "cancelado";
+
+const normalizeRedemptionStatus = (status?: string | null): RedemptionStatus => {
+  if (status === "concluido" || status === "cancelado" || status === "em_analise") {
+    return status;
+  }
+  if (status === "completed") {
+    return "concluido";
+  }
+  if (status === "cancelled") {
+    return "cancelado";
+  }
+  return "em_analise";
 };
 
 export const fetchAdminStatus = async (): Promise<boolean> => {
@@ -600,7 +615,7 @@ export const fetchAdminRedemptions = async (): Promise<AdminRedemption[]> => {
 
     return (data ?? []).map((redemption) => ({
       id: redemption.id,
-      status: redemption.status,
+      status: normalizeRedemptionStatus(redemption.status),
       points_spent: redemption.points_spent,
       created_at: redemption.created_at,
       user_id: redemption.user_id,
@@ -649,12 +664,15 @@ export const fetchAdminProfiles = async (): Promise<AdminProfile[]> => {
 
 export const updateAdminRedemptionStatus = async (
   redemptionId: string,
-  status: "pending" | "completed" | "cancelled",
+  status: RedemptionStatus,
 ) => {
-  const { error } = await supabase.from("redemptions").update({ status }).eq("id", redemptionId);
+  const { error } = await supabase.rpc("update_redemption_status_admin", {
+    p_redemption_id: redemptionId,
+    p_new_status: status,
+  });
 
   if (error) {
-    throw error;
+    throw new Error(error.message);
   }
 
   return true;

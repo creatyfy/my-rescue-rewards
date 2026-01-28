@@ -231,10 +231,10 @@ export function useAdminReports() {
     const redemptionTotals = filteredRedemptions.reduce(
       (acc, redemption) => {
         acc.total += 1;
-        if (redemption.status === "completed") {
+        if (redemption.status === "concluido") {
           acc.completed += 1;
           acc.pointsSpent += redemption.points_spent;
-        } else if (redemption.status === "cancelled") {
+        } else if (redemption.status === "cancelado") {
           acc.cancelled += 1;
         } else {
           acc.pending += 1;
