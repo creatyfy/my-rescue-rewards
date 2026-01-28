@@ -82,26 +82,32 @@ export type Database = {
       }
       notifications: {
         Row: {
+          arquivada: boolean | null
           created_at: string
           id: string
           is_read: boolean
           message: string
+          tipo: string | null
           title: string
           user_id: string
         }
         Insert: {
+          arquivada?: boolean | null
           created_at?: string
           id?: string
           is_read?: boolean
           message: string
+          tipo?: string | null
           title: string
           user_id: string
         }
         Update: {
+          arquivada?: boolean | null
           created_at?: string
           id?: string
           is_read?: boolean
           message?: string
+          tipo?: string | null
           title?: string
           user_id?: string
         }
