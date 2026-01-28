@@ -254,7 +254,6 @@ export default function Auth() {
 
     try {
       const cpfDigits = getCpfDigits(formData.cpf);
-      const formattedCpf = formatCpf(cpfDigits);
       const phoneDigits = getPhoneDigits(formData.phone);
       const normalizedPhone = phoneDigits ? `55${phoneDigits}` : "";
       const normalizedEmail = formData.email.trim().toLowerCase();
@@ -315,7 +314,7 @@ export default function Auth() {
           emailRedirectTo: `${window.location.origin}/dashboard`,
           data: {
             full_name: formData.name,
-            cpf: formattedCpf,
+            cpf: cpfDigits,
             phone: normalizedPhone,
           },
         },
@@ -328,7 +327,7 @@ export default function Auth() {
       if (data.session) {
         await updateCurrentUserProfile({
           fullName: formData.name,
-          cpf: formattedCpf,
+          cpf: cpfDigits,
           phone: normalizedPhone,
         });
         navigate("/dashboard");
@@ -386,10 +385,31 @@ export default function Auth() {
     void validateUniqueField(field, formData[field]);
   };
 
+  const isRegister = mode === "register";
+  const cpfDigits = getCpfDigits(formData.cpf);
+  const phoneDigits = getPhoneDigits(formData.phone);
+  const hasPasswordMismatch =
+    isRegister &&
+    formData.password &&
+    formData.confirmPassword &&
+    formData.password !== formData.confirmPassword;
+  const hasMissingRequiredFields =
+    isRegister &&
+    (!formData.name.trim() ||
+      !shouldValidateField("cpf", formData.cpf) ||
+      !shouldValidateField("phone", formData.phone) ||
+      !shouldValidateField("email", formData.email) ||
+      !formData.password ||
+      !formData.confirmPassword ||
+      !cpfDigits ||
+      !phoneDigits);
+
   const shouldDisableSubmit =
     isLoading ||
-    (mode === "register" &&
-      (phoneError !== null ||
+    (isRegister &&
+      (hasMissingRequiredFields ||
+        hasPasswordMismatch ||
+        phoneError !== null ||
         fieldValidation.cpf.status === "loading" ||
         fieldValidation.email.status === "loading" ||
         fieldValidation.phone.status === "loading" ||
