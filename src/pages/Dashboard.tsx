@@ -20,8 +20,9 @@ type TransactionStatus =
   | "approved"
   | "pending"
   | "rejected"
-  | "completed"
-  | "cancelled";
+  | "em_analise"
+  | "concluido"
+  | "cancelado";
 
 type Transaction = {
   id: string;

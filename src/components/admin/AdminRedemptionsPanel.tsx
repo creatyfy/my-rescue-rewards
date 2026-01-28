@@ -21,7 +21,7 @@ export function AdminRedemptionsPanel() {
   const [profiles, setProfiles] = useState<AdminProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingRedemptionId, setUpdatingRedemptionId] = useState<string | null>(null);
-  const [activeStatus, setActiveStatus] = useState<AdminRedemption["status"]>("pending");
+  const [activeStatus, setActiveStatus] = useState<AdminRedemption["status"]>("em_analise");
 
   // User profile modal state
   const [userModalOpen, setUserModalOpen] = useState(false);
@@ -87,7 +87,8 @@ export function AdminRedemptionsPanel() {
       toast.success("Status do resgate atualizado.");
     } catch (error) {
       console.error("Erro ao atualizar resgate:", error);
-      toast.error("Não foi possível atualizar o resgate.");
+      const message = (error as { message?: string }).message ?? "Não foi possível atualizar o resgate.";
+      toast.error(message);
     } finally {
       setUpdatingRedemptionId(null);
     }
@@ -95,19 +96,19 @@ export function AdminRedemptionsPanel() {
 
   const getStatusBadge = (status: AdminRedemption["status"]) => {
     switch (status) {
-      case "completed":
+      case "concluido":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success/10 text-success">
             Concluído
           </span>
         );
-      case "cancelled":
+      case "cancelado":
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-destructive/10 text-destructive">
             Cancelado
           </span>
         );
-      case "pending":
+      case "em_analise":
       default:
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-pending/10 text-pending">
@@ -145,17 +146,17 @@ export function AdminRedemptionsPanel() {
     emptyMessage: string;
   }> = [
     {
-      value: "pending",
+      value: "em_analise",
       label: "Em análise",
       emptyMessage: "Nenhum resgate em análise no momento.",
     },
     {
-      value: "completed",
+      value: "concluido",
       label: "Concluído",
       emptyMessage: "Nenhum resgate concluído no momento.",
     },
     {
-      value: "cancelled",
+      value: "cancelado",
       label: "Cancelado",
       emptyMessage: "Nenhum resgate cancelado no momento.",
     },
@@ -215,6 +216,7 @@ export function AdminRedemptionsPanel() {
                 ) : (
                   filteredRedemptions.map((redemption) => {
                     const userInfo = userLookup.get(redemption.user_id);
+                    const isFinalStatus = redemption.status !== "em_analise";
                     return (
                       <TableRow key={redemption.id} className="hover:bg-muted/20">
                         <TableCell>
@@ -257,15 +259,15 @@ export function AdminRedemptionsPanel() {
                             onValueChange={(value) =>
                               handleUpdateStatus(redemption.id, value as AdminRedemption["status"])
                             }
-                            disabled={updatingRedemptionId === redemption.id}
+                            disabled={updatingRedemptionId === redemption.id || isFinalStatus}
                           >
                             <SelectTrigger className="w-36">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent className="bg-popover border-border">
-                              <SelectItem value="pending">Em análise</SelectItem>
-                              <SelectItem value="completed">Concluído</SelectItem>
-                              <SelectItem value="cancelled">Cancelado</SelectItem>
+                              <SelectItem value="em_analise">Em análise</SelectItem>
+                              <SelectItem value="concluido">Concluído</SelectItem>
+                              <SelectItem value="cancelado">Cancelado</SelectItem>
                             </SelectContent>
                           </Select>
                         </TableCell>
