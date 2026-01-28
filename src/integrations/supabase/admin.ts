@@ -75,6 +75,9 @@ export type AdminProduct = {
   description: string | null;
   image_url: string | null;
   points_cost: number;
+  prize_value_reais: number | null;
+  points_calculated: number | null;
+  points_manual_edit: boolean;
   stock: number;
   active: boolean;
   created_at: string;
@@ -661,7 +664,7 @@ export const fetchAdminProducts = async (): Promise<AdminProduct[]> => {
   try {
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, description, image_url, points_cost, stock, active, created_at")
+      .select("id, name, description, image_url, points_cost, prize_value_reais, points_calculated, points_manual_edit, stock, active, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -669,7 +672,10 @@ export const fetchAdminProducts = async (): Promise<AdminProduct[]> => {
       return [];
     }
 
-    return (data ?? []) as AdminProduct[];
+    return (data ?? []).map((product) => ({
+      ...product,
+      points_manual_edit: product.points_manual_edit ?? false,
+    })) as AdminProduct[];
   } catch {
     return [];
   }
@@ -778,6 +784,9 @@ export const createProduct = async (input: {
   name: string;
   description?: string | null;
   pointsCost: number;
+  prizeValueReais?: number | null;
+  pointsCalculated?: number | null;
+  pointsManualEdit?: boolean;
   stock: number;
   imageFile?: File | null;
   imageUrl?: string | null;
@@ -793,18 +802,24 @@ export const createProduct = async (input: {
       name: input.name,
       description: input.description ?? null,
       points_cost: input.pointsCost,
+      prize_value_reais: input.prizeValueReais ?? null,
+      points_calculated: input.pointsCalculated ?? null,
+      points_manual_edit: input.pointsManualEdit ?? false,
       stock: input.stock,
       image_url: imageUrl,
       active: input.active,
     })
-    .select("id, name, description, image_url, points_cost, stock, active, created_at")
+    .select("id, name, description, image_url, points_cost, prize_value_reais, points_calculated, points_manual_edit, stock, active, created_at")
     .single();
 
   if (error) {
     throw error;
   }
 
-  return data as AdminProduct;
+  return {
+    ...data,
+    points_manual_edit: data.points_manual_edit ?? false,
+  } as AdminProduct;
 };
 
 export const updateProduct = async (input: {
@@ -812,6 +827,9 @@ export const updateProduct = async (input: {
   name: string;
   description?: string | null;
   pointsCost: number;
+  prizeValueReais?: number | null;
+  pointsCalculated?: number | null;
+  pointsManualEdit?: boolean;
   stock: number;
   imageFile?: File | null;
   imageUrl?: string | null;
@@ -827,19 +845,25 @@ export const updateProduct = async (input: {
       name: input.name,
       description: input.description ?? null,
       points_cost: input.pointsCost,
+      prize_value_reais: input.prizeValueReais ?? null,
+      points_calculated: input.pointsCalculated ?? null,
+      points_manual_edit: input.pointsManualEdit ?? false,
       stock: input.stock,
       image_url: imageUrl,
       active: input.active,
     })
     .eq("id", input.id)
-    .select("id, name, description, image_url, points_cost, stock, active, created_at")
+    .select("id, name, description, image_url, points_cost, prize_value_reais, points_calculated, points_manual_edit, stock, active, created_at")
     .single();
 
   if (error) {
     throw error;
   }
 
-  return data as AdminProduct;
+  return {
+    ...data,
+    points_manual_edit: data.points_manual_edit ?? false,
+  } as AdminProduct;
 };
 
 export const deleteProduct = async (id: string) => {
