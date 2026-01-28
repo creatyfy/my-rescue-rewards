@@ -8,7 +8,6 @@ import { updateCurrentUserProfile } from "@/integrations/supabase/profile";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Phone, FileText } from "lucide-react";
 import logoHorizontal from "@/assets/logo-horizontal.png";
-import { getPhoneValidationError } from "@/lib/phone-utils";
 import { getDuplicateFieldMessage } from "@/lib/duplicate-errors";
 
 type AuthMode = "login" | "register";
@@ -51,7 +50,6 @@ export default function Auth() {
     }
   }, [searchParams]);
 
-  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [fieldValidation, setFieldValidation] = useState<UniqueFieldValidation>({
     cpf: { status: "idle", message: "" },
     email: { status: "idle", message: "" },
@@ -115,6 +113,14 @@ export default function Auth() {
     return value.trim().toLowerCase();
   };
 
+  const isValidEmailFormat = (value: string) => {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) {
+      return false;
+    }
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized);
+  };
+
   const shouldValidateField = (field: UniqueFieldKey, value: string) => {
     if (field === "cpf") {
       return getCpfDigits(value).length === 11;
@@ -122,10 +128,10 @@ export default function Auth() {
 
     if (field === "phone") {
       const digits = getPhoneDigits(value);
-      return digits.length >= 10;
+      return digits.length === 11;
     }
 
-    return value.includes("@");
+    return isValidEmailFormat(value);
   };
 
   const setFieldValidationState = (
@@ -141,20 +147,20 @@ export default function Auth() {
 
   const getValidationMessage = (field: UniqueFieldKey) => {
     if (field === "cpf") {
-      return "Este CPF já está vinculado a outra conta.";
+      return "Este CPF já está cadastrado.";
     }
 
     if (field === "phone") {
-      return "Este telefone já está vinculado a outro usuário.";
+      return "Este telefone já está vinculado a outra conta.";
     }
 
-    return "Este e-mail já está em uso.";
+    return "Este e-mail já está cadastrado.";
   };
 
   const validateUniqueField = async (field: UniqueFieldKey, value: string) => {
     if (!shouldValidateField(field, value)) {
       setFieldValidationState(field, "idle");
-      return;
+      return "idle";
     }
 
     const normalizedValue = getNormalizedValue(field, value);
@@ -162,37 +168,45 @@ export default function Auth() {
     setFieldValidationState(field, "loading");
 
     try {
-      const { data, error } = await supabase.functions.invoke("validar-unicidade", {
+      const functionName =
+        field === "cpf"
+          ? "validar-cpf"
+          : field === "phone"
+            ? "validar-telefone"
+            : "validar-email";
+      const { data, error } = await supabase.functions.invoke(functionName, {
         body: {
-          tipo: field === "phone" ? "telefone" : field,
           valor: normalizedValue,
         },
       });
 
       if (requestId !== validationRequestId.current[field]) {
-        return;
+        return "idle";
       }
 
       if (error) {
+        const status = (error as { context?: { status?: number } }).context?.status;
+        if (status === 409) {
+          setFieldValidationState(field, "invalid", getValidationMessage(field));
+          return "invalid";
+        }
         setFieldValidationState(field, "idle");
-        toast.error("Não foi possível validar este campo agora.");
-        return;
+        return "idle";
       }
 
       if (data?.disponivel) {
         setFieldValidationState(field, "valid", "Disponível");
-      } else {
-        setFieldValidationState(field, "invalid", getValidationMessage(field));
+        return "valid";
       }
+      setFieldValidationState(field, "invalid", getValidationMessage(field));
+      return "invalid";
     } catch (validationError) {
       if (requestId !== validationRequestId.current[field]) {
-        return;
+        return "idle";
       }
 
       setFieldValidationState(field, "idle");
-      const message =
-        validationError instanceof Error ? validationError.message : "";
-      toast.error(message || "Não foi possível validar este campo agora.");
+      return "idle";
     }
   };
 
@@ -218,23 +232,6 @@ export default function Auth() {
       return;
     }
 
-    if (!shouldValidateField("email", formData.email)) {
-      setFieldValidationState("email", "idle");
-      return;
-    }
-
-    const timeout = window.setTimeout(() => {
-      void validateUniqueField("email", formData.email);
-    }, 600);
-
-    return () => window.clearTimeout(timeout);
-  }, [formData.email, mode]);
-
-  useEffect(() => {
-    if (mode !== "register") {
-      return;
-    }
-
     if (!shouldValidateField("phone", formData.phone)) {
       setFieldValidationState("phone", "idle");
       return;
@@ -250,7 +247,6 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setPhoneError(null);
 
     try {
       const cpfDigits = getCpfDigits(formData.cpf);
@@ -283,12 +279,25 @@ export default function Auth() {
         return;
       }
 
-      // Validate phone for registration
-      if (mode === "register" && normalizedPhone) {
-        const validationError = getPhoneValidationError(normalizedPhone);
-        if (validationError) {
-          setPhoneError(validationError);
-          toast.error(validationError);
+      if (mode === "register" && !isValidEmailFormat(formData.email)) {
+        setFieldValidationState("email", "invalid", "Informe um e-mail válido.");
+        return;
+      }
+
+      if (mode === "register") {
+        const validationResults = await Promise.all([
+          fieldValidation.cpf.status === "valid"
+            ? "valid"
+            : validateUniqueField("cpf", formData.cpf),
+          fieldValidation.phone.status === "valid"
+            ? "valid"
+            : validateUniqueField("phone", formData.phone),
+          fieldValidation.email.status === "valid"
+            ? "valid"
+            : validateUniqueField("email", formData.email),
+        ]);
+
+        if (validationResults.some((status) => status === "invalid")) {
           return;
         }
       }
@@ -377,6 +386,14 @@ export default function Auth() {
       return;
     }
 
+    if (field === "email") {
+      const emailValue = formData.email.trim();
+      if (emailValue && !isValidEmailFormat(emailValue)) {
+        setFieldValidationState("email", "invalid", "Informe um e-mail válido.");
+        return;
+      }
+    }
+
     if (!shouldValidateField(field, formData[field])) {
       setFieldValidationState(field, "idle");
       return;
@@ -409,7 +426,6 @@ export default function Auth() {
     (isRegister &&
       (hasMissingRequiredFields ||
         hasPasswordMismatch ||
-        phoneError !== null ||
         fieldValidation.cpf.status === "loading" ||
         fieldValidation.email.status === "loading" ||
         fieldValidation.phone.status === "loading" ||
@@ -524,9 +540,7 @@ export default function Auth() {
                   onChange={handleChange}
                   onBlur={() => handleUniqueFieldBlur("phone")}
                   className={`pl-16 ${
-                    phoneError || fieldValidation.phone.status === "invalid"
-                      ? "border-destructive"
-                      : ""
+                    fieldValidation.phone.status === "invalid" ? "border-destructive" : ""
                   }`}
                   inputMode="numeric"
                   maxLength={11}
@@ -536,9 +550,6 @@ export default function Auth() {
               <p className="text-xs text-muted-foreground">
                 O código do país 55 já está incluso. Digite DDD + número (11 dígitos).
               </p>
-              {phoneError && (
-                <p className="text-xs text-destructive">{phoneError}</p>
-              )}
               {fieldValidation.phone.status === "loading" && (
                 <p className="text-xs text-muted-foreground">
                   Validando telefone...

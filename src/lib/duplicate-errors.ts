@@ -1,7 +1,7 @@
 export const DUPLICATE_FIELD_MESSAGES = {
-  cpf: "Este CPF já está vinculado a outro cadastro.",
-  email: "Este e-mail já está em uso. Utilize outro ou recupere sua conta.",
-  phone: "Este telefone já está vinculado a outro usuário.",
+  cpf: "Este CPF já está cadastrado.",
+  email: "Este e-mail já está cadastrado.",
+  phone: "Este telefone já está vinculado a outra conta.",
 } as const;
 
 type ErrorLike = {
