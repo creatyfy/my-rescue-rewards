@@ -9,6 +9,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Phone, FileText } from "lucide-react";
 import logoHorizontal from "@/assets/logo-horizontal.png";
 import { getPhoneValidationError } from "@/lib/phone-utils";
+import { getDuplicateFieldMessage } from "@/lib/duplicate-errors";
 
 type AuthMode = "login" | "register";
 
@@ -82,6 +83,7 @@ export default function Auth() {
       const formattedCpf = formatCpf(cpfDigits);
       const phoneDigits = getPhoneDigits(formData.phone);
       const normalizedPhone = phoneDigits ? `55${phoneDigits}` : "";
+      const normalizedEmail = formData.email.trim().toLowerCase();
 
       if (mode === "register" && formData.password !== formData.confirmPassword) {
         toast.error("As senhas não conferem.");
@@ -100,7 +102,7 @@ export default function Auth() {
 
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
+          email: normalizedEmail,
           password: formData.password,
         });
 
@@ -112,36 +114,8 @@ export default function Auth() {
         return;
       }
 
-      if (mode === "register") {
-        if (cpfDigits) {
-          const { data: cpfMatches, error: cpfError } = await (supabase as any)
-            .from("profiles")
-            .select("user_id")
-            .or(`cpf.eq.${formattedCpf},cpf.eq.${cpfDigits}`)
-            .limit(1);
-
-          if (!cpfError && cpfMatches?.length) {
-            toast.error("CPF já cadastrado.");
-            return;
-          }
-        }
-
-        if (normalizedPhone) {
-          const { data: phoneMatches, error: phoneErrorCheck } = await (supabase as any)
-            .from("profiles")
-            .select("user_id")
-            .or(`phone.eq.${normalizedPhone},phone.eq.${phoneDigits}`)
-            .limit(1);
-
-          if (!phoneErrorCheck && phoneMatches?.length) {
-            toast.error("Telefone já cadastrado.");
-            return;
-          }
-        }
-      }
-
       const { data, error } = await supabase.auth.signUp({
-        email: formData.email,
+        email: normalizedEmail,
         password: formData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/dashboard`,
@@ -168,12 +142,14 @@ export default function Auth() {
         toast.success("Conta criada! Verifique seu e-mail para confirmar.");
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "";
-      if (message.toLowerCase().includes("user already registered")) {
-        toast.error("E-mail já cadastrado.");
-      } else {
-        toast.error(message || "Não foi possível autenticar. Tente novamente.");
+      const duplicateMessage = getDuplicateFieldMessage(error);
+      if (duplicateMessage) {
+        toast.error(duplicateMessage);
+        return;
       }
+
+      const message = error instanceof Error ? error.message : "";
+      toast.error(message || "Não foi possível autenticar. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
