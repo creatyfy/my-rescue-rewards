@@ -18,6 +18,9 @@ export default function ProfileEdit() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
+  const normalizeCpf = (value: string) => value.replace(/\D/g, "").slice(0, 11);
+  const normalizePhone = (value: string) => value.replace(/\D/g, "");
+
   useEffect(() => {
     let isMounted = true;
 
@@ -63,8 +66,9 @@ export default function ProfileEdit() {
 
     // Validate phone if provided
     const phoneValue = form.phone.trim();
-    if (phoneValue) {
-      const validationError = getPhoneValidationError(phoneValue);
+    const normalizedPhone = normalizePhone(phoneValue);
+    if (normalizedPhone) {
+      const validationError = getPhoneValidationError(normalizedPhone);
       if (validationError) {
         setPhoneError(validationError);
         toast.error(validationError);
@@ -76,10 +80,11 @@ export default function ProfileEdit() {
     setIsSaving(true);
 
     try {
+      const normalizedCpf = normalizeCpf(form.cpf);
       await updateCurrentUserProfile({
         fullName: form.fullName.trim() || null,
-        cpf: form.cpf.trim() || null,
-        phone: phoneValue || null,
+        cpf: normalizedCpf || null,
+        phone: normalizedPhone || null,
       });
       toast.success("Dados atualizados com sucesso.");
     } catch (error) {
