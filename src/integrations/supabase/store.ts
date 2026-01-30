@@ -222,7 +222,7 @@ export const redeemProduct = async (
     throw error;
   }
 
-  const result = data as RedemptionResult[] | null;
+  const result = data as unknown as RedemptionResult[] | null;
   const redemption = result?.[0];
   if (!redemption) {
     return null;

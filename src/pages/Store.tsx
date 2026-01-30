@@ -344,17 +344,34 @@ export default function Store() {
                 </Button>
               </DialogClose>
             </div>
-            <div className="flex flex-1 items-center justify-center p-4 sm:p-6">
-              {previewProduct ? (
-                <img
-                  src={previewProduct.imageUrl}
-                  alt={`Imagem do produto ${previewProduct.name}`}
-                  loading="lazy"
-                  decoding="async"
-                  className="max-h-full max-w-full object-contain"
-                />
-              ) : (
-                <div className="text-sm text-muted-foreground">Imagem indisponível.</div>
+            <div className="flex flex-1 flex-col sm:flex-row overflow-hidden">
+              {/* Image Section */}
+              <div className="flex flex-1 items-center justify-center p-4 sm:p-6 bg-muted/30">
+                {previewProduct ? (
+                  <img
+                    src={previewProduct.imageUrl}
+                    alt={`Imagem do produto ${previewProduct.name}`}
+                    loading="lazy"
+                    decoding="async"
+                    className="max-h-[50vh] sm:max-h-[70vh] max-w-full object-contain rounded-lg"
+                  />
+                ) : (
+                  <div className="text-sm text-muted-foreground">Imagem indisponível.</div>
+                )}
+              </div>
+              
+              {/* Description Section */}
+              {previewProduct?.description && (
+                <div className="sm:w-80 border-t sm:border-t-0 sm:border-l border-border bg-background">
+                  <div className="p-4 sm:p-5 h-full overflow-y-auto">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                      Descrição
+                    </h4>
+                    <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                      {previewProduct.description}
+                    </p>
+                  </div>
+                </div>
               )}
             </div>
           </div>
