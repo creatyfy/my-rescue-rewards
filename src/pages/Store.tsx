@@ -316,7 +316,7 @@ export default function Store() {
         <DialogContent
           showCloseButton={false}
           closeLabel="Fechar imagem do produto"
-          className="w-[95vw] max-w-4xl h-[90vh] sm:h-auto sm:max-h-[90vh] p-0"
+          className="w-[95vw] max-w-4xl max-h-[90vh] p-0 flex flex-col"
           onOpenAutoFocus={(event) => {
             event.preventDefault();
             previewCloseButtonRef.current?.focus();
@@ -326,34 +326,37 @@ export default function Store() {
             previewTriggerRef.current?.focus();
           }}
         >
-          <div className="flex h-full flex-col bg-background">
-            <div className="flex items-center justify-between border-b border-border px-4 py-3">
-              <DialogTitle className="text-sm font-semibold text-foreground">
-                {previewProduct?.name ?? "Produto"}
-              </DialogTitle>
-              <DialogClose asChild>
-                <Button
-                  ref={previewCloseButtonRef}
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9"
-                  aria-label="Fechar imagem do produto"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </DialogClose>
-            </div>
-            <div className="flex flex-1 flex-col sm:flex-row overflow-hidden min-h-0">
+          {/* Header - Fixed */}
+          <div className="flex items-center justify-between border-b border-border px-4 py-3 shrink-0">
+            <DialogTitle className="text-sm font-semibold text-foreground">
+              {previewProduct?.name ?? "Produto"}
+            </DialogTitle>
+            <DialogClose asChild>
+              <Button
+                ref={previewCloseButtonRef}
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9"
+                aria-label="Fechar imagem do produto"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogClose>
+          </div>
+          
+          {/* Content - Scrollable on mobile, side-by-side on desktop */}
+          <div className="flex-1 overflow-y-auto sm:overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:h-full">
               {/* Image Section */}
-              <div className="flex items-center justify-center p-3 sm:p-6 bg-muted/30 shrink-0 max-h-[40vh] sm:max-h-none sm:flex-1">
+              <div className="flex items-center justify-center p-4 sm:p-6 bg-muted/30 sm:flex-1 shrink-0">
                 {previewProduct ? (
                   <img
                     src={previewProduct.imageUrl}
                     alt={`Imagem do produto ${previewProduct.name}`}
                     loading="lazy"
                     decoding="async"
-                    className="max-h-full max-w-full object-contain rounded-lg"
+                    className="max-h-[35vh] sm:max-h-[70vh] max-w-full object-contain rounded-lg"
                   />
                 ) : (
                   <div className="text-sm text-muted-foreground">Imagem indisponível.</div>
@@ -362,12 +365,12 @@ export default function Store() {
               
               {/* Description Section */}
               {previewProduct?.description && (
-                <div className="flex-1 min-h-0 sm:flex-none sm:w-80 border-t sm:border-t-0 sm:border-l border-border bg-background overflow-hidden">
-                  <div className="p-4 sm:p-5 h-full overflow-y-auto">
+                <div className="sm:w-80 border-t sm:border-t-0 sm:border-l border-border bg-background sm:overflow-y-auto">
+                  <div className="p-4 sm:p-5">
                     <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2 sm:mb-3">
                       Descrição
                     </h4>
-                    <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                    <p className="text-sm text-foreground leading-relaxed whitespace-pre-line pb-4 sm:pb-0">
                       {previewProduct.description}
                     </p>
                   </div>
