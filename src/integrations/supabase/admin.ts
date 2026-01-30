@@ -107,6 +107,7 @@ export type AdminReceiptSummary = {
   establishment_id: string | null;
   establishment_name: string | null;
   user_id: string;
+  image_path: string | null;
 };
 
 const normalizeReceiptStatus = (status?: string | null): ReceiptReviewStatus => {
@@ -572,7 +573,7 @@ export const fetchAdminReceiptsSummary = async (): Promise<AdminReceiptSummary[]
     const { data, error } = await supabase
       .from("receipts")
       .select(
-        "id, status, purchase_value, points_earned, created_at, establishment_id, establishments(name), user_id",
+        "id, status, purchase_value, points_earned, created_at, establishment_id, establishments(name), user_id, image_path",
       )
       .order("created_at", { ascending: false });
 
@@ -590,6 +591,7 @@ export const fetchAdminReceiptsSummary = async (): Promise<AdminReceiptSummary[]
       establishment_id: receipt.establishment_id ?? null,
       establishment_name: receipt.establishments?.name ?? null,
       user_id: receipt.user_id,
+      image_path: receipt.image_path ?? null,
     })) as AdminReceiptSummary[];
   } catch {
     return [];

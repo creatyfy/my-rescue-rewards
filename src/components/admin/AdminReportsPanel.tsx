@@ -7,6 +7,7 @@ import { useAdminReports } from "@/hooks/useAdminReports";
 import { ReportsFilterBar } from "./reports/ReportsFilterBar";
 import { ReportsMetricsGrid } from "./reports/ReportsMetricsGrid";
 import { ReportsSummaryTable } from "./reports/ReportsSummaryTable";
+import { ReportsReceiptsTable } from "./reports/ReportsReceiptsTable";
 import { EstablishmentDetailView } from "./reports/EstablishmentDetailView";
 
 type AdminReportsPanelProps = {
@@ -225,6 +226,13 @@ export function AdminReportsPanel({
 
                   {/* Summary Table */}
                   <ReportsSummaryTable summary={summary} />
+
+                  {/* Receipts Table */}
+                  <ReportsReceiptsTable
+                    receipts={receipts}
+                    establishments={establishments}
+                    userLookup={userLookup}
+                  />
                 </>
               ) : (
                 <EmptyState />
