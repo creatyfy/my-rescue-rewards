@@ -211,11 +211,20 @@ export function AdminReportsPanel({
 
           {/* Establishment Detail View */}
           {selectedEstablishment && establishmentMetrics ? (
-            <EstablishmentDetailView
-              establishment={selectedEstablishment}
-              metrics={establishmentMetrics}
-              onBack={() => setEstablishmentFilter("all")}
-            />
+            <>
+              <EstablishmentDetailView
+                establishment={selectedEstablishment}
+                metrics={establishmentMetrics}
+                onBack={() => setEstablishmentFilter("all")}
+              />
+              
+              {/* Receipts Table for selected establishment */}
+              <ReportsReceiptsTable
+                receipts={receipts}
+                establishments={establishments}
+                userLookup={userLookup}
+              />
+            </>
           ) : (
             <>
               {/* General View */}
