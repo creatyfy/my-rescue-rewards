@@ -225,9 +225,9 @@ export function AdminProductsPanel() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteProduct(id);
+      const result = await deleteProduct(id);
       setItems((prev) => prev.filter((item) => item.id !== id));
-      toast.success("Produto removido.");
+      toast.success(result.archived ? "Produto removido do catálogo." : "Produto removido.");
     } catch (error) {
       console.error("Erro ao remover produto:", error);
       const message = error instanceof Error ? error.message : "Não foi possível remover o produto.";

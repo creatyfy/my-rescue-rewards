@@ -889,9 +889,22 @@ export const updateProduct = async (input: {
 export const deleteProduct = async (id: string) => {
   const { error } = await supabase.from("products").delete().eq("id", id);
 
-  if (error) {
-    throw error;
+  if (!error) {
+    return { archived: false };
   }
 
-  return true;
+  if (error.code === "23503") {
+    const { error: archiveError } = await supabase
+      .from("products")
+      .update({ active: false, stock: 0 })
+      .eq("id", id);
+
+    if (archiveError) {
+      throw archiveError;
+    }
+
+    return { archived: true };
+  }
+
+  throw error;
 };
