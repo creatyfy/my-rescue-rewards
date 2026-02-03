@@ -294,10 +294,8 @@ export default function Profile() {
           <DialogHeader>
             <DialogTitle>Excluir conta</DialogTitle>
             <DialogDescription>
-              Todos os seus dados pessoais e progresso serão apagados. Informações
-              essenciais para o administrador, como resgates e comprovantes, serão mantidas
-              para não impactar os relatórios. Se quiser se cadastrar novamente, você
-              começará do zero.
+              Com essa ação você apagará todos seus dados pessoais e progressão no nosso
+              sistema.
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/40 p-4">
@@ -310,7 +308,7 @@ export default function Profile() {
               htmlFor="confirm-delete"
               className="text-sm text-foreground leading-relaxed cursor-pointer"
             >
-              Estou ciente de que meus dados pessoais e progresso serão apagados.
+              Estou ciente de que meus dados pessoais e progressão serão apagados.
             </label>
           </div>
           <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
