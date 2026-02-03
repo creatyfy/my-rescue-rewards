@@ -1,5 +1,14 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
 import {
   User,
@@ -9,10 +18,15 @@ import {
   LogOut,
   Shield,
   FileText,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { fetchCurrentUserProfile, logoutCurrentUser } from "@/integrations/supabase/profile";
+import {
+  deleteCurrentUserData,
+  fetchCurrentUserProfile,
+  logoutCurrentUser,
+} from "@/integrations/supabase/profile";
 import {
   fetchCurrentUserBalance,
   fetchCurrentUserId,
@@ -37,6 +51,9 @@ export default function Profile() {
     receipts: 0,
     redemptions: 0,
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmed, setDeleteConfirmed] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -136,6 +153,28 @@ export default function Profile() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!deleteConfirmed) {
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      await deleteCurrentUserData();
+      toast.success("Seus dados pessoais foram apagados.");
+      await logoutCurrentUser();
+      navigate("/auth");
+    } catch (error) {
+      console.error("Erro ao apagar dados da conta:", error);
+      toast.error("Não foi possível apagar seus dados pessoais.");
+    } finally {
+      setIsDeletingAccount(false);
+      setDeleteDialogOpen(false);
+      setDeleteConfirmed(false);
+    }
+  };
+
   return (
     <AppLayout title="Perfil" showBack>
       <div className="container px-4 py-6">
@@ -227,11 +266,73 @@ export default function Profile() {
           Sair da conta
         </Button>
 
+        <Button
+          variant="outline"
+          className="w-full mt-3 text-destructive border-destructive/40 hover:bg-destructive/10"
+          onClick={() => setDeleteDialogOpen(true)}
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          Excluir minha conta
+        </Button>
+
         {/* Version */}
         <p className="text-center text-xs text-muted-foreground mt-6">
           Meu Resgate v1.0.0
         </p>
       </div>
+
+      <Dialog
+        open={deleteDialogOpen}
+        onOpenChange={(open) => {
+          setDeleteDialogOpen(open);
+          if (!open) {
+            setDeleteConfirmed(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Excluir conta</DialogTitle>
+            <DialogDescription>
+              Todos os seus dados pessoais e progresso serão apagados. Informações
+              essenciais para o administrador, como resgates e comprovantes, serão mantidas
+              para não impactar os relatórios. Se quiser se cadastrar novamente, você
+              começará do zero.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/40 p-4">
+            <Checkbox
+              id="confirm-delete"
+              checked={deleteConfirmed}
+              onCheckedChange={(checked) => setDeleteConfirmed(Boolean(checked))}
+            />
+            <label
+              htmlFor="confirm-delete"
+              className="text-sm text-foreground leading-relaxed cursor-pointer"
+            >
+              Estou ciente de que meus dados pessoais e progresso serão apagados.
+            </label>
+          </div>
+          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              disabled={isDeletingAccount}
+              className="w-full sm:w-auto"
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={!deleteConfirmed || isDeletingAccount}
+              className="w-full sm:w-auto"
+            >
+              {isDeletingAccount ? "Apagando..." : "Confirmar exclusão"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
