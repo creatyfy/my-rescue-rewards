@@ -297,8 +297,9 @@ export default function Profile() {
             <DialogHeader>
               <DialogTitle>Excluir conta</DialogTitle>
               <DialogDescription>
-                Com essa ação você apagará todos seus dados pessoais e progressão no nosso
-                sistema.
+                Com essa ação apagaremos seus dados pessoais e bloquearemos o acesso à conta,
+                mantendo apenas informações necessárias para relatórios (comprovantes, resgates
+                e valores de compras).
               </DialogDescription>
             </DialogHeader>
             <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/40 p-4">
@@ -311,7 +312,8 @@ export default function Profile() {
                 htmlFor="confirm-delete"
                 className="text-sm text-foreground leading-relaxed cursor-pointer"
               >
-                Estou ciente de que meus dados pessoais e progressão serão apagados.
+                Estou ciente de que meus dados pessoais serão apagados e a conta será
+                bloqueada.
               </label>
             </div>
             <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">

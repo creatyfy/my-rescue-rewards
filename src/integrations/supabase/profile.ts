@@ -172,71 +172,15 @@ export const updateCurrentUserAvatar = async (file: File) => {
   return publicUrl;
 };
 
-const getAvatarPathFromUrl = (avatarUrl: string | null) => {
-  if (!avatarUrl) {
-    return null;
-  }
-
-  const marker = "/avatars/";
-  const index = avatarUrl.indexOf(marker);
-  if (index === -1) {
-    return null;
-  }
-
-  return avatarUrl.slice(index + marker.length);
-};
-
 export const deleteCurrentUserData = async () => {
-  const { data: userData, error: userError } = await supabase.auth.getUser();
+  const { data, error } = await supabase.functions.invoke("delete-account");
 
-  if (userError) {
-    throw userError;
+  if (error) {
+    throw error;
   }
 
-  if (!userData.user) {
-    throw new Error("Usuário não autenticado.");
-  }
-
-  let avatarUrl: string | null = null;
-
-  try {
-    const { data, error } = await (supabase as any)
-      .from("profiles")
-      .select("avatar_url")
-      .eq("user_id", userData.user.id)
-      .maybeSingle();
-
-    if (error) {
-      console.warn("profiles table not available:", error.message);
-    } else {
-      avatarUrl = data?.avatar_url ?? null;
-    }
-  } catch (error) {
-    console.warn("Não foi possível carregar avatar para exclusão:", error);
-  }
-
-  const avatarPath = getAvatarPathFromUrl(avatarUrl);
-
-  if (avatarPath) {
-    const { error: deleteError } = await supabase.storage.from("avatars").remove([avatarPath]);
-
-    if (deleteError) {
-      console.warn("Não foi possível remover avatar:", deleteError.message);
-    }
-  }
-
-  const { error: profileError } = await (supabase as any)
-    .from("profiles")
-    .update({
-      full_name: null,
-      cpf: null,
-      phone: null,
-      avatar_url: null,
-    })
-    .eq("user_id", userData.user.id);
-
-  if (profileError) {
-    throw profileError;
+  if (!data?.success) {
+    throw new Error("Não foi possível apagar seus dados pessoais.");
   }
 
   return true;
