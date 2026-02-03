@@ -297,9 +297,8 @@ export default function Profile() {
             <DialogHeader>
               <DialogTitle>Excluir conta</DialogTitle>
               <DialogDescription>
-                Com essa ação apagaremos seus dados pessoais e bloquearemos o acesso à conta,
-                mantendo apenas informações necessárias para relatórios (comprovantes, resgates
-                e valores de compras).
+                Com essa ação você apagará todos seus dados cadastrais e progressão do nosso
+                sistema.
               </DialogDescription>
             </DialogHeader>
             <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/40 p-4">
