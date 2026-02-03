@@ -266,14 +266,16 @@ export default function Profile() {
           Sair da conta
         </Button>
 
-        <Button
-          variant="outline"
-          className="w-full mt-3 text-destructive border-destructive/40 hover:bg-destructive/10"
-          onClick={() => setDeleteDialogOpen(true)}
-        >
-          <Trash2 className="w-4 h-4 mr-2" />
-          Excluir minha conta
-        </Button>
+        {!isAdmin && (
+          <Button
+            variant="outline"
+            className="w-full mt-3 text-destructive border-destructive/40 hover:bg-destructive/10"
+            onClick={() => setDeleteDialogOpen(true)}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Excluir minha conta
+          </Button>
+        )}
 
         {/* Version */}
         <p className="text-center text-xs text-muted-foreground mt-6">
@@ -281,56 +283,58 @@ export default function Profile() {
         </p>
       </div>
 
-      <Dialog
-        open={deleteDialogOpen}
-        onOpenChange={(open) => {
-          setDeleteDialogOpen(open);
-          if (!open) {
-            setDeleteConfirmed(false);
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Excluir conta</DialogTitle>
-            <DialogDescription>
-              Com essa ação você apagará todos seus dados pessoais e progressão no nosso
-              sistema.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/40 p-4">
-            <Checkbox
-              id="confirm-delete"
-              checked={deleteConfirmed}
-              onCheckedChange={(checked) => setDeleteConfirmed(Boolean(checked))}
-            />
-            <label
-              htmlFor="confirm-delete"
-              className="text-sm text-foreground leading-relaxed cursor-pointer"
-            >
-              Estou ciente de que meus dados pessoais e progressão serão apagados.
-            </label>
-          </div>
-          <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
-            <Button
-              variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
-              disabled={isDeletingAccount}
-              className="w-full sm:w-auto"
-            >
-              Cancelar
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteAccount}
-              disabled={!deleteConfirmed || isDeletingAccount}
-              className="w-full sm:w-auto"
-            >
-              {isDeletingAccount ? "Apagando..." : "Confirmar exclusão"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {!isAdmin && (
+        <Dialog
+          open={deleteDialogOpen}
+          onOpenChange={(open) => {
+            setDeleteDialogOpen(open);
+            if (!open) {
+              setDeleteConfirmed(false);
+            }
+          }}
+        >
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Excluir conta</DialogTitle>
+              <DialogDescription>
+                Com essa ação você apagará todos seus dados pessoais e progressão no nosso
+                sistema.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/40 p-4">
+              <Checkbox
+                id="confirm-delete"
+                checked={deleteConfirmed}
+                onCheckedChange={(checked) => setDeleteConfirmed(Boolean(checked))}
+              />
+              <label
+                htmlFor="confirm-delete"
+                className="text-sm text-foreground leading-relaxed cursor-pointer"
+              >
+                Estou ciente de que meus dados pessoais e progressão serão apagados.
+              </label>
+            </div>
+            <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteDialogOpen(false)}
+                disabled={isDeletingAccount}
+                className="w-full sm:w-auto"
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteAccount}
+                disabled={!deleteConfirmed || isDeletingAccount}
+                className="w-full sm:w-auto"
+              >
+                {isDeletingAccount ? "Apagando..." : "Confirmar exclusão"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </AppLayout>
   );
 }
