@@ -20,6 +20,9 @@ import { Download, Pencil, Plus, Trash2 } from "lucide-react";
 const buildQrCodeUrl = (token: string) =>
   `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(token)}`;
 
+const buildQrFilename = (name: string) =>
+  `qr-${name.trim().toLowerCase().replace(/[^a-z0-9]+/gi, "-").replace(/(^-|-$)+/g, "") || "estabelecimento"}.png`;
+
 type EstablishmentFormState = {
   id?: string;
   name: string;
@@ -149,6 +152,29 @@ export function AdminEstablishmentsPanel() {
     }
   };
 
+  const handleDownloadQrCode = async (qrUrl: string, name: string) => {
+    try {
+      const response = await fetch(qrUrl);
+      if (!response.ok) {
+        throw new Error("Não foi possível baixar o QR Code.");
+      }
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = objectUrl;
+      anchor.download = buildQrFilename(name);
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(objectUrl);
+      toast.success("QR Code baixado.");
+    } catch (error) {
+      console.error("Erro ao baixar QR Code:", error);
+      const message = error instanceof Error ? error.message : "Não foi possível baixar o QR Code.";
+      toast.error(message);
+    }
+  };
+
   useEffect(() => {
     if (!dialogOpen) {
       if (localPreviewUrl) URL.revokeObjectURL(localPreviewUrl);
@@ -250,11 +276,13 @@ export function AdminEstablishmentsPanel() {
                             alt={`QR Code ${item.name}`}
                             className="h-12 w-12 sm:h-16 sm:w-16 rounded border"
                           />
-                          <Button variant="outline" size="sm" asChild>
-                            <a href={qrUrl} download={`qr-${item.name}.png`}>
-                              <Download className="h-4 w-4 sm:mr-1" />
-                              <span className="hidden sm:inline">Download</span>
-                            </a>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadQrCode(qrUrl, item.name)}
+                          >
+                            <Download className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Download</span>
                           </Button>
                         </div>
                       ) : (
