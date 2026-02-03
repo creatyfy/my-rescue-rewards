@@ -167,7 +167,9 @@ export default function Profile() {
       navigate("/auth");
     } catch (error) {
       console.error("Erro ao apagar dados da conta:", error);
-      toast.error("Não foi possível apagar seus dados pessoais.");
+      toast.error(
+        "Não foi possível apagar seus dados pessoais. Essa ação acontece ao excluir sua conta.",
+      );
     } finally {
       setIsDeletingAccount(false);
       setDeleteDialogOpen(false);
@@ -297,8 +299,9 @@ export default function Profile() {
             <DialogHeader>
               <DialogTitle>Excluir conta</DialogTitle>
               <DialogDescription>
-                Com essa ação você apagará todos seus dados cadastrais e progressão do nosso
-                sistema.
+                A exclusão só acontece quando você decide apagar a conta. Seus dados pessoais
+                serão removidos, mas informações necessárias para relatórios permanecem
+                armazenadas.
               </DialogDescription>
             </DialogHeader>
             <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-muted/40 p-4">
@@ -311,8 +314,8 @@ export default function Profile() {
                 htmlFor="confirm-delete"
                 className="text-sm text-foreground leading-relaxed cursor-pointer"
               >
-                Estou ciente de que meus dados pessoais serão apagados e a conta será
-                bloqueada.
+                Estou ciente de que meus dados pessoais serão apagados e que dados usados em
+                relatórios não serão excluídos.
               </label>
             </div>
             <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
