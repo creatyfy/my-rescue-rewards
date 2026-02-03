@@ -180,7 +180,9 @@ export const deleteCurrentUserData = async () => {
   }
 
   if (!data?.success) {
-    throw new Error("Não foi possível apagar seus dados pessoais.");
+    throw new Error(
+      "Não foi possível apagar seus dados pessoais. Essa ação acontece ao excluir sua conta.",
+    );
   }
 
   return true;
