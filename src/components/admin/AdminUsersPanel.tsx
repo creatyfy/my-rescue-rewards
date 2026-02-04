@@ -26,10 +26,11 @@ import {
   fetchAdminUsers,
   promoteUserToAdmin,
   demoteAdminToUser,
+  adminDeleteUser,
   type AdminUser,
 } from "@/integrations/supabase/admin";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ShieldCheck, ShieldOff, User, Loader2 } from "lucide-react";
+import { Search, ShieldCheck, ShieldOff, User, Loader2, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { UserProfileModal } from "./UserProfileModal";
 
@@ -41,7 +42,7 @@ export function AdminUsersPanel() {
 
   // Confirmation dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogAction, setDialogAction] = useState<"promote" | "demote" | null>(null);
+  const [dialogAction, setDialogAction] = useState<"promote" | "demote" | "delete" | null>(null);
   const [targetUser, setTargetUser] = useState<AdminUser | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -86,6 +87,12 @@ export function AdminUsersPanel() {
     setDialogOpen(true);
   };
 
+  const handleOpenDelete = (user: AdminUser) => {
+    setTargetUser(user);
+    setDialogAction("delete");
+    setDialogOpen(true);
+  };
+
   const handleConfirmAction = async () => {
     if (!targetUser || !dialogAction) return;
 
@@ -98,13 +105,16 @@ export function AdminUsersPanel() {
         } else {
           toast.info("Usuário já é administrador.");
         }
-      } else {
+      } else if (dialogAction === "demote") {
         const result = await demoteAdminToUser(targetUser.user_id);
         if (result) {
           toast.success(`${targetUser.full_name || targetUser.email} foi rebaixado a usuário comum.`);
         } else {
           toast.info("Usuário já é usuário comum.");
         }
+      } else if (dialogAction === "delete") {
+        await adminDeleteUser(targetUser.user_id);
+        toast.success(`Conta de ${targetUser.full_name || targetUser.email} foi excluída.`);
       }
 
       await loadUsers();
@@ -217,24 +227,36 @@ export function AdminUsersPanel() {
                     <TableCell className="text-right">
                       {isCurrentUser ? (
                         <span className="text-xs text-muted-foreground">Você</span>
-                      ) : isAdmin ? (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleOpenDemote(user)}
-                        >
-                          <ShieldOff className="h-4 w-4 sm:mr-1" />
-                          <span className="hidden sm:inline">Rebaixar</span>
-                        </Button>
                       ) : (
-                        <Button
-                          size="sm"
-                          variant="default"
-                          onClick={() => handleOpenPromote(user)}
-                        >
-                          <ShieldCheck className="h-4 w-4 sm:mr-1" />
-                          <span className="hidden sm:inline">Promover</span>
-                        </Button>
+                        <div className="flex items-center justify-end gap-1">
+                          {isAdmin ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenDemote(user)}
+                            >
+                              <ShieldOff className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Rebaixar</span>
+                            </Button>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => handleOpenPromote(user)}
+                            >
+                              <ShieldCheck className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Promover</span>
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleOpenDelete(user)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
@@ -249,7 +271,11 @@ export function AdminUsersPanel() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {dialogAction === "promote" ? "Promover a Administrador" : "Rebaixar a Usuário"}
+              {dialogAction === "promote"
+                ? "Promover a Administrador"
+                : dialogAction === "demote"
+                ? "Rebaixar a Usuário"
+                : "Deletar conta permanentemente?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {dialogAction === "promote" ? (
@@ -258,19 +284,31 @@ export function AdminUsersPanel() {
                   <strong>{targetUser?.full_name || targetUser?.email}</strong> a
                   administrador? Essa pessoa terá acesso total ao painel administrativo.
                 </>
-              ) : (
+              ) : dialogAction === "demote" ? (
                 <>
                   Tem certeza que deseja rebaixar{" "}
                   <strong>{targetUser?.full_name || targetUser?.email}</strong> a usuário
                   comum? Essa pessoa perderá acesso ao painel administrativo.
+                </>
+              ) : (
+                <>
+                  Esta ação é <strong>irreversível</strong>. Todos os dados pessoais de{" "}
+                  <strong>{targetUser?.full_name || targetUser?.email}</strong> serão
+                  apagados (nome, e-mail, telefone, foto).
+                  <br /><br />
+                  Os registros de transações serão mantidos de forma anônima para relatórios.
                 </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={actionLoading}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmAction} disabled={actionLoading}>
-              {actionLoading ? "Processando..." : "Confirmar"}
+            <AlertDialogAction
+              onClick={handleConfirmAction}
+              disabled={actionLoading}
+              className={dialogAction === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : ""}
+            >
+              {actionLoading ? "Processando..." : dialogAction === "delete" ? "Confirmar exclusão" : "Confirmar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
