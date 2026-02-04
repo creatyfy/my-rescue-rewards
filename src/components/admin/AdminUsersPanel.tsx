@@ -228,7 +228,7 @@ export function AdminUsersPanel() {
                       {isCurrentUser ? (
                         <span className="text-xs text-muted-foreground">Você</span>
                       ) : (
-                        <div className="flex items-center justify-end gap-1">
+                        <div className="flex items-center justify-end gap-2">
                           {isAdmin ? (
                             <Button
                               size="sm"
@@ -250,11 +250,12 @@ export function AdminUsersPanel() {
                           )}
                           <Button
                             size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            variant="outline"
+                            className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
                             onClick={() => handleOpenDelete(user)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Deletar</span>
                           </Button>
                         </div>
                       )}
