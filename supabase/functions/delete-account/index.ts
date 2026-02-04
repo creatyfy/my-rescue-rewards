@@ -105,18 +105,14 @@ serve(async (req) => {
       }
     }
 
-    const { error: profileUpdateError } = await supabaseAdmin
+    // Delete profile record (this will hide user from admin panel via INNER JOIN)
+    const { error: profileDeleteError } = await supabaseAdmin
       .from("profiles")
-      .update({
-        full_name: null,
-        cpf: null,
-        phone: null,
-        avatar_url: null,
-      })
+      .delete()
       .eq("user_id", userId);
 
-    if (profileUpdateError) {
-      throw profileUpdateError;
+    if (profileDeleteError) {
+      throw profileDeleteError;
     }
 
     const { error: roleDeleteError } = await supabaseAdmin
