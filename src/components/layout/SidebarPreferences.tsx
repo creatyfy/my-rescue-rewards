@@ -7,7 +7,6 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
-import { DeleteAccountDialog } from "./DeleteAccountDialog";
 
 interface SidebarPreferencesProps {
   isDarkMode: boolean;
@@ -43,7 +42,6 @@ export function SidebarPreferences({
             <span>Sair da conta</span>
           </SidebarMenuButton>
         </SidebarMenuItem>
-        <DeleteAccountDialog />
       </SidebarMenu>
     </SidebarGroup>
   );
