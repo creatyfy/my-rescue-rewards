@@ -200,6 +200,22 @@ export const demoteAdminToUser = async (targetUserId: string): Promise<boolean> 
   return Boolean(data);
 };
 
+export const adminDeleteUser = async (targetUserId: string): Promise<boolean> => {
+  const { data, error } = await supabase.functions.invoke("admin-delete-user", {
+    body: { target_user_id: targetUserId },
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data?.success) {
+    throw new Error(data?.error ?? "Não foi possível excluir a conta.");
+  }
+
+  return true;
+};
+
 export const fetchPendingReceipts = async (): Promise<AdminReceipt[]> => {
   const result = await fetchAdminReceipts({ status: "pending" });
   return result.items;
