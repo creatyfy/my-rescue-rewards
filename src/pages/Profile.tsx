@@ -33,7 +33,7 @@ import {
   fetchReceiptHistory,
   fetchRedemptionHistory,
 } from "@/integrations/supabase/store";
-import { fetchAdminStatus } from "@/integrations/supabase/admin";
+import { resolveAdminAccess } from "@/integrations/supabase/admin";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -65,7 +65,7 @@ export default function Profile() {
 
         const [profile, adminStatus, balance, receipts, redemptions] = await Promise.all([
           fetchCurrentUserProfile(),
-          fetchAdminStatus().catch(() => false),
+          resolveAdminAccess().catch(() => false),
           fetchCurrentUserBalance(),
           userId ? fetchReceiptHistory(userId) : Promise.resolve([]),
           userId ? fetchRedemptionHistory(userId) : Promise.resolve([]),

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { fetchAdminStatus } from "@/integrations/supabase/admin";
+import { resolveAdminAccess } from "@/integrations/supabase/admin";
 import { ShieldAlert } from "lucide-react";
 
 export default function Admin() {
@@ -63,7 +63,7 @@ export default function Admin() {
           return;
         }
 
-        const isAdmin = await fetchAdminStatus();
+        const isAdmin = await resolveAdminAccess();
 
         setStatus(isAdmin ? "authorized" : "unauthorized");
       } catch (error) {

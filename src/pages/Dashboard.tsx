@@ -5,7 +5,7 @@ import { PointsCard } from "@/components/points/PointsCard";
 import { QuickActions } from "@/components/points/QuickActions";
 import { TransactionItem } from "@/components/transactions/TransactionItem";
 import { Card } from "@/components/ui/card";
-import { fetchAdminStatus } from "@/integrations/supabase/admin";
+import { resolveAdminAccess } from "@/integrations/supabase/admin";
 import {
   fetchCurrentUserBalance,
   fetchCurrentUserId,
@@ -48,7 +48,7 @@ export default function Dashboard() {
 
     const loadAdminStatus = async () => {
       try {
-        const status = await fetchAdminStatus().catch(() => false);
+        const status = await resolveAdminAccess().catch(() => false);
         if (mounted) {
           setIsAdmin(status);
         }

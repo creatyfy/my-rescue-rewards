@@ -18,7 +18,7 @@ import { toast } from "@/components/ui/sonner";
 import {
   DeliveryData,
   UserContact,
-  checkCurrentUserIsAdmin,
+  resolveCurrentUserPrivileges,
   fetchCurrentUserBalance,
   fetchCurrentUserContact,
   fetchProducts,
@@ -58,17 +58,17 @@ export default function Store() {
     const loadStoreData = async () => {
       setLoading(true);
       try {
-        const [productsData, balance, contact, adminStatus] = await Promise.all([
+        const [productsData, balance, contact, privileges] = await Promise.all([
           fetchProducts(),
           fetchCurrentUserBalance(),
           fetchCurrentUserContact(),
-          checkCurrentUserIsAdmin(),
+          resolveCurrentUserPrivileges(),
         ]);
 
         setProducts(productsData);
         setUserPoints(balance);
         setUserContact(contact);
-        setIsAdmin(adminStatus);
+        setIsAdmin(privileges.canViewValueEquivalent);
       } catch (error) {
         console.error("Erro ao carregar loja:", error);
       } finally {

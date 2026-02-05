@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Switch } from "@/components/ui/switch";
-import { fetchAdminStatus } from "@/integrations/supabase/admin";
+import { resolveAdminAccess } from "@/integrations/supabase/admin";
 
 const initialPreferences = {
   notifications: true,
@@ -25,7 +25,7 @@ export default function Settings() {
     const loadAdminStatus = async () => {
       setAdminLoading(true);
       try {
-        const status = await fetchAdminStatus().catch(() => false);
+        const status = await resolveAdminAccess().catch(() => false);
         if (mounted) setIsAdmin(status);
       } finally {
         if (mounted) setAdminLoading(false);

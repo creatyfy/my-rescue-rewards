@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
-import { fetchAdminStatus } from "@/integrations/supabase/admin";
+import { resolveAdminAccess } from "@/integrations/supabase/admin";
 import { logoutCurrentUser } from "@/integrations/supabase/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminSidebar } from "./AdminSidebar";
@@ -28,7 +28,7 @@ export function SidebarNav() {
           return;
         }
 
-        const status = await fetchAdminStatus().catch(() => false);
+        const status = await resolveAdminAccess().catch(() => false);
         if (mounted) {
           setIsAdmin(status);
         }

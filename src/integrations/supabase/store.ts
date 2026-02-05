@@ -383,17 +383,28 @@ export const fetchCurrentUserId = async (): Promise<string | null> => {
   return data.user?.id ?? null;
 };
 
-export const checkCurrentUserIsAdmin = async (): Promise<boolean> => {
+export const resolveCurrentUserPrivileges = async (): Promise<{ canViewValueEquivalent: boolean }> => {
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+
+  if (userError || !userData.user) {
+    return { canViewValueEquivalent: false };
+  }
+
   try {
-    const { data, error } = await supabase.rpc("is_admin");
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", userData.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
 
     if (error) {
-      console.warn("is_admin function not available:", error.message);
-      return false;
+      console.warn("user privileges could not be resolved:", error.message);
+      return { canViewValueEquivalent: false };
     }
 
-    return Boolean(data);
+    return { canViewValueEquivalent: Boolean(data) };
   } catch {
-    return false;
+    return { canViewValueEquivalent: false };
   }
 };
