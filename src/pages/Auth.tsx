@@ -13,6 +13,7 @@ import { getDuplicateFieldMessage } from "@/lib/duplicate-errors";
 type AuthMode = "login" | "register";
 type UniqueFieldKey = "cpf" | "email" | "phone";
 type ValidationStatus = "idle" | "loading" | "valid" | "invalid";
+type LoginAuthStatus = "success" | "pending_confirmation" | "error";
 type UniqueFieldValidation = Record<
   UniqueFieldKey,
   {
@@ -25,6 +26,8 @@ export default function Auth() {
   const [mode, setMode] = useState<AuthMode>("login");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState("");
+  const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -303,15 +306,25 @@ export default function Auth() {
       }
 
       if (mode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password: formData.password,
-        });
+        const loginResult = await authenticateLoginWithEmailConfirmation(
+          normalizedEmail,
+          formData.password,
+        );
 
-        if (error) {
-          throw error;
+        if (loginResult.status === "pending_confirmation") {
+          setPendingConfirmationEmail(normalizedEmail);
+          toast.error(
+            loginResult.message ||
+              "Seu cadastro ainda não foi confirmado por e-mail.",
+          );
+          return;
         }
 
+        if (loginResult.status === "error") {
+          throw new Error(loginResult.message || "Não foi possível autenticar.");
+        }
+
+        setPendingConfirmationEmail("");
         navigate("/dashboard");
         return;
       }
@@ -334,6 +347,7 @@ export default function Auth() {
       }
 
       if (data.session) {
+        setPendingConfirmationEmail("");
         await updateCurrentUserProfile({
           fullName: formData.name,
           cpf: cpfDigits,
@@ -432,6 +446,76 @@ export default function Auth() {
         fieldValidation.cpf.status === "invalid" ||
         fieldValidation.email.status === "invalid" ||
         fieldValidation.phone.status === "invalid"));
+
+
+  const resendConfirmationEmail = async () => {
+    const normalizedEmail = pendingConfirmationEmail.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      toast.error("Informe seu e-mail para reenviar a confirmação.");
+      return;
+    }
+
+    setIsResendingConfirmation(true);
+
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email: normalizedEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("E-mail de confirmação reenviado. Verifique sua caixa de entrada.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      toast.error(message || "Não foi possível reenviar o e-mail de confirmação.");
+    } finally {
+      setIsResendingConfirmation(false);
+    }
+  };
+
+  const authenticateLoginWithEmailConfirmation = async (
+    email: string,
+    password: string,
+  ): Promise<{ status: LoginAuthStatus; message?: string }> => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      const message = error.message.toLowerCase();
+      if (message.includes("email not confirmed")) {
+        return {
+          status: "pending_confirmation",
+          message:
+            "Seu cadastro está aguardando confirmação de e-mail. Confirme seu e-mail para entrar.",
+        };
+      }
+
+      return {
+        status: "error",
+        message: error.message,
+      };
+    }
+
+    if (!data.user?.email_confirmed_at) {
+      await supabase.auth.signOut();
+      return {
+        status: "pending_confirmation",
+        message:
+          "Seu cadastro está aguardando confirmação de e-mail. Confirme seu e-mail para entrar.",
+      };
+    }
+
+    return { status: "success" };
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -680,6 +764,28 @@ export default function Auth() {
               "Criar conta"
             )}
           </Button>
+
+
+          {mode === "login" && pendingConfirmationEmail && (
+            <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              <p>
+                Conta aguardando confirmação de e-mail para{" "}
+                <strong>{pendingConfirmationEmail}</strong>.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={resendConfirmationEmail}
+                disabled={isResendingConfirmation}
+              >
+                {isResendingConfirmation
+                  ? "Reenviando..."
+                  : "Reenviar e-mail de confirmação"}
+              </Button>
+            </div>
+          )}
         </form>
 
         {/* Toggle mode */}
