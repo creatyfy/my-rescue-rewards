@@ -135,12 +135,23 @@ const normalizeRedemptionStatus = (status?: string | null): RedemptionStatus => 
   return "em_analise";
 };
 
-export const fetchAdminStatus = async (): Promise<boolean> => {
+export const resolveAdminAccess = async (): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.rpc("is_admin");
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      return false;
+    }
+
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("user_id")
+      .eq("user_id", userData.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
 
     if (error) {
-      console.warn("is_admin function not available:", error.message);
+      console.warn("admin access could not be resolved:", error.message);
       return false;
     }
 
@@ -420,11 +431,6 @@ export const updateAdminReceipt = async (
   updates: ReceiptUpdateInput,
   changes: ReceiptFieldChange[],
 ) => {
-  const isAdmin = await fetchAdminStatus();
-  if (!isAdmin) {
-    throw new Error("Usuário sem permissão de admin.");
-  }
-
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError) {
     throw userError;

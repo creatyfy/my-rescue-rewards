@@ -82,11 +82,16 @@ serve(async (req) => {
     });
   }
 
-  // Check if caller is admin
-  const { data: isAdmin, error: adminError } = await supabaseUser.rpc("is_admin");
+  // Resolve caller role internally
+  const { data: roleData, error: roleError } = await supabaseAdmin
+    .from("user_roles")
+    .select("user_id")
+    .eq("user_id", userData.user.id)
+    .eq("role", "admin")
+    .maybeSingle();
 
-  if (adminError || !isAdmin) {
-    console.error("Erro ao validar admin:", adminError);
+  if (roleError || !roleData) {
+    console.error("Erro ao validar permissão:", roleError);
     return jsonResponse({ error: "Apenas administradores podem excluir contas de outros usuários." }, 403);
   }
 
@@ -193,4 +198,3 @@ serve(async (req) => {
     return jsonResponse({ error: "Erro ao excluir conta" }, 500);
   }
 });
-
