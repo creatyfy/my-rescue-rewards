@@ -18,6 +18,11 @@ const jsonResponse = (payload: Record<string, unknown>, status = 200) =>
     },
   });
 
+const toHex = (buffer: ArrayBuffer) =>
+  Array.from(new Uint8Array(buffer))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+
 const payloadSchema = z
   .object({
     qrCodeToken: z.string({ required_error: "qrCodeToken é obrigatório." }).trim().min(1),
@@ -106,14 +111,36 @@ serve(async (req) => {
 
   const { qrCodeToken, purchaseValue, receiptPath } = validationResult.data;
 
+  const { data: receiptFile, error: downloadError } = await supabase.storage
+    .from("receipts")
+    .download(receiptPath);
+
+  if (downloadError || !receiptFile) {
+    return jsonResponse({ errors: ["Não foi possível validar o comprovante enviado."] }, 400);
+  }
+
+  const receiptFingerprint = toHex(
+    await crypto.subtle.digest("SHA-256", await receiptFile.arrayBuffer()),
+  );
+
   const { data, error } = await supabase.rpc("submit_receipt" as never, {
-    p_qr_value: qrCodeToken,
+    p_qr_code_token: qrCodeToken,
     p_purchase_value: purchaseValue,
-    p_image_path: receiptPath,
+    p_receipt_image_url: receiptPath,
+    p_receipt_fingerprint: receiptFingerprint,
   } as never);
 
   if (error) {
-    return jsonResponse({ errors: [error.message || "Erro ao enviar comprovante."] }, 400);
+    const message = error.message || "Erro ao enviar comprovante.";
+    if (message.includes("duplicate_receipt")) {
+      return jsonResponse({ errors: ["Comprovante já enviado."] }, 409);
+    }
+
+    if (message.includes("rate_limit_")) {
+      return jsonResponse({ errors: ["Muitas tentativas. Tente novamente em alguns minutos."] }, 429);
+    }
+
+    return jsonResponse({ errors: [message] }, 400);
   }
 
   return jsonResponse({ data, message: "Comprovante enviado com sucesso." }, 200);
