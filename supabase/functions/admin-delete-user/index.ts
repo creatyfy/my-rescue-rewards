@@ -169,16 +169,11 @@ serve(async (req) => {
       console.warn("Erro ao limpar endereços de resgate:", redemptionUpdateError.message);
     }
 
-    // Ban user to prevent login (instead of deleting from auth)
-    const { error: userUpdateError } = await supabaseAdmin.auth.admin.updateUserById(
-      targetUserId,
-      {
-        ban_duration: "87600h", // 10 years
-      },
-    );
+    // Delete user from auth.users to allow re-registration with same email/cpf/phone
+    const { error: userDeleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
 
-    if (userUpdateError) {
-      console.warn("Erro ao bloquear login:", userUpdateError.message);
+    if (userDeleteError) {
+      console.warn("Erro ao deletar usuário do auth:", userDeleteError.message);
     }
 
     // Log admin action
