@@ -154,8 +154,8 @@ serve(async (req) => {
     });
 
   if (error) {
-    return jsonResponse({ error: `Erro ao salvar comprovante: ${error.message}` }, 400);
+    return jsonResponse({ error: "Não foi possível salvar o comprovante." }, 400);
   }
 
-  return jsonResponse({ path: data.path, message: "Upload realizado com sucesso." }, 200);
+  return jsonResponse({ success: true, path: data.path, message: "Upload realizado com sucesso." }, 200);
 });

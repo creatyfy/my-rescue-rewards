@@ -101,7 +101,7 @@ serve(async (req) => {
   });
 
   if (error) {
-    return jsonResponse({ errors: [error.message || "Erro ao autenticar."] }, 401);
+    return jsonResponse({ errors: ["Credenciais inválidas."] }, 401);
   }
 
   if (!data.user?.email_confirmed_at) {
@@ -109,7 +109,6 @@ serve(async (req) => {
     return jsonResponse(
       {
         errors: ["Seu cadastro está aguardando confirmação de e-mail."],
-        code: "email_not_confirmed",
       },
       403,
     );
@@ -117,8 +116,7 @@ serve(async (req) => {
 
   return jsonResponse(
     {
-      user: data.user,
-      session: data.session,
+      success: true,
       message: "Login realizado com sucesso.",
     },
     200,
