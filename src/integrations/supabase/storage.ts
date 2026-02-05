@@ -8,29 +8,25 @@ const getFileExtension = (file: File) => {
 const buildFileName = (file: File) => `${crypto.randomUUID()}.${getFileExtension(file)}`;
 
 export const uploadReceiptForCurrentUser = async (file: File) => {
-  const { data, error } = await supabase.auth.getUser();
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const { data, error } = await supabase.functions.invoke<{ path: string; error?: string }>(
+    "upload-receipt",
+    {
+      body: formData,
+    },
+  );
 
   if (error) {
-    throw error;
+    throw new Error(error.message || "Erro ao enviar comprovante.");
   }
 
-  if (!data.user) {
-    throw new Error("Usuário não autenticado.");
+  if (!data?.path) {
+    throw new Error(data?.error || "Falha no upload do comprovante.");
   }
 
-  const path = `${data.user.id}/${buildFileName(file)}`;
-  const { data: uploadData, error: uploadError } = await supabase.storage
-    .from("receipts")
-    .upload(path, file, {
-      contentType: file.type,
-      upsert: false,
-    });
-
-  if (uploadError) {
-    throw uploadError;
-  }
-
-  return uploadData.path;
+  return data.path;
 };
 
 export const createSignedReceiptUrl = async (path: string, expiresIn = 60) => {
