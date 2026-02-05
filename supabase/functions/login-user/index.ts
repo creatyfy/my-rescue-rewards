@@ -18,70 +18,19 @@ const jsonResponse = (payload: Record<string, unknown>, status = 200) =>
     },
   });
 
-const cpfDigitsOnlyRegex = /^\d{11}$/;
-const phoneDigitsOnlyRegex = /^\d{10,11}$/;
-
-const isValidCpf = (cpf: string) => {
-  if (!cpfDigitsOnlyRegex.test(cpf)) {
-    return false;
-  }
-
-  if (/^(\d)\1{10}$/.test(cpf)) {
-    return false;
-  }
-
-  const digits = cpf.split("").map(Number);
-
-  const firstVerifier =
-    (digits
-      .slice(0, 9)
-      .reduce((acc, digit, index) => acc + digit * (10 - index), 0) *
-      10) %
-    11;
-  const firstDigit = firstVerifier === 10 ? 0 : firstVerifier;
-
-  if (firstDigit !== digits[9]) {
-    return false;
-  }
-
-  const secondVerifier =
-    (digits
-      .slice(0, 10)
-      .reduce((acc, digit, index) => acc + digit * (11 - index), 0) *
-      10) %
-    11;
-  const secondDigit = secondVerifier === 10 ? 0 : secondVerifier;
-
-  return secondDigit === digits[10];
-};
-
-const registerPayloadSchema = z
+const loginPayloadSchema = z
   .object({
-    turnstileToken: z
-      .string({ required_error: "turnstileToken é obrigatório." })
-      .trim()
-      .min(1, "turnstileToken é obrigatório."),
-    full_name: z
-      .string({ required_error: "full_name é obrigatório." })
-      .trim()
-      .min(3, "full_name deve ter no mínimo 3 caracteres.")
-      .max(100, "full_name deve ter no máximo 100 caracteres."),
     email: z
       .string({ required_error: "email é obrigatório." })
       .trim()
       .email("email deve estar em um formato válido."),
-    cpf: z
-      .string({ required_error: "cpf é obrigatório." })
-      .trim()
-      .regex(cpfDigitsOnlyRegex, "cpf deve conter apenas números e 11 dígitos.")
-      .refine(isValidCpf, "cpf inválido pelo algoritmo oficial."),
-    phone: z
-      .string({ required_error: "phone é obrigatório." })
-      .trim()
-      .regex(phoneDigitsOnlyRegex, "phone deve conter apenas números com 10 ou 11 dígitos."),
     password: z
       .string({ required_error: "password é obrigatório." })
       .min(6, "password deve ter no mínimo 6 caracteres."),
+    turnstileToken: z
+      .string({ required_error: "turnstileToken é obrigatório." })
+      .trim()
+      .min(1, "turnstileToken é obrigatório."),
   })
   .strict("Campos extras não são permitidos.");
 
@@ -118,7 +67,7 @@ serve(async (req) => {
     return jsonResponse({ errors: [turnstileValidation.message] }, turnstileValidation.status);
   }
 
-  const validationResult = registerPayloadSchema.safeParse(parsedBody);
+  const validationResult = loginPayloadSchema.safeParse(parsedBody);
   if (!validationResult.success) {
     return jsonResponse(
       {
@@ -133,43 +82,45 @@ serve(async (req) => {
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
 
-  if (!supabaseUrl || !supabaseServiceRoleKey) {
+  if (!supabaseUrl || !supabaseAnonKey) {
     console.error("Missing Supabase environment variables.");
     return jsonResponse({ errors: ["Configuração do servidor inválida."] }, 500);
   }
 
-  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: { persistSession: false },
   });
 
-  const { full_name, email, cpf, phone, password } = validationResult.data;
+  const { email, password } = validationResult.data;
 
-  const { data, error } = await supabase.auth.admin.createUser({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
-    email_confirm: false,
-    user_metadata: {
-      full_name,
-      cpf,
-      phone: `55${phone}`,
-    },
   });
 
   if (error) {
-    console.error("Erro ao criar usuário:", error);
-    return jsonResponse({ errors: [error.message || "Erro ao criar usuário."] }, 400);
+    return jsonResponse({ errors: [error.message || "Erro ao autenticar."] }, 401);
+  }
+
+  if (!data.user?.email_confirmed_at) {
+    await supabase.auth.signOut();
+    return jsonResponse(
+      {
+        errors: ["Seu cadastro está aguardando confirmação de e-mail."],
+        code: "email_not_confirmed",
+      },
+      403,
+    );
   }
 
   return jsonResponse(
     {
-      user: {
-        id: data.user?.id,
-        email: data.user?.email,
-      },
-      message: "Cadastro realizado com sucesso.",
+      user: data.user,
+      session: data.session,
+      message: "Login realizado com sucesso.",
     },
-    201,
+    200,
   );
 });
