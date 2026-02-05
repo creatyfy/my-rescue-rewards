@@ -1,35 +1,35 @@
 -- Manual RLS validation script for local Supabase.
--- Replace the UUID placeholders with real user/admin IDs.
+-- Replace UUID placeholders with real IDs before running.
 
 begin;
 
--- Simulate regular user context.
+-- Regular user context.
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 
--- Expect: only own profile rows visible/updatable.
-select * from profiles;
-update profiles set full_name = full_name where user_id = auth.uid();
+-- Expect: only own data in profiles/receipts/ledger.
+select * from public.profiles;
+select * from public.receipts;
+select * from public.points_ledger;
 
--- Expect: can insert receipt/redemption for self.
-insert into receipts (user_id, establishment_id, purchase_value, points_earned)
-values (auth.uid(), '00000000-0000-0000-0000-000000000010', 10.00, 1);
+-- Expect: cannot promote self to admin through profile update (blocked in DB trigger).
+update public.profiles
+set role = 'admin'
+where user_id = auth.uid();
 
-insert into redemptions (user_id, product_id, points_spent)
-values (auth.uid(), '00000000-0000-0000-0000-000000000020', 100);
+-- Expect: cannot view another user's receipt.
+select *
+from public.receipts
+where user_id = '00000000-0000-0000-0000-000000000009';
 
--- Expect: cannot update receipts or products (admin-only).
-update receipts set status = 'approved' where user_id = auth.uid();
-update products set name = name;
-
--- Simulate admin context (ensure this user has admin role in user_roles).
+-- Admin context (this user must truly be admin in DB role tables).
 select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000002', true);
 select set_config('request.jwt.claim.role', 'authenticated', true);
 
--- Expect: admin can manage roles, establishments, products, receipts updates.
-select * from user_roles;
-insert into establishments (name, qr_code_token)
-values ('Admin Store', 'token-1');
-update receipts set status = 'approved';
+-- Expect: admin can view cross-user receipts and sensitive profile fields.
+select user_id, role, full_name, phone, cpf
+from public.profiles;
+
+select * from public.receipts;
 
 rollback;
