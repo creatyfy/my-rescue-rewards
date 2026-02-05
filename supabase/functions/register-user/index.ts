@@ -159,15 +159,12 @@ serve(async (req) => {
 
   if (error) {
     console.error("Erro ao criar usuário:", error);
-    return jsonResponse({ errors: [error.message || "Erro ao criar usuário."] }, 400);
+    return jsonResponse({ errors: ["Não foi possível concluir o cadastro."] }, 400);
   }
 
   return jsonResponse(
     {
-      user: {
-        id: data.user?.id,
-        email: data.user?.email,
-      },
+      success: true,
       message: "Cadastro realizado com sucesso.",
     },
     201,

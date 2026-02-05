@@ -18,6 +18,15 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+const jsonResponse = (payload: Record<string, unknown>, status = 200) =>
+  new Response(JSON.stringify(payload), {
+    status,
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+    },
+  });
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -32,39 +41,29 @@ serve(async (req) => {
 
   try {
     const { tipo, valor } = await req.json();
+    const normalizedType = String(tipo ?? "").trim().toLowerCase();
 
-    if (!tipo) {
-      return new Response("Tipo inválido", {
-        status: 400,
-        headers: corsHeaders,
-      });
+    if (!["cpf", "email", "telefone"].includes(normalizedType)) {
+      return jsonResponse({ erro: "tipo_invalido" }, 400);
     }
 
     const { data, error } = await supabase.rpc("is_unique_field_available", {
-      field_type: tipo,
+      field_type: normalizedType,
       field_value: valor ?? "",
     });
 
     if (error) {
       console.error("Erro ao validar unicidade:", error);
-      return new Response("Erro ao validar", {
-        status: 500,
-        headers: corsHeaders,
-      });
+      return jsonResponse({ erro: "falha_validacao" }, 500);
     }
 
-    return new Response(JSON.stringify({ disponivel: data === true }), {
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        "Content-Type": "application/json",
-      },
-    });
+    if (data === true) {
+      return jsonResponse({ disponivel: true }, 200);
+    }
+
+    return jsonResponse({ disponivel: false }, 409);
   } catch (error) {
     console.error("Erro inesperado:", error);
-    return new Response("Erro inesperado", {
-      status: 500,
-      headers: corsHeaders,
-    });
+    return jsonResponse({ erro: "falha_inesperada" }, 500);
   }
 });

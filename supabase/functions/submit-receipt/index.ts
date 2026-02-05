@@ -111,9 +111,15 @@ serve(async (req) => {
 
   const { qrCodeToken, purchaseValue, receiptPath } = validationResult.data;
 
+  const userId = userData.user.id;
+  const normalizedReceiptPath = receiptPath.trim();
+  if (!normalizedReceiptPath.startsWith(`${userId}/`)) {
+    return jsonResponse({ errors: ["Comprovante inválido para o usuário autenticado."] }, 400);
+  }
+
   const { data: receiptFile, error: downloadError } = await supabase.storage
     .from("receipts")
-    .download(receiptPath);
+    .download(normalizedReceiptPath);
 
   if (downloadError || !receiptFile) {
     return jsonResponse({ errors: ["Não foi possível validar o comprovante enviado."] }, 400);
@@ -126,7 +132,7 @@ serve(async (req) => {
   const { data, error } = await supabase.rpc("submit_receipt" as never, {
     p_qr_code_token: qrCodeToken,
     p_purchase_value: purchaseValue,
-    p_receipt_image_url: receiptPath,
+    p_receipt_image_url: normalizedReceiptPath,
     p_receipt_fingerprint: receiptFingerprint,
   } as never);
 
@@ -140,8 +146,30 @@ serve(async (req) => {
       return jsonResponse({ errors: ["Muitas tentativas. Tente novamente em alguns minutos."] }, 429);
     }
 
-    return jsonResponse({ errors: [message] }, 400);
+    return jsonResponse({ errors: ["Não foi possível enviar o comprovante."] }, 400);
   }
 
-  return jsonResponse({ data, message: "Comprovante enviado com sucesso." }, 200);
+  const submitted = Array.isArray(data) ? data[0] : null;
+
+  return jsonResponse(
+    {
+      success: true,
+      receipt: {
+        protocol_number:
+          submitted && typeof submitted === "object" && "protocol_number" in submitted
+            ? (submitted as { protocol_number?: string }).protocol_number ?? null
+            : null,
+        points_earned:
+          submitted && typeof submitted === "object" && "points_earned" in submitted
+            ? (submitted as { points_earned?: number }).points_earned ?? null
+            : null,
+        status:
+          submitted && typeof submitted === "object" && "status" in submitted
+            ? (submitted as { status?: string }).status ?? null
+            : null,
+      },
+      message: "Comprovante enviado com sucesso.",
+    },
+    200,
+  );
 });
