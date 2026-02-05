@@ -1,0 +1,208 @@
+{
+  "info": {
+    "name": "Security Attack Regression",
+    "description": "Coleção para simular ataques em endpoints Supabase (estilo Postman/Newman). Todos os cenários devem retornar falha controlada.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1) Envio de CPF inválido",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"full_name\": \"Ataque CPF\",\n  \"email\": \"cpf.invalido+{{$timestamp}}@example.com\",\n  \"cpf\": \"12345678900\",\n  \"phone\": \"11999999999\",\n  \"password\": \"Teste@123456\"\n}"
+        },
+        "url": "{{BASE_URL}}/functions/v1/register-user"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Deve bloquear CPF inválido', function () {",
+              "  pm.response.to.have.status(400);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2) Upload de arquivo falso (.bat disfarçado)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "{{FAKE_BAT_FILE_PATH}}",
+              "contentType": "image/jpeg"
+            }
+          ]
+        },
+        "url": "{{BASE_URL}}/functions/v1/upload-receipt"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Deve bloquear arquivo não-imagem', function () {",
+              "  pm.response.to.have.status(400);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3) Upload acima de 10MB",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": "{{OVERSIZED_FILE_PATH}}",
+              "contentType": "image/jpeg"
+            }
+          ]
+        },
+        "url": "{{BASE_URL}}/functions/v1/upload-receipt"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Deve rejeitar payload > 10MB', function () {",
+              "  pm.response.to.have.status(413);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4) Manipulação de pontos no submit",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"qrCodeToken\": \"{{QR_TOKEN}}\",\n  \"purchaseValue\": 1.99,\n  \"receiptPath\": \"{{USER_RECEIPT_PATH}}\",\n  \"turnstileToken\": \"{{TURNSTILE_TOKEN}}\",\n  \"points_earned\": 999999\n}"
+        },
+        "url": "{{BASE_URL}}/functions/v1/submit-receipt"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Deve bloquear tentativa de campo extra para manipular pontos', function () {",
+              "  pm.response.to.have.status(400);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5) Acesso admin por usuário comum",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{NON_ADMIN_TOKEN}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"target_user_id\": \"{{TARGET_USER_ID}}\"\n}"
+        },
+        "url": "{{BASE_URL}}/functions/v1/admin-delete-user"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Usuário comum não pode executar ação de admin', function () {",
+              "  pm.response.to.have.status(403);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6) Loop de envio de comprovantes",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{USER_TOKEN}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"qrCodeToken\": \"{{QR_TOKEN}}\",\n  \"purchaseValue\": 89.90,\n  \"receiptPath\": \"{{USER_RECEIPT_PATH}}\",\n  \"turnstileToken\": \"{{TURNSTILE_TOKEN}}\"\n}"
+        },
+        "url": "{{BASE_URL}}/functions/v1/submit-receipt"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const run = Number(pm.collectionVariables.get('loop_run') || 0);",
+              "pm.collectionVariables.set('loop_run', String(run + 1));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const status = pm.response.code;",
+              "pm.test('Loop deve falhar com duplicate(409) ou rate limit(429)', function () {",
+              "  pm.expect([409, 429]).to.include(status);",
+              "});",
+              "const run = Number(pm.collectionVariables.get('loop_run') || 1);",
+              "if (run < Number(pm.environment.get('LOOP_ATTEMPTS') || 5)) {",
+              "  postman.setNextRequest('6) Loop de envio de comprovantes');",
+              "} else {",
+              "  pm.collectionVariables.unset('loop_run');",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "loop_run", "value": "0" }
+  ]
+}

@@ -10,7 +10,9 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "postman:fixtures": "node scripts/postman/generate-attack-fixtures.mjs",
+    "test:security:postman": "node scripts/postman/run-security-attacks.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
