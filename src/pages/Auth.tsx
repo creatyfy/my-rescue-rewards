@@ -810,25 +810,27 @@ export default function Auth() {
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label>Verificação de segurança</Label>
-            <TurnstileWidget
-              siteKey={turnstileSiteKey}
-              onVerify={(token) => {
-                setTurnstileToken(token);
-                setTurnstileError("");
-              }}
-              onExpire={() => setTurnstileError("O desafio expirou. Tente novamente.")}
-              onError={() => setTurnstileError("Não foi possível validar o captcha.")}
-              onWidgetId={(id) => {
-                turnstileWidgetId.current = id;
-              }}
-              className="w-full"
-            />
-            {turnstileError ? (
-              <p className="text-sm text-destructive">{turnstileError}</p>
-            ) : null}
-          </div>
+          {turnstileSiteKey && (
+            <div className="space-y-2">
+              <Label>Verificação de segurança</Label>
+              <TurnstileWidget
+                siteKey={turnstileSiteKey}
+                onVerify={(token) => {
+                  setTurnstileToken(token);
+                  setTurnstileError("");
+                }}
+                onExpire={() => setTurnstileError("O desafio expirou. Tente novamente.")}
+                onError={() => setTurnstileError("Não foi possível validar o captcha.")}
+                onWidgetId={(id) => {
+                  turnstileWidgetId.current = id;
+                }}
+                className="w-full"
+              />
+              {turnstileError && (
+                <p className="text-sm text-destructive">{turnstileError}</p>
+              )}
+            </div>
+          )}
 
           {mode === "login" && (
             <div className="text-right">
