@@ -129,9 +129,11 @@ export const updateCurrentUserProfile = async (input: ProfileUpdateInput): Promi
 export const updateCurrentUserPassword = async ({
   currentPassword,
   newPassword,
+  turnstileToken,
 }: {
   currentPassword: string;
   newPassword: string;
+  turnstileToken: string;
 }) => {
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
@@ -143,13 +145,40 @@ export const updateCurrentUserPassword = async ({
     throw new Error("Usuário não autenticado.");
   }
 
-  const { error: signInError } = await supabase.auth.signInWithPassword({
-    email: userData.user.email,
-    password: currentPassword,
+  if (!turnstileToken) {
+    throw new Error("Token do Turnstile ausente.");
+  }
+
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Configuração do servidor inválida.");
+  }
+
+  const loginResponse = await fetch(`${supabaseUrl}/functions/v1/login-user`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${supabaseAnonKey}`,
+    },
+    body: JSON.stringify({
+      email: userData.user.email,
+      password: currentPassword,
+      turnstileToken,
+    }),
   });
 
-  if (signInError) {
-    throw signInError;
+  const loginPayload = await loginResponse.json().catch(() => ({}));
+  if (!loginResponse.ok) {
+    const message =
+      typeof loginPayload === "object" &&
+      loginPayload !== null &&
+      Array.isArray((loginPayload as { errors?: string[] }).errors)
+        ? (loginPayload as { errors?: string[] }).errors?.[0]
+        : "";
+    throw new Error(message || "Não foi possível validar sua senha atual.");
   }
 
   const { error: updateError } = await supabase.auth.updateUser({

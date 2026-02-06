@@ -1,16 +1,29 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { updateCurrentUserPassword } from "@/integrations/supabase/profile";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 export default function ProfileSecurity() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileError, setTurnstileError] = useState("");
+  const turnstileWidgetId = useRef<string | null>(null);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+
+  const resetTurnstile = () => {
+    if (turnstileWidgetId.current && window.turnstile) {
+      window.turnstile.reset(turnstileWidgetId.current);
+    }
+    setTurnstileToken("");
+    setTurnstileError("");
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -25,10 +38,24 @@ export default function ProfileSecurity() {
       return;
     }
 
+    if (!turnstileSiteKey) {
+      toast.error("Captcha indisponível no momento.");
+      return;
+    }
+
+    if (!turnstileToken) {
+      toast.error("Confirme o desafio de segurança para continuar.");
+      return;
+    }
+
     setIsSaving(true);
 
     try {
-      await updateCurrentUserPassword({ currentPassword, newPassword });
+      await updateCurrentUserPassword({
+        currentPassword,
+        newPassword,
+        turnstileToken,
+      });
       toast.success("Senha atualizada com sucesso.");
       setCurrentPassword("");
       setNewPassword("");
@@ -37,6 +64,7 @@ export default function ProfileSecurity() {
       console.error("Erro ao atualizar senha:", error);
       toast.error("Não foi possível atualizar sua senha.");
     } finally {
+      resetTurnstile();
       setIsSaving(false);
     }
   };
@@ -85,7 +113,29 @@ export default function ProfileSecurity() {
                 placeholder="Repita a nova senha"
               />
             </div>
-            <Button type="submit" className="w-full" disabled={isSaving}>
+            <div className="space-y-2">
+              <Label>Verificação de segurança</Label>
+              <TurnstileWidget
+                siteKey={turnstileSiteKey}
+                onVerify={(token) => {
+                  setTurnstileToken(token);
+                  setTurnstileError("");
+                }}
+                onExpire={() => setTurnstileError("O desafio expirou. Tente novamente.")}
+                onError={() => setTurnstileError("Não foi possível validar o captcha.")}
+                onWidgetId={(id) => {
+                  turnstileWidgetId.current = id;
+                }}
+              />
+              {turnstileError ? (
+                <p className="text-sm text-destructive">{turnstileError}</p>
+              ) : null}
+            </div>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isSaving || !turnstileSiteKey || !turnstileToken}
+            >
               {isSaving ? "Atualizando..." : "Atualizar senha"}
             </Button>
           </form>

@@ -18,6 +18,60 @@ const jsonResponse = (payload: Record<string, unknown>, status = 200) =>
     },
   });
 
+const MAX_BODY_SIZE = 10_000;
+
+const readBodyWithLimit = async (
+  req: Request,
+): Promise<{ ok: true; bodyText: string } | { ok: false; response: Response }> => {
+  const contentLength = req.headers.get("content-length");
+  if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
+    return {
+      ok: false,
+      response: jsonResponse({ errors: ["Payload excede o limite permitido."] }, 413),
+    };
+  }
+
+  if (!req.body) {
+    return {
+      ok: false,
+      response: jsonResponse({ errors: ["Payload ausente."] }, 400),
+    };
+  }
+
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    if (value) {
+      total += value.length;
+      if (total > MAX_BODY_SIZE) {
+        return {
+          ok: false,
+          response: jsonResponse({ errors: ["Payload excede o limite permitido."] }, 413),
+        };
+      }
+      chunks.push(value);
+    }
+  }
+
+  const buffer = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    buffer.set(chunk, offset);
+    offset += chunk.length;
+  }
+
+  return {
+    ok: true,
+    bodyText: new TextDecoder().decode(buffer),
+  };
+};
+
 const cpfDigitsOnlyRegex = /^\d{11}$/;
 const phoneDigitsOnlyRegex = /^\d{10,11}$/;
 
@@ -97,9 +151,14 @@ serve(async (req) => {
     });
   }
 
+  const bodyReadResult = await readBodyWithLimit(req);
+  if (!bodyReadResult.ok) {
+    return bodyReadResult.response;
+  }
+
   let parsedBody: unknown;
   try {
-    parsedBody = await req.json();
+    parsedBody = JSON.parse(bodyReadResult.bodyText);
   } catch {
     return jsonResponse({ errors: ["Payload JSON inválido."] }, 400);
   }
