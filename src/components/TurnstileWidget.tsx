@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 
 declare global {
   interface Window {
@@ -66,6 +66,17 @@ export const TurnstileWidget = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
 
+  // Store callbacks in refs to avoid re-triggering the effect
+  const onVerifyRef = useRef(onVerify);
+  const onExpireRef = useRef(onExpire);
+  const onErrorRef = useRef(onError);
+  const onWidgetIdRef = useRef(onWidgetId);
+
+  onVerifyRef.current = onVerify;
+  onExpireRef.current = onExpire;
+  onErrorRef.current = onError;
+  onWidgetIdRef.current = onWidgetId;
+
   useEffect(() => {
     let isMounted = true;
 
@@ -81,28 +92,33 @@ export const TurnstileWidget = ({
         }
 
         if (widgetIdRef.current) {
-          window.turnstile.remove(widgetIdRef.current);
+          try {
+            window.turnstile.remove(widgetIdRef.current);
+          } catch {
+            // Widget already removed
+          }
+          widgetIdRef.current = null;
         }
 
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
-          callback: (token) => onVerify(token),
+          callback: (token) => onVerifyRef.current(token),
           "expired-callback": () => {
-            onVerify("");
-            onExpire?.();
+            onVerifyRef.current("");
+            onExpireRef.current?.();
           },
           "error-callback": () => {
-            onVerify("");
-            onError?.();
+            onVerifyRef.current("");
+            onErrorRef.current?.();
           },
         });
 
         if (widgetIdRef.current) {
-          onWidgetId?.(widgetIdRef.current);
+          onWidgetIdRef.current?.(widgetIdRef.current);
         }
       } catch (error) {
         console.error("Erro ao renderizar Turnstile:", error);
-        onError?.();
+        onErrorRef.current?.();
       }
     };
 
@@ -111,10 +127,15 @@ export const TurnstileWidget = ({
     return () => {
       isMounted = false;
       if (widgetIdRef.current && window.turnstile) {
-        window.turnstile.remove(widgetIdRef.current);
+        try {
+          window.turnstile.remove(widgetIdRef.current);
+        } catch {
+          // Already removed
+        }
+        widgetIdRef.current = null;
       }
     };
-  }, [onError, onExpire, onVerify, onWidgetId, siteKey]);
+  }, [siteKey]);
 
   return <div ref={containerRef} className={className} />;
 };
