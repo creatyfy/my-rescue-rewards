@@ -4,11 +4,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { updateCurrentUserProfile } from "@/integrations/supabase/profile";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Phone, FileText } from "lucide-react";
 import logoHorizontal from "@/assets/logo-horizontal.png";
 import { getDuplicateFieldMessage } from "@/lib/duplicate-errors";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 type AuthMode = "login" | "register";
 type UniqueFieldKey = "cpf" | "email" | "phone";
@@ -28,8 +28,14 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState("");
   const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileError, setTurnstileError] = useState("");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const turnstileWidgetId = useRef<string | null>(null);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
   const [formData, setFormData] = useState({
     name: "",
@@ -73,6 +79,50 @@ export default function Auth() {
       });
     }
   }, [mode]);
+
+  const resetTurnstile = () => {
+    if (turnstileWidgetId.current && window.turnstile) {
+      window.turnstile.reset(turnstileWidgetId.current);
+    }
+    setTurnstileToken("");
+    setTurnstileError("");
+  };
+
+  useEffect(() => {
+    resetTurnstile();
+  }, [mode]);
+
+  const getErrorMessage = (payload: unknown) => {
+    if (typeof payload === "object" && payload !== null) {
+      const data = payload as { errors?: string[]; message?: string };
+      if (Array.isArray(data.errors) && data.errors[0]) {
+        return data.errors[0];
+      }
+      if (data.message) {
+        return data.message;
+      }
+    }
+    return "";
+  };
+
+  const callAuthFunction = async (path: string, body: Record<string, unknown>) => {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error("Configuração do servidor inválida.");
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/${path}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    return { response, data };
+  };
 
   const formatCpf = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -254,7 +304,6 @@ export default function Auth() {
     try {
       const cpfDigits = getCpfDigits(formData.cpf);
       const phoneDigits = getPhoneDigits(formData.phone);
-      const normalizedPhone = phoneDigits ? `55${phoneDigits}` : "";
       const normalizedEmail = formData.email.trim().toLowerCase();
 
       if (mode === "register" && formData.password !== formData.confirmPassword) {
@@ -279,6 +328,16 @@ export default function Auth() {
           fieldValidation.phone.status === "invalid")
       ) {
         toast.error("Corrija os campos antes de continuar.");
+        return;
+      }
+
+      if (!turnstileSiteKey) {
+        toast.error("Captcha indisponível no momento.");
+        return;
+      }
+
+      if (!turnstileToken) {
+        toast.error("Confirme o desafio de segurança antes de continuar.");
         return;
       }
 
@@ -329,34 +388,25 @@ export default function Auth() {
         return;
       }
 
-      const { data, error } = await supabase.auth.signUp({
+      const { response, data } = await callAuthFunction("register-user", {
+        full_name: formData.name,
         email: normalizedEmail,
+        cpf: cpfDigits,
+        phone: phoneDigits,
         password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-          data: {
-            full_name: formData.name,
-            cpf: cpfDigits,
-            phone: normalizedPhone,
-          },
-        },
+        turnstileToken,
       });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        const message = getErrorMessage(data);
+        throw new Error(message || "Não foi possível concluir o cadastro.");
       }
 
-      if (data.session) {
-        setPendingConfirmationEmail("");
-        await updateCurrentUserProfile({
-          fullName: formData.name,
-          cpf: cpfDigits,
-          phone: normalizedPhone,
-        });
-        navigate("/dashboard");
-      } else {
-        toast.success("Conta criada! Verifique seu e-mail para confirmar.");
-      }
+      setPendingConfirmationEmail(normalizedEmail);
+      toast.success(
+        getErrorMessage(data) ||
+          "Cadastro realizado! Verifique seu e-mail para confirmar a conta.",
+      );
     } catch (error) {
       const duplicateMessage = getDuplicateFieldMessage(error);
       if (duplicateMessage) {
@@ -367,6 +417,7 @@ export default function Auth() {
       const message = error instanceof Error ? error.message : "";
       toast.error(message || "Não foi possível autenticar. Tente novamente.");
     } finally {
+      resetTurnstile();
       setIsLoading(false);
     }
   };
@@ -437,6 +488,8 @@ export default function Auth() {
 
   const shouldDisableSubmit =
     isLoading ||
+    !turnstileSiteKey ||
+    !turnstileToken ||
     (isRegister &&
       (hasMissingRequiredFields ||
         hasPasswordMismatch ||
@@ -484,37 +537,56 @@ export default function Auth() {
     email: string,
     password: string,
   ): Promise<{ status: LoginAuthStatus; message?: string }> => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    try {
+      const { response, data } = await callAuthFunction("login-user", {
+        email,
+        password,
+        turnstileToken,
+      });
 
-    if (error) {
-      const message = error.message.toLowerCase();
-      if (message.includes("email not confirmed")) {
+      if (!response.ok) {
+        const message = getErrorMessage(data);
+        if (response.status === 403 && message.toLowerCase().includes("confirma")) {
+          return {
+            status: "pending_confirmation",
+            message:
+              message ||
+              "Seu cadastro está aguardando confirmação de e-mail. Confirme seu e-mail para entrar.",
+          };
+        }
+
         return {
-          status: "pending_confirmation",
-          message:
-            "Seu cadastro está aguardando confirmação de e-mail. Confirme seu e-mail para entrar.",
+          status: "error",
+          message: message || "Credenciais inválidas.",
         };
       }
 
-      return {
-        status: "error",
-        message: error.message,
-      };
-    }
+      const session = (data as { session?: { access_token?: string; refresh_token?: string } })
+        .session;
+      if (!session?.access_token || !session.refresh_token) {
+        return {
+          status: "error",
+          message: "Não foi possível iniciar a sessão.",
+        };
+      }
 
-    if (!data.user?.email_confirmed_at) {
-      await supabase.auth.signOut();
-      return {
-        status: "pending_confirmation",
-        message:
-          "Seu cadastro está aguardando confirmação de e-mail. Confirme seu e-mail para entrar.",
-      };
-    }
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+      });
 
-    return { status: "success" };
+      if (sessionError) {
+        return {
+          status: "error",
+          message: sessionError.message,
+        };
+      }
+
+      return { status: "success" };
+    } catch (loginError) {
+      const message = loginError instanceof Error ? loginError.message : "";
+      return { status: "error", message: message || "Credenciais inválidas." };
+    }
   };
 
   return (
@@ -735,6 +807,26 @@ export default function Auth() {
               </div>
             </div>
           )}
+
+          <div className="space-y-2">
+            <Label>Verificação de segurança</Label>
+            <TurnstileWidget
+              siteKey={turnstileSiteKey}
+              onVerify={(token) => {
+                setTurnstileToken(token);
+                setTurnstileError("");
+              }}
+              onExpire={() => setTurnstileError("O desafio expirou. Tente novamente.")}
+              onError={() => setTurnstileError("Não foi possível validar o captcha.")}
+              onWidgetId={(id) => {
+                turnstileWidgetId.current = id;
+              }}
+              className="w-full"
+            />
+            {turnstileError ? (
+              <p className="text-sm text-destructive">{turnstileError}</p>
+            ) : null}
+          </div>
 
           {mode === "login" && (
             <div className="text-right">
