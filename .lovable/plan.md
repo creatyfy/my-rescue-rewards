@@ -1,238 +1,112 @@
 
 
-# Plano de Implementação: Nova Regra de Pontos para Produtos (1 Real = 600 Pontos)
+# Security Audit Report - Current Risk Assessment
 
-## Resumo Executivo
+## Findings Table
 
-Este plano implementa uma mudança significativa no sistema de pontos para **produtos/prêmios**, onde o administrador informa o valor em reais e o sistema calcula automaticamente os pontos necessários usando a fórmula **valor x 600**.
-
-**Nota importante**: Esta regra de 600 pontos/real é específica para **definição de preço de produtos (prêmios)**. A regra atual de 10 pontos/real para **comprovantes de compra** permanece inalterada, pois são regras de negócio distintas:
-- **Comprovantes**: Usuário ganha 10 pontos por R$1 gasto
-- **Produtos**: Custo em pontos = valor do prêmio x 600
-
----
-
-## Fases de Implementação
-
-### Fase 1: Configuração Centralizada do Multiplicador
-
-Criar um arquivo de configuração centralizado para evitar "hardcode" espalhado no sistema.
-
-**Arquivo novo**: `src/lib/points-config.ts`
-- Constante `PRODUCT_POINTS_MULTIPLIER = 600`
-- Constante `RECEIPT_POINTS_MULTIPLIER = 10` (já existente, para referência)
-- Funções utilitárias:
-  - `calculateProductPoints(valueInReais: number): number`
-  - `calculateProductValue(points: number): number`
+| # | Original Finding | Current Status | Risk | Justification |
+|---|-----------------|---------------|------|---------------|
+| 1 | **Validacoes backend** | Parcialmente mitigado | **ATENCAO** | Login/cadastro passam por Edge Functions com Zod `.strict()`. Porem `submit-receipt` no frontend chama `supabase.rpc()` diretamente, ignorando a Edge Function que tem Turnstile + Zod. |
+| 2 | **Confirmacao de e-mail** | Mitigado | **OK** | `config.toml` tem `enable_confirmations = true`. `register-user` cria com `email_confirm: false` e envia email. `login-user` bloqueia contas nao confirmadas (403). Nao ha `supabase.auth.signUp` no frontend. |
+| 3 | **CAPTCHA (Turnstile)** | Parcialmente mitigado | **CRITICO** | Login e cadastro passam por Edge Functions com Turnstile. Porem o envio de comprovantes (`receipts.ts`) chama `supabase.rpc("submit_receipt")` diretamente, contornando completamente o Turnstile da Edge Function `submit-receipt`. |
+| 4 | **Upload de arquivos** | Parcialmente mitigado | **ATENCAO** | Comprovantes passam por `upload-receipt` (valida MIME, reprocessa imagem, 10MB). Porem uploads de produtos, estabelecimentos e avatares vao direto para o Storage sem validacao de tipo/tamanho no backend. |
+| 5 | **Protecao contra abuso** | Parcialmente mitigado | **ATENCAO** | A funcao SQL `submit_receipt` tem rate limit e fingerprint. Porem como o frontend chama o RPC diretamente (sem Edge Function), o rate limit do SQL eh a unica camada - sem Turnstile. |
+| 6 | **Pontos e valores** | Mitigado | **OK** | Calculo esta no backend via `calculate_receipt_points()` + `submit_receipt()`. Trigger `on_receipt_status_change` gerencia creditos/ajustes corretamente. |
+| 7 | **Permissoes e Admin** | Mitigado | **OK** | `is_admin()` e `has_role()` sao `SECURITY DEFINER`. RLS policies usam `has_role()`. `bootstrap_first_admin` desabilitado. Promoca/rebaixamento restrito a admins existentes. `user_roles` so acessivel por admins. |
+| 8 | **Responses e dados sensiveis** | Mitigado | **OK** | Respostas de erro sao genericas. Sem vazamento de stack traces. |
+| 9 | **Bypass de frontend (Postman/API direta)** | Parcialmente mitigado | **CRITICO** | Login/cadastro agora passam por Edge Functions (sem acesso direto ao `signUp`/`signInWithPassword`). Porem o envio de comprovantes ainda eh feito via RPC direta, contornando a Edge Function. Password reset (`ForgotPassword.tsx`) usa `supabase.auth.resetPasswordForEmail` diretamente sem Turnstile. |
 
 ---
 
-### Fase 2: Atualização do Schema do Banco de Dados
+## Must-Fix Before Production (Top 5)
 
-**Tabela `products`** - Adicionar novas colunas:
+1. **CRITICO: Frontend envia comprovantes via RPC direta, contornando a Edge Function `submit-receipt`**
+   - `src/integrations/supabase/receipts.ts` chama `supabase.rpc("submit_receipt")` diretamente
+   - Isso ignora: Turnstile, Zod validation, body size limit, e a verificacao de fingerprint da Edge Function
+   - **Fix**: Alterar `submitReceiptForCurrentUser` para chamar `supabase.functions.invoke("submit-receipt")` com o turnstileToken
 
-| Coluna | Tipo | Descrição |
-|--------|------|-----------|
-| `prize_value_reais` | `numeric` | Valor do prêmio em reais informado pelo admin |
-| `points_calculated` | `integer` | Pontos calculados automaticamente (valor x 600) |
-| `points_manual_edit` | `boolean` | Flag indicando se o admin editou manualmente |
+2. **CRITICO: Password reset sem Turnstile**
+   - `ForgotPassword.tsx` chama `supabase.auth.resetPasswordForEmail()` diretamente
+   - Um atacante pode abusar dessa rota para spammar emails de reset via Postman
+   - **Fix**: Criar Edge Function `reset-password` com Turnstile e redirecionar o frontend
 
-**Nota**: A coluna `points_cost` existente continuará sendo a fonte da verdade para o custo final em pontos (seja calculado ou editado).
+3. **ATENCAO: Uploads admin (produtos/estabelecimentos/avatares) sem validacao backend**
+   - `uploadProductImage`, `uploadEstablishmentImage`, `uploadAvatarForCurrentUser` fazem upload direto ao Storage
+   - Sem validacao de MIME real, sem reprocessamento de imagem, sem limite de tamanho no backend
+   - Protegido apenas por RLS (admins podem escrever)
+   - **Fix**: Criar Edge Functions de upload similares a `upload-receipt` ou adicionar Storage Policies restritivas
 
----
+4. **ATENCAO: `TURNSTILE_SECRET_KEY` nao esta nos secrets configurados**
+   - O unico secret encontrado foi `LOVABLE_API_KEY`
+   - Sem o secret, todas as Edge Functions que usam Turnstile retornam erro 500
+   - **Fix**: Configurar o secret `TURNSTILE_SECRET_KEY` imediatamente
 
-### Fase 3: Reformulação do Formulário de Produtos
-
-**Arquivo**: `src/components/admin/AdminProductsPanel.tsx`
-
-**Novo fluxo do formulário**:
-
-1. **Campo "Valor do prêmio (R$)"** (novo campo principal)
-   - Input numérico para valor em reais
-   - Ao digitar, calcula automaticamente os pontos
-
-2. **Campo "Custo em pontos"** (campo existente, modificado)
-   - Inicialmente em modo somente leitura
-   - Exibe o valor calculado automaticamente
-   - Mostra mensagem de confirmação
-
-3. **Bloco de confirmação** (novo)
-   - Mensagem: "Com base no valor do prêmio informado, este produto exigirá X pontos para resgate. Deseja confirmar ou editar esse valor?"
-   - Botões: "Confirmar" e "Editar pontos"
-
-4. **Comportamento dos botões**:
-   - **Confirmar**: Mantém valor calculado, campo permanece bloqueado
-   - **Editar pontos**: Libera o campo para edição manual
-
-**Estado do formulário atualizado**:
-```
-type ProductFormState = {
-  id?: string;
-  name: string;
-  description: string;
-  prizeValueReais: string;      // NOVO
-  pointsCost: string;           // existente
-  pointsManualEdit: boolean;    // NOVO
-  pointsConfirmed: boolean;     // NOVO (controle de UI)
-  stock: string;
-  imageUrl: string;
-  imageFile: File | null;
-  active: boolean;
-};
-```
+5. **ATENCAO: `resendConfirmationEmail` no frontend chama `supabase.auth.resend()` diretamente**
+   - Sem rate limit ou Turnstile no reenvio de email de confirmacao
+   - Atacante pode automatizar reenvios infinitos via Postman
+   - **Fix**: Mover para Edge Function com Turnstile
 
 ---
 
-### Fase 4: Atualização das Funções de Backend (Admin)
+## Concrete Exploit Example (CRITICAL #1)
 
-**Arquivo**: `src/integrations/supabase/admin.ts`
-
-**Alterações em `createProduct`**:
-- Aceitar novos parâmetros: `prizeValueReais`, `pointsManualEdit`
-- Salvar todos os campos no banco
-
-**Alterações em `updateProduct`**:
-- Mesma lógica de create
-- Preservar histórico de edições manuais
-
-**Tipo `AdminProduct` atualizado**:
-```
-type AdminProduct = {
-  id: string;
-  name: string;
-  description: string | null;
-  image_url: string | null;
-  points_cost: number;
-  prize_value_reais: number | null;  // NOVO
-  points_calculated: number | null;   // NOVO
-  points_manual_edit: boolean;        // NOVO
-  stock: number;
-  active: boolean;
-  created_at: string;
-};
-```
-
----
-
-### Fase 5: Validações
-
-**No formulário (frontend)**:
-- Valor do prêmio deve ser maior que 0
-- Pontos finais devem ser maior que 0
-- Não permitir salvar sem pontos definidos/confirmados
-
-**Fluxo de validação**:
-1. Admin informa valor em reais
-2. Sistema calcula pontos automaticamente
-3. Admin deve clicar "Confirmar" ou "Editar pontos"
-4. Só após confirmação/edição o botão "Salvar" é habilitado
-
----
-
-### Fase 6: Exibição na Interface do Usuário
-
-**Arquivos afetados**:
-- `src/components/store/ProductCard.tsx` - Exibir valor equivalente em R$
-- `src/pages/Store.tsx` - Mostrar conversão para usuário
-
-**Adicionar na loja**:
-- Abaixo do custo em pontos: "Equivale a R$ X,XX" (usando a fórmula inversa: pontos / 600)
-
----
-
-## Detalhes Técnicos
-
-### Migration SQL para o Banco de Dados
-
-```sql
--- Adicionar novas colunas à tabela products
-ALTER TABLE public.products 
-ADD COLUMN IF NOT EXISTS prize_value_reais numeric DEFAULT NULL,
-ADD COLUMN IF NOT EXISTS points_calculated integer DEFAULT NULL,
-ADD COLUMN IF NOT EXISTS points_manual_edit boolean DEFAULT false;
-
--- Comentários para documentação
-COMMENT ON COLUMN public.products.prize_value_reais IS 'Valor do prêmio em reais informado pelo administrador';
-COMMENT ON COLUMN public.products.points_calculated IS 'Pontos calculados automaticamente (valor x 600)';
-COMMENT ON COLUMN public.products.points_manual_edit IS 'Indica se o custo em pontos foi editado manualmente';
-```
-
-### Arquivo de Configuração
-
-```typescript
-// src/lib/points-config.ts
-
-// Multiplicadores centralizados
-export const PRODUCT_POINTS_MULTIPLIER = 600;
-export const RECEIPT_POINTS_MULTIPLIER = 10;
-
-// Funções utilitárias para produtos
-export function calculateProductPoints(valueInReais: number): number {
-  return Math.floor(valueInReais * PRODUCT_POINTS_MULTIPLIER);
-}
-
-export function calculateProductValue(points: number): number {
-  return points / PRODUCT_POINTS_MULTIPLIER;
-}
-
-// Funções utilitárias para comprovantes (já existentes no sistema)
-export function calculateReceiptPoints(valueInReais: number): number {
-  return Math.floor(valueInReais * RECEIPT_POINTS_MULTIPLIER);
-}
-```
-
----
-
-## Arquivos a Serem Modificados
-
-| Arquivo | Tipo de Alteração |
-|---------|-------------------|
-| `src/lib/points-config.ts` | **Criar** - Configuração centralizada |
-| `src/components/admin/AdminProductsPanel.tsx` | **Modificar** - Novo formulário |
-| `src/integrations/supabase/admin.ts` | **Modificar** - Tipos e funções CRUD |
-| `src/components/store/ProductCard.tsx` | **Modificar** - Exibir equivalente em R$ |
-| `src/pages/Store.tsx` | **Modificar** - Conversão visual |
-| Migration SQL | **Criar** - Novas colunas na tabela products |
-
----
-
-## Fluxo Visual do Novo Formulário
+**Submissao de comprovantes falsos em massa via Postman, sem CAPTCHA:**
 
 ```text
-+--------------------------------------------------+
-|  NOVO PRODUTO                                     |
-+--------------------------------------------------+
-|  Nome: [____________________]                     |
-|  Descrição: [_______________]                     |
-|                                                   |
-|  Valor do prêmio (R$): [500.00]                  |
-|                                                   |
-|  Custo em pontos: [300.000] (somente leitura)    |
-|                                                   |
-|  +----------------------------------------------+ |
-|  | Com base no valor informado, este produto    | |
-|  | exigirá 300.000 pontos para resgate.        | |
-|  |                                              | |
-|  | Deseja confirmar ou editar esse valor?       | |
-|  |                                              | |
-|  | [Confirmar]  [Editar pontos]                 | |
-|  +----------------------------------------------+ |
-|                                                   |
-|  Estoque: [____]                                  |
-|  Imagem: [Selecionar arquivo]                    |
-|  [x] Produto ativo                               |
-|                                                   |
-|  [Cancelar]  [Salvar]                            |
-+--------------------------------------------------+
+POST https://rymywtllzgysesdzstof.supabase.co/rest/v1/rpc/submit_receipt
+Headers:
+  apikey: <anon_key>
+  Authorization: Bearer <user_jwt>
+  Content-Type: application/json
+
+Body:
+{
+  "p_qr_code_token": "<token_valido_de_estabelecimento>",
+  "p_purchase_value": 9999.99,
+  "p_image_path": "<user_id>/qualquer-imagem-existente.jpg"
+}
 ```
+
+Este request ignora completamente:
+- Turnstile (sem CAPTCHA)
+- Zod schema validation
+- Body size limit (10KB)
+- A Edge Function `submit-receipt` inteira
+
+O unico controle restante eh o rate limit SQL dentro da funcao `submit_receipt()` e a verificacao de fingerprint -- que depende de parametros que podem nao estar sendo passados corretamente pelo RPC direto (o RPC espera `p_image_path`, nao `p_receipt_image_url`).
 
 ---
 
-## Considerações de Compatibilidade
+## Technical Implementation Plan
 
-1. **Produtos existentes**: Produtos já cadastrados terão `prize_value_reais` e `points_calculated` como NULL, e `points_manual_edit` como FALSE. O sistema continuará funcionando normalmente usando `points_cost`.
+### 1. Redirecionar submissao de comprovantes para Edge Function
 
-2. **Migração gradual**: Ao editar um produto existente, o admin pode optar por informar o valor em reais e recalcular, ou manter o custo em pontos atual.
+**Arquivo**: `src/integrations/supabase/receipts.ts`
 
-3. **Futuro**: O multiplicador 600 está centralizado em `points-config.ts`, permitindo alteração fácil sem refatoração do sistema.
+Alterar `submitReceiptForCurrentUser` para:
+- Receber `turnstileToken` como parametro
+- Chamar `supabase.functions.invoke("submit-receipt", { body: { qrCodeToken, purchaseValue, receiptPath, turnstileToken } })`
+- Remover todas as chamadas `supabase.rpc("submit_receipt")`
+
+**Arquivos afetados**: `src/pages/Scan.tsx` (adicionar widget Turnstile e passar token)
+
+### 2. Criar Edge Function `reset-password`
+
+- Validar Turnstile
+- Chamar `supabase.auth.resetPasswordForEmail()` server-side
+- Atualizar `ForgotPassword.tsx` para usar a Edge Function
+
+### 3. Adicionar validacao de upload para admin
+
+- Frontend: adicionar validacao de tipo (JPG/PNG) e tamanho (10MB) nos formularios de produto e estabelecimento
+- Backend: considerar Storage Policies ou Edge Functions dedicadas
+
+### 4. Configurar `TURNSTILE_SECRET_KEY`
+
+- Sem este secret, login e cadastro estao retornando erro 500
+
+### 5. Proteger reenvio de confirmacao
+
+- Mover `resendConfirmationEmail` para Edge Function com Turnstile
+- Ou adicionar rate limit no frontend (com consciencia de que eh contornavel)
 
