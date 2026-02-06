@@ -38,12 +38,7 @@ export default function ProfileSecurity() {
       return;
     }
 
-    if (!turnstileSiteKey) {
-      toast.error("Captcha indisponível no momento.");
-      return;
-    }
-
-    if (!turnstileToken) {
+    if (turnstileSiteKey && !turnstileToken) {
       toast.error("Confirme o desafio de segurança para continuar.");
       return;
     }
@@ -134,7 +129,7 @@ export default function ProfileSecurity() {
             <Button
               type="submit"
               className="w-full"
-              disabled={isSaving || !turnstileSiteKey || !turnstileToken}
+              disabled={isSaving || (!!turnstileSiteKey && !turnstileToken)}
             >
               {isSaving ? "Atualizando..." : "Atualizar senha"}
             </Button>
