@@ -22,9 +22,9 @@ const payloadSchema = z
       .trim()
       .email("Informe um e-mail válido."),
     turnstileToken: z
-      .string({ required_error: "turnstileToken é obrigatório." })
+      .string()
       .trim()
-      .min(1, "turnstileToken é obrigatório."),
+      .optional(),
     redirectTo: z
       .string()
       .url("redirectTo deve ser uma URL válida.")
