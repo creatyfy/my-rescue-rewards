@@ -332,12 +332,7 @@ export default function Auth() {
         return;
       }
 
-      if (!turnstileSiteKey) {
-        toast.error("Captcha indisponível no momento.");
-        return;
-      }
-
-      if (!turnstileToken) {
+      if (turnstileSiteKey && !turnstileToken) {
         toast.error("Confirme o desafio de segurança antes de continuar.");
         return;
       }
@@ -489,8 +484,7 @@ export default function Auth() {
 
   const shouldDisableSubmit =
     isLoading ||
-    !turnstileSiteKey ||
-    !turnstileToken ||
+    (!!turnstileSiteKey && !turnstileToken) ||
     (isRegister &&
       (hasMissingRequiredFields ||
         hasPasswordMismatch ||
