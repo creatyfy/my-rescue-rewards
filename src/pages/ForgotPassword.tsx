@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,26 +6,51 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileError, setTurnstileError] = useState("");
+  const turnstileWidgetId = useRef<string | null>(null);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+
+  const resetTurnstile = () => {
+    if (turnstileWidgetId.current && window.turnstile) {
+      window.turnstile.reset(turnstileWidgetId.current);
+    }
+    setTurnstileToken("");
+    setTurnstileError("");
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+
+    if (turnstileSiteKey && !turnstileToken) {
+      toast.error("Confirme o desafio de segurança antes de continuar.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
       const redirectTo = `${window.location.origin}/reset-password`;
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo,
+
+      const { data, error } = await supabase.functions.invoke("reset-password", {
+        body: {
+          email: email.trim().toLowerCase(),
+          turnstileToken,
+          redirectTo,
+        },
       });
 
       if (error) {
-        throw error;
+        const errorData = data as { errors?: string[] } | null;
+        throw new Error(errorData?.errors?.[0] || error.message || "Erro ao enviar.");
       }
 
-      toast.success("Enviamos um link de recuperação para o seu e-mail.");
+      toast.success("Se o e-mail estiver cadastrado, você receberá um link de recuperação.");
     } catch (error) {
       const message =
         error instanceof Error
@@ -33,6 +58,7 @@ export default function ForgotPassword() {
           : "Não foi possível enviar o e-mail de recuperação.";
       toast.error(message);
     } finally {
+      resetTurnstile();
       setIsLoading(false);
     }
   };
@@ -82,7 +108,34 @@ export default function ForgotPassword() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+          {turnstileSiteKey && (
+            <div className="space-y-2">
+              <Label>Verificação de segurança</Label>
+              <TurnstileWidget
+                siteKey={turnstileSiteKey}
+                onVerify={(token) => {
+                  setTurnstileToken(token);
+                  setTurnstileError("");
+                }}
+                onExpire={() => setTurnstileError("O desafio expirou. Tente novamente.")}
+                onError={() => setTurnstileError("Não foi possível validar o captcha.")}
+                onWidgetId={(id) => {
+                  turnstileWidgetId.current = id;
+                }}
+                className="w-full"
+              />
+              {turnstileError && (
+                <p className="text-sm text-destructive">{turnstileError}</p>
+              )}
+            </div>
+          )}
+
+          <Button
+            type="submit"
+            className="w-full"
+            size="lg"
+            disabled={isLoading || (!!turnstileSiteKey && !turnstileToken)}
+          >
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
