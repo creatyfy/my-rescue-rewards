@@ -108,24 +108,26 @@ export default function ProfileSecurity() {
                 placeholder="Repita a nova senha"
               />
             </div>
-            <div className="space-y-2">
-              <Label>Verificação de segurança</Label>
-              <TurnstileWidget
-                siteKey={turnstileSiteKey}
-                onVerify={(token) => {
-                  setTurnstileToken(token);
-                  setTurnstileError("");
-                }}
-                onExpire={() => setTurnstileError("O desafio expirou. Tente novamente.")}
-                onError={() => setTurnstileError("Não foi possível validar o captcha.")}
-                onWidgetId={(id) => {
-                  turnstileWidgetId.current = id;
-                }}
-              />
-              {turnstileError ? (
-                <p className="text-sm text-destructive">{turnstileError}</p>
-              ) : null}
-            </div>
+            {turnstileSiteKey && (
+              <div className="space-y-2">
+                <Label>Verificação de segurança</Label>
+                <TurnstileWidget
+                  siteKey={turnstileSiteKey}
+                  onVerify={(token) => {
+                    setTurnstileToken(token);
+                    setTurnstileError("");
+                  }}
+                  onExpire={() => setTurnstileError("O desafio expirou. Tente novamente.")}
+                  onError={() => setTurnstileError("Não foi possível validar o captcha.")}
+                  onWidgetId={(id) => {
+                    turnstileWidgetId.current = id;
+                  }}
+                />
+                {turnstileError && (
+                  <p className="text-sm text-destructive">{turnstileError}</p>
+                )}
+              </div>
+            )}
             <Button
               type="submit"
               className="w-full"
