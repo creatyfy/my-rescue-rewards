@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -35,7 +36,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
 
     try {
-      const redirectTo = `${window.location.origin}/reset-password`;
+      const redirectTo = `${getAppBaseUrl()}/reset-password`;
 
       const { data, error } = await supabase.functions.invoke("reset-password", {
         body: {
