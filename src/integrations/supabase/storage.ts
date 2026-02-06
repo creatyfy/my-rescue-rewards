@@ -1,5 +1,17 @@
 import { supabase } from "./client";
 
+const MAX_ADMIN_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+const validateImageFile = (file: File) => {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    throw new Error("Formato inválido. Envie uma imagem JPG, PNG ou WebP.");
+  }
+  if (file.size > MAX_ADMIN_UPLOAD_SIZE) {
+    throw new Error("O arquivo deve ter no máximo 10MB.");
+  }
+};
+
 const getFileExtension = (file: File) => {
   const extension = file.name.split(".").pop();
   return extension ? extension.toLowerCase() : "jpg";
@@ -42,6 +54,7 @@ export const createSignedReceiptUrl = async (path: string, expiresIn = 60) => {
 };
 
 export const uploadProductImage = async (file: File) => {
+  validateImageFile(file);
   const path = `products/${buildFileName(file)}`;
   const { data, error } = await supabase.storage.from("products").upload(path, file, {
     contentType: file.type,
@@ -56,6 +69,7 @@ export const uploadProductImage = async (file: File) => {
 };
 
 export const uploadEstablishmentImage = async (file: File) => {
+  validateImageFile(file);
   const path = `establishments/${buildFileName(file)}`;
   const { data, error } = await supabase.storage
     .from("establishments")
@@ -72,6 +86,7 @@ export const uploadEstablishmentImage = async (file: File) => {
 };
 
 export const uploadAvatarForCurrentUser = async (file: File) => {
+  validateImageFile(file);
   const { data, error } = await supabase.auth.getUser();
 
   if (error) {

@@ -23,6 +23,7 @@ import {
   submitReceiptForCurrentUser,
 } from "@/integrations/supabase/receipts";
 import { uploadReceiptForCurrentUser } from "@/integrations/supabase/storage";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 type ScanStep = "ready" | "scan" | "form" | "manual" | "success";
 
@@ -49,6 +50,9 @@ export default function Scan() {
   const [fileError, setFileError] = useState<string | null>(null);
   const [isLoadingStores, setIsLoadingStores] = useState(false);
   const [submissionMode, setSubmissionMode] = useState<"qr" | "manual" | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileWidgetId = useRef<string | null>(null);
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
   
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null);
   const isProcessingRef = useRef(false);
@@ -169,6 +173,11 @@ export default function Scan() {
       return;
     }
 
+    if (!turnstileToken) {
+      toast.error("Confirme o desafio de segurança antes de continuar.");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       const receiptPath = await uploadReceiptForCurrentUser(receiptFile);
@@ -176,14 +185,17 @@ export default function Scan() {
         qrCodeToken,
         purchaseValue: parsedValue,
         receiptPath,
+        turnstileToken,
       });
       toast.success("Comprovante enviado para análise.");
       setStep("success");
     } catch (error) {
       console.error("Erro ao enviar:", error);
-      toast.error("Não foi possível enviar o comprovante.");
+      const message = error instanceof Error ? error.message : "Não foi possível enviar o comprovante.";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
+      resetTurnstile();
     }
   };
 
@@ -218,6 +230,11 @@ export default function Scan() {
       return;
     }
 
+    if (!turnstileToken) {
+      toast.error("Confirme o desafio de segurança antes de continuar.");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       const receiptPath = await uploadReceiptForCurrentUser(receiptFile);
@@ -225,6 +242,7 @@ export default function Scan() {
         qrCodeToken: selectedStore.qrCodeToken,
         purchaseValue: parsedValue,
         receiptPath,
+        turnstileToken,
       });
       setEstablishmentName(selectedStore.name);
       setQrCodeToken(selectedStore.qrCodeToken);
@@ -232,10 +250,19 @@ export default function Scan() {
       setStep("success");
     } catch (error) {
       console.error("Erro ao enviar:", error);
-      toast.error("Não foi possível enviar o comprovante.");
+      const message = error instanceof Error ? error.message : "Não foi possível enviar o comprovante.";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
+      resetTurnstile();
     }
+  };
+
+  const resetTurnstile = () => {
+    if (turnstileWidgetId.current && window.turnstile) {
+      window.turnstile.reset(turnstileWidgetId.current);
+    }
+    setTurnstileToken("");
   };
 
   const resetReceiptState = () => {
@@ -249,6 +276,7 @@ export default function Scan() {
     setStoreError(null);
     setFileError(null);
     setSubmissionMode(null);
+    resetTurnstile();
   };
 
   const resetForm = () => {
@@ -597,6 +625,20 @@ export default function Scan() {
                 )}
               </div>
 
+              {turnstileSiteKey && (
+                <div className="space-y-2">
+                  <Label>Verificação de segurança</Label>
+                  <TurnstileWidget
+                    siteKey={turnstileSiteKey}
+                    onVerify={(token) => setTurnstileToken(token)}
+                    onExpire={() => setTurnstileToken("")}
+                    onError={() => setTurnstileToken("")}
+                    onWidgetId={(id) => { turnstileWidgetId.current = id; }}
+                    className="w-full"
+                  />
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <Button type="button" variant="outline" onClick={resetForm} className="flex-1">
                   Cancelar
@@ -604,7 +646,7 @@ export default function Scan() {
                 <Button
                   type="submit"
                   className="flex-1"
-                  disabled={isSubmitting || !purchaseValue || parseFloat(purchaseValue) < 10 || !receiptImage}
+                  disabled={isSubmitting || !purchaseValue || parseFloat(purchaseValue) < 10 || !receiptImage || (!turnstileToken && !!turnstileSiteKey)}
                 >
                   {isSubmitting ? "Enviando..." : "Enviar"}
                 </Button>
@@ -753,6 +795,20 @@ export default function Scan() {
                 )}
               </div>
 
+              {turnstileSiteKey && (
+                <div className="space-y-2">
+                  <Label>Verificação de segurança</Label>
+                  <TurnstileWidget
+                    siteKey={turnstileSiteKey}
+                    onVerify={(token) => setTurnstileToken(token)}
+                    onExpire={() => setTurnstileToken("")}
+                    onError={() => setTurnstileToken("")}
+                    onWidgetId={(id) => { turnstileWidgetId.current = id; }}
+                    className="w-full"
+                  />
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <Button type="button" variant="outline" onClick={resetForm} className="flex-1">
                   Cancelar
@@ -766,7 +822,8 @@ export default function Scan() {
                     parseFloat(purchaseValue) < 10 ||
                     !receiptFile ||
                     Boolean(storeError) ||
-                    isLoadingStores
+                    isLoadingStores ||
+                    (!turnstileToken && !!turnstileSiteKey)
                   }
                 >
                   {isSubmitting ? "Enviando..." : "Enviar"}

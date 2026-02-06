@@ -11,48 +11,11 @@ type SubmittedReceipt = {
   status: "pending" | "approved" | "rejected";
 };
 
-type LegacySubmittedReceipt = {
-  receipt_id: string;
-  points?: number | null;
-  points_earned?: number | null;
-  protocol_number?: string | null;
-  status?: "pending" | "approved" | "rejected" | null;
-};
-
 type EstablishmentOption = {
   id: string;
   name: string;
   qr_code_token: string | null;
   active?: boolean | null;
-};
-
-const shouldRetryLegacySubmit = (message: string) => {
-  const normalized = message.toLowerCase();
-  return (
-    normalized.includes("pgrst202") ||
-    normalized.includes("could not find the function") ||
-    normalized.includes("does not exist") ||
-    normalized.includes("parameter") ||
-    normalized.includes("p_receipt_image_url") ||
-    normalized.includes("p_image_path") ||
-    normalized.includes("qr_token")
-  );
-};
-
-const normalizeSubmittedReceipt = (receipt: LegacySubmittedReceipt): SubmittedReceipt => {
-  const status = receipt.status;
-  if (status === "approved" || status === "rejected") {
-    return {
-      receipt_id: receipt.receipt_id,
-      points: receipt.points ?? receipt.points_earned ?? 0,
-      status,
-    };
-  }
-  return {
-    receipt_id: receipt.receipt_id,
-    points: receipt.points ?? receipt.points_earned ?? 0,
-    status: "pending",
-  };
 };
 
 export const fetchStoreByQrValue = async (
@@ -83,79 +46,56 @@ export const submitReceiptForCurrentUser = async ({
   qrCodeToken,
   purchaseValue,
   receiptPath,
+  turnstileToken,
 }: {
   qrCodeToken: string;
   purchaseValue: number;
   receiptPath: string;
+  turnstileToken: string;
 }): Promise<SubmittedReceipt | null> => {
-  try {
-    console.info("Enviando comprovante para análise:", {
+  const { data, error } = await supabase.functions.invoke("submit-receipt", {
+    body: {
       qrCodeToken,
       purchaseValue,
       receiptPath,
-    });
-    const { data, error } = await supabase.rpc("submit_receipt" as never, {
-      p_qr_value: qrCodeToken,
-      p_purchase_value: purchaseValue,
-      p_image_path: receiptPath,
-    } as never);
+      turnstileToken,
+    },
+  });
 
-    if (error) {
-      const message = error.message ?? "";
-      console.warn("submit_receipt function not available:", message);
-      if (!shouldRetryLegacySubmit(message)) {
-        throw error;
-      }
+  if (error) {
+    // Try to extract structured error from response
+    const contextStatus = (error as { context?: { status?: number } }).context?.status;
+    const errorData = data as { errors?: string[] } | null;
+    const message = errorData?.errors?.[0] || error.message || "Erro ao enviar comprovante.";
 
-      const legacyParams = [
-        {
-          p_qr_code_token: qrCodeToken,
-          p_purchase_value: purchaseValue,
-          p_image_path: receiptPath,
-        },
-        {
-          p_qr_code_token: qrCodeToken,
-          p_purchase_value: purchaseValue,
-          p_receipt_image_url: receiptPath,
-        },
-        {
-          qr_token: qrCodeToken,
-          purchase_value: purchaseValue,
-          image_url: receiptPath,
-        },
-      ] as const;
-
-      for (const params of legacyParams) {
-        const { data: legacyData, error: legacyError } = await supabase.rpc(
-          "submit_receipt" as never,
-          params as never,
-        );
-
-        if (legacyError) {
-          console.warn("submit_receipt legacy call failed:", legacyError.message);
-          continue;
-        }
-
-        const legacyResult = legacyData as LegacySubmittedReceipt[] | null;
-        return legacyResult?.[0] ? normalizeSubmittedReceipt(legacyResult[0]) : null;
-      }
-
-      throw error;
+    if (contextStatus === 409) {
+      throw new Error("Comprovante já enviado.");
     }
-
-    const result = data as LegacySubmittedReceipt[] | null;
-    if (result?.[0]) {
-      const normalized = normalizeSubmittedReceipt(result[0]);
-      console.info("Comprovante criado:", {
-        receiptId: normalized.receipt_id,
-        status: normalized.status,
-      });
-      return normalized;
+    if (contextStatus === 429) {
+      throw new Error("Muitas tentativas. Tente novamente em alguns minutos.");
     }
-    return null;
-  } catch (err) {
-    throw err;
+    throw new Error(message);
   }
+
+  const result = data as {
+    success?: boolean;
+    receipt?: {
+      protocol_number?: string | null;
+      points_earned?: number | null;
+      status?: string | null;
+    };
+  } | null;
+
+  if (!result?.success || !result.receipt) {
+    return null;
+  }
+
+  const status = result.receipt.status;
+  return {
+    receipt_id: result.receipt.protocol_number ?? "",
+    points: result.receipt.points_earned ?? 0,
+    status: status === "approved" || status === "rejected" ? status : "pending",
+  };
 };
 
 export const fetchReceiptEstablishments = async (): Promise<

@@ -509,19 +509,25 @@ export default function Auth() {
       return;
     }
 
+    if (turnstileSiteKey && !turnstileToken) {
+      toast.error("Confirme o desafio de segurança antes de reenviar.");
+      return;
+    }
+
     setIsResendingConfirmation(true);
 
     try {
-      const { error } = await supabase.auth.resend({
-        type: "signup",
-        email: normalizedEmail,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
+      const { data, error } = await supabase.functions.invoke("resend-confirmation", {
+        body: {
+          email: normalizedEmail,
+          turnstileToken,
+          redirectTo: `${window.location.origin}/dashboard`,
         },
       });
 
       if (error) {
-        throw error;
+        const errorData = data as { errors?: string[] } | null;
+        throw new Error(errorData?.errors?.[0] || error.message || "Erro ao reenviar.");
       }
 
       toast.success("E-mail de confirmação reenviado. Verifique sua caixa de entrada.");
@@ -529,6 +535,7 @@ export default function Auth() {
       const message = error instanceof Error ? error.message : "";
       toast.error(message || "Não foi possível reenviar o e-mail de confirmação.");
     } finally {
+      resetTurnstile();
       setIsResendingConfirmation(false);
     }
   };
