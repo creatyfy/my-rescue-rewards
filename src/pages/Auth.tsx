@@ -83,7 +83,12 @@ export default function Auth() {
 
   const resetTurnstile = () => {
     if (turnstileWidgetId.current && window.turnstile) {
-      window.turnstile.reset(turnstileWidgetId.current);
+      try {
+        window.turnstile.reset(turnstileWidgetId.current);
+      } catch {
+        // Widget may have been unmounted; clear the stale reference
+        turnstileWidgetId.current = null;
+      }
     }
     setTurnstileToken("");
     setTurnstileError("");
