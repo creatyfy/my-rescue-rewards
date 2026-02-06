@@ -17,7 +17,27 @@ const getFileExtension = (file: File) => {
   return extension ? extension.toLowerCase() : "jpg";
 };
 
-const buildFileName = (file: File) => `${crypto.randomUUID()}.${getFileExtension(file)}`;
+const uploadAdminImage = async (functionName: string, file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const { data, error } = await supabase.functions.invoke<{ path?: string; error?: string }>(
+    functionName,
+    {
+      body: formData,
+    },
+  );
+
+  if (error) {
+    throw new Error(error.message || "Erro ao enviar imagem.");
+  }
+
+  if (!data?.path) {
+    throw new Error(data?.error || "Falha no upload da imagem.");
+  }
+
+  return data.path;
+};
 
 export const uploadReceiptForCurrentUser = async (file: File) => {
   const formData = new FormData();
@@ -55,34 +75,12 @@ export const createSignedReceiptUrl = async (path: string, expiresIn = 60) => {
 
 export const uploadProductImage = async (file: File) => {
   validateImageFile(file);
-  const path = `products/${buildFileName(file)}`;
-  const { data, error } = await supabase.storage.from("products").upload(path, file, {
-    contentType: file.type,
-    upsert: false,
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  return data.path;
+  return uploadAdminImage("upload-product-image", file);
 };
 
 export const uploadEstablishmentImage = async (file: File) => {
   validateImageFile(file);
-  const path = `establishments/${buildFileName(file)}`;
-  const { data, error } = await supabase.storage
-    .from("establishments")
-    .upload(path, file, {
-      contentType: file.type,
-      upsert: false,
-    });
-
-  if (error) {
-    throw error;
-  }
-
-  return data.path;
+  return uploadAdminImage("upload-establishment-image", file);
 };
 
 export const uploadAvatarForCurrentUser = async (file: File) => {
