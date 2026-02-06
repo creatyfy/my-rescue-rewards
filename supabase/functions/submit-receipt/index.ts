@@ -89,8 +89,9 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
     console.error("Missing Supabase environment variables.");
     return jsonResponse({ errors: ["Configuração do servidor inválida."] }, 500);
   }
@@ -108,6 +109,26 @@ serve(async (req) => {
   if (userError || !userData.user) {
     return jsonResponse({ errors: ["Usuário não autenticado."] }, 401);
   }
+
+  const clientIp =
+    req.headers.get("CF-Connecting-IP") ??
+    req.headers.get("x-forwarded-for") ??
+    req.headers.get("x-real-ip") ??
+    undefined;
+
+  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      headers: {
+        ...(clientIp
+          ? {
+              "x-forwarded-for": clientIp,
+              "cf-connecting-ip": clientIp,
+            }
+          : {}),
+      },
+    },
+  });
 
   const { qrCodeToken, purchaseValue, receiptPath } = validationResult.data;
 
@@ -129,7 +150,8 @@ serve(async (req) => {
     await crypto.subtle.digest("SHA-256", await receiptFile.arrayBuffer()),
   );
 
-  const { data, error } = await supabase.rpc("submit_receipt" as never, {
+  const { data, error } = await supabaseAdmin.rpc("submit_receipt_from_edge" as never, {
+    p_user_id: userId,
     p_qr_code_token: qrCodeToken,
     p_purchase_value: purchaseValue,
     p_receipt_image_url: normalizedReceiptPath,
