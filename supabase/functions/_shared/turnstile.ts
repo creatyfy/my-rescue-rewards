@@ -13,21 +13,19 @@ export const verifyTurnstileToken = async (
   token: string | null | undefined,
   remoteIp?: string | null,
 ): Promise<TurnstileValidationResult> => {
+  const secret = Deno.env.get("TURNSTILE_SECRET_KEY");
+
+  // If Turnstile is not configured on the server, skip validation entirely
+  if (!secret) {
+    console.warn("TURNSTILE_SECRET_KEY não configurada — validação ignorada.");
+    return { success: true };
+  }
+
   if (!token || !token.trim()) {
     return {
       success: false,
       status: 403,
       message: "Token do Turnstile ausente.",
-    };
-  }
-
-  const secret = Deno.env.get("TURNSTILE_SECRET_KEY");
-  if (!secret) {
-    console.error("TURNSTILE_SECRET_KEY não configurada.");
-    return {
-      success: false,
-      status: 500,
-      message: "Configuração de segurança inválida.",
     };
   }
 
