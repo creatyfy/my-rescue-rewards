@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { z } from "https://esm.sh/zod@3.23.8";
 import { verifyTurnstileToken } from "../_shared/turnstile.ts";
 
@@ -162,10 +162,25 @@ serve(async (req) => {
     return jsonResponse({ errors: ["Não foi possível concluir o cadastro."] }, 400);
   }
 
+  // Send confirmation email via anon-key client
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (supabaseAnonKey) {
+    const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false },
+    });
+    const { error: resendError } = await anonClient.auth.resend({
+      type: "signup",
+      email,
+    });
+    if (resendError) {
+      console.warn("Erro ao enviar e-mail de confirmação:", resendError.message);
+    }
+  }
+
   return jsonResponse(
     {
       success: true,
-      message: "Cadastro realizado com sucesso.",
+      message: "Cadastro realizado com sucesso. Verifique seu e-mail para confirmar a conta.",
     },
     201,
   );
