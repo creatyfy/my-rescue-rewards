@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { getAppBaseUrl } from "@/lib/app-url";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Phone, FileText } from "lucide-react";
 import logoHorizontal from "@/assets/logo-horizontal.png";
@@ -521,7 +522,7 @@ export default function Auth() {
         body: {
           email: normalizedEmail,
           turnstileToken,
-          redirectTo: `${window.location.origin}/dashboard`,
+          redirectTo: `${getAppBaseUrl()}/dashboard`,
         },
       });
 
