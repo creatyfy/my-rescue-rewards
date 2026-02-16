@@ -80,7 +80,7 @@ const loginPayloadSchema = z
       .email("email deve estar em um formato válido."),
     password: z
       .string({ required_error: "password é obrigatório." })
-      .min(6, "password deve ter no mínimo 6 caracteres."),
+      .min(1, "password é obrigatório."),
     turnstileToken: z.string().trim().optional(),
   })
   .strict("Campos extras não são permitidos.");
