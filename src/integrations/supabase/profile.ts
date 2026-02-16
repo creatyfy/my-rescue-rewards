@@ -94,11 +94,13 @@ export const updateCurrentUserProfile = async (input: ProfileUpdateInput): Promi
   }
 
   if (typeof input.cpf !== "undefined") {
-    payload.cpf = input.cpf ?? null;
+    const cpfClean = input.cpf?.replace(/\D/g, "") || null;
+    payload.cpf = cpfClean;
   }
 
   if (typeof input.phone !== "undefined") {
-    payload.phone = input.phone ?? null;
+    const phoneClean = input.phone?.replace(/\D/g, "") || null;
+    payload.phone = phoneClean;
   }
 
   if (typeof input.avatarUrl !== "undefined") {
