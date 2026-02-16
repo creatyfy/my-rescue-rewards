@@ -9,6 +9,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Phone, FileText } from "lucide-react";
 import logoHorizontal from "@/assets/logo-horizontal.png";
 import { getDuplicateFieldMessage } from "@/lib/duplicate-errors";
+import { translateError } from "@/lib/translate-error";
 import { isValidCpf } from "@/lib/cpf-validation";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
 
@@ -475,7 +476,7 @@ export default function Auth() {
         return;
       }
 
-      const message = error instanceof Error ? error.message : "";
+      const message = translateError(error instanceof Error ? error.message : "");
       if (mode === "register") {
         setFormError(message || "Não foi possível concluir o cadastro. Tente novamente.");
       } else {
@@ -654,7 +655,7 @@ export default function Auth() {
       if (sessionError) {
         return {
           status: "error",
-          message: sessionError.message,
+          message: translateError(sessionError.message),
         };
       }
 

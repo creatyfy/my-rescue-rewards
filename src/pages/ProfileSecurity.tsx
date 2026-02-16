@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { updateCurrentUserPassword } from "@/integrations/supabase/profile";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
+import { translateError } from "@/lib/translate-error";
 
 export default function ProfileSecurity() {
   const [currentPassword, setCurrentPassword] = useState("");
@@ -57,7 +58,8 @@ export default function ProfileSecurity() {
       setConfirmPassword("");
     } catch (error) {
       console.error("Erro ao atualizar senha:", error);
-      toast.error("Não foi possível atualizar sua senha.");
+      const msg = translateError(error instanceof Error ? error.message : "");
+      toast.error(msg || "Não foi possível atualizar sua senha.");
     } finally {
       resetTurnstile();
       setIsSaving(false);
