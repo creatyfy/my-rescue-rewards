@@ -93,6 +93,10 @@ export const updateCurrentUserProfile = async (input: ProfileUpdateInput): Promi
     payload.full_name = input.fullName ?? null;
   }
 
+  if (typeof input.cpf !== "undefined") {
+    payload.cpf = input.cpf ?? null;
+  }
+
   if (typeof input.phone !== "undefined") {
     payload.phone = input.phone ?? null;
   }

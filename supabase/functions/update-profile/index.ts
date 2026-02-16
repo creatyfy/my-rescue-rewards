@@ -22,14 +22,22 @@ const profileSchema = z
       .min(3, "Nome deve ter no mínimo 3 caracteres.")
       .max(100, "Nome deve ter no máximo 100 caracteres.")
       .optional(),
+    cpf: z
+      .string()
+      .trim()
+      .regex(/^\d{11}$/, "CPF deve conter exatamente 11 dígitos numéricos.")
+      .nullable()
+      .optional(),
     phone: z
       .string()
       .regex(/^\d{12,13}$/, "Telefone inválido. Formato esperado: 55 + DDD + número.")
+      .nullable()
       .optional(),
     avatar_url: z
       .string()
       .url("URL do avatar inválida.")
       .max(500, "URL do avatar muito longa.")
+      .nullable()
       .optional(),
   })
   .strict("Campos extras não são permitidos.");
@@ -99,6 +107,7 @@ serve(async (req) => {
 
   const payload: Record<string, unknown> = {};
   if (updates.full_name !== undefined) payload.full_name = updates.full_name;
+  if (updates.cpf !== undefined) payload.cpf = updates.cpf;
   if (updates.phone !== undefined) payload.phone = updates.phone;
   if (updates.avatar_url !== undefined) payload.avatar_url = updates.avatar_url;
 
