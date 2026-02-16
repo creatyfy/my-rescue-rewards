@@ -127,7 +127,11 @@ export default function ProfileEdit() {
                 id="cpf"
                 placeholder="000.000.000-00"
                 value={form.cpf}
-                onChange={handleChange("cpf")}
+                onChange={(e) => {
+                  const onlyDigits = e.target.value.replace(/\D/g, "").slice(0, 11);
+                  setForm((prev) => ({ ...prev, cpf: onlyDigits }));
+                }}
+                inputMode="numeric"
                 disabled={isLoading}
               />
             </div>
