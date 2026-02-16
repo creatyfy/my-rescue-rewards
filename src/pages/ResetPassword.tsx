@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { translateError } from "@/lib/translate-error";
 
 export default function ResetPassword() {
   const [password, setPassword] = useState("");
@@ -64,10 +65,11 @@ export default function ResetPassword() {
       toast.success("Senha atualizada com sucesso! Faça login novamente.");
       navigate("/auth");
     } catch (error) {
-      const message =
+      const message = translateError(
         error instanceof Error
           ? error.message
-          : "Não foi possível atualizar a senha.";
+          : "Não foi possível atualizar a senha.",
+      );
       toast.error(message);
     } finally {
       setIsLoading(false);
