@@ -79,7 +79,7 @@ serve(async (req) => {
       return jsonResponse({ disponivel: true }, 200);
     }
 
-    return jsonResponse({ disponivel: false }, 409);
+    return jsonResponse({ disponivel: false }, 200);
   } catch (error) {
     console.error("Erro inesperado:", error);
     return new Response("Erro inesperado", {
