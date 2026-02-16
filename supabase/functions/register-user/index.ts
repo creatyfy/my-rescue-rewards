@@ -230,6 +230,9 @@ serve(async (req) => {
     const { error: resendError } = await anonClient.auth.resend({
       type: "signup",
       email,
+      options: {
+        emailRedirectTo: "https://my-rescue-rewards.lovable.app/auth?confirmed=true",
+      },
     });
     if (resendError) {
       console.warn("Erro ao enviar e-mail de confirmação:", resendError.message);

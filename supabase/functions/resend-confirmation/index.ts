@@ -92,7 +92,7 @@ serve(async (req) => {
     type: "signup",
     email,
     options: {
-      emailRedirectTo: redirectTo || undefined,
+      emailRedirectTo: redirectTo || "https://my-rescue-rewards.lovable.app/auth?confirmed=true",
     },
   });
 
