@@ -259,20 +259,20 @@ export default function Auth() {
           setFieldValidationState(field, "invalid", "CPF inválido. Verifique os dígitos informados.");
           return "invalid";
         }
-        if (status === 409) {
-          setFieldValidationState(field, "invalid", getValidationMessage(field));
-          return "invalid";
-        }
         setFieldValidationState(field, "idle");
         return "idle";
       }
 
-      if (data?.disponivel) {
+      if (data?.disponivel === true) {
         setFieldValidationState(field, "valid", "Disponível");
         return "valid";
       }
-      setFieldValidationState(field, "invalid", getValidationMessage(field));
-      return "invalid";
+      if (data?.disponivel === false) {
+        setFieldValidationState(field, "invalid", getValidationMessage(field));
+        return "invalid";
+      }
+      setFieldValidationState(field, "idle");
+      return "idle";
     } catch (validationError) {
       if (requestId !== validationRequestId.current[field]) {
         return "idle";
