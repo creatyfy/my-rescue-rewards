@@ -110,26 +110,6 @@ serve(async (req) => {
     return jsonResponse({ errors: ["Usuário não autenticado."] }, 401);
   }
 
-  const clientIp =
-    req.headers.get("CF-Connecting-IP") ??
-    req.headers.get("x-forwarded-for") ??
-    req.headers.get("x-real-ip") ??
-    undefined;
-
-  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-    global: {
-      headers: {
-        ...(clientIp
-          ? {
-              "x-forwarded-for": clientIp,
-              "cf-connecting-ip": clientIp,
-            }
-          : {}),
-      },
-    },
-  });
-
   const { qrCodeToken, purchaseValue, receiptPath } = validationResult.data;
 
   const userId = userData.user.id;
@@ -138,34 +118,22 @@ serve(async (req) => {
     return jsonResponse({ errors: ["Comprovante inválido para o usuário autenticado."] }, 400);
   }
 
-  const { data: receiptFile, error: downloadError } = await supabase.storage
-    .from("receipts")
-    .download(normalizedReceiptPath);
-
-  if (downloadError || !receiptFile) {
-    return jsonResponse({ errors: ["Não foi possível validar o comprovante enviado."] }, 400);
-  }
-
-  const receiptFingerprint = toHex(
-    await crypto.subtle.digest("SHA-256", await receiptFile.arrayBuffer()),
-  );
-
-  const { data, error } = await supabaseAdmin.rpc("submit_receipt_from_edge" as never, {
-    p_user_id: userId,
+  const { data, error } = await supabase.rpc("submit_receipt", {
     p_qr_code_token: qrCodeToken,
     p_purchase_value: purchaseValue,
-    p_receipt_image_url: normalizedReceiptPath,
-    p_receipt_fingerprint: receiptFingerprint,
-  } as never);
+    p_image_path: normalizedReceiptPath,
+  });
 
   if (error) {
     const message = error.message || "Erro ao enviar comprovante.";
-    if (message.includes("duplicate_receipt")) {
-      return jsonResponse({ errors: ["Comprovante já enviado."] }, 409);
+    console.error("Erro ao enviar comprovante:", message);
+
+    if (message.includes("invalid establishment token")) {
+      return jsonResponse({ errors: ["Estabelecimento inválido."] }, 400);
     }
 
-    if (message.includes("rate_limit_")) {
-      return jsonResponse({ errors: ["Muitas tentativas. Tente novamente em alguns minutos."] }, 429);
+    if (message.includes("purchase value below minimum")) {
+      return jsonResponse({ errors: ["Valor mínimo de compra é R$10,00."] }, 400);
     }
 
     return jsonResponse({ errors: ["Não foi possível enviar o comprovante."] }, 400);
