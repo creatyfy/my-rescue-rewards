@@ -27,6 +27,16 @@ const jsonResponse = (payload: Record<string, unknown>, status = 200) =>
     },
   });
 
+const isValidCpfAlgorithm = (cpf: string): boolean => {
+  if (!/^\d{11}$/.test(cpf)) return false;
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+  const digits = cpf.split("").map(Number);
+  const fv = (digits.slice(0, 9).reduce((a, d, i) => a + d * (10 - i), 0) * 10) % 11;
+  if ((fv === 10 ? 0 : fv) !== digits[9]) return false;
+  const sv = (digits.slice(0, 10).reduce((a, d, i) => a + d * (11 - i), 0) * 10) % 11;
+  return (sv === 10 ? 0 : sv) === digits[10];
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -45,6 +55,11 @@ serve(async (req) => {
 
     if (digits.length !== 11) {
       return jsonResponse({ erro: "cpf_invalido" }, 400);
+    }
+
+    // Validate CPF algorithm before checking uniqueness
+    if (!isValidCpfAlgorithm(digits)) {
+      return jsonResponse({ erro: "cpf_invalido_algoritmo" }, 400);
     }
 
     const { data, error } = await supabase.rpc("is_unique_field_available", {
