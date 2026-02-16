@@ -141,7 +141,11 @@ export default function ProfileEdit() {
                 id="phone"
                 placeholder="5511912345678"
                 value={form.phone}
-                onChange={handleChange("phone")}
+                onChange={(e) => {
+                  const onlyDigits = e.target.value.replace(/\D/g, "");
+                  setForm((prev) => ({ ...prev, phone: onlyDigits }));
+                }}
+                inputMode="numeric"
                 disabled={isLoading}
                 className={phoneError ? "border-destructive" : ""}
               />
