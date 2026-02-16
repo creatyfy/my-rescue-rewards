@@ -48,6 +48,28 @@ export default function Auth() {
     confirmPassword: "",
   });
 
+  // Listen for auth state changes (e.g. after clicking confirmation link)
+  useEffect(() => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (session && (event === "SIGNED_IN" || event === "TOKEN_REFRESHED")) {
+          navigate("/dashboard", { replace: true });
+        }
+      },
+    );
+
+    // Check if already logged in
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        navigate("/dashboard", { replace: true });
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [navigate]);
+
   useEffect(() => {
     const requestedMode = searchParams.get("mode");
     const confirmed = searchParams.get("confirmed");
