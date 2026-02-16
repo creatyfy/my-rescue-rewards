@@ -11,7 +11,7 @@ enable_confirmations = true
 
 [auth.url]
 site_url = "https://my-rescue-rewards.lovable.app"
-additional_redirect_urls = ["https://my-rescue-rewards.lovable.app/auth?confirmed=true", "https://my-rescue-rewards.lovable.app/reset-password"]
+additional_redirect_urls = ["https://my-rescue-rewards.lovable.app/auth?confirmed=true", "https://my-rescue-rewards.lovable.app/reset-password", "https://id-preview--19b1415d-588d-40a6-86dc-890da8cb8b4b.lovable.app/reset-password", "https://id-preview--19b1415d-588d-40a6-86dc-890da8cb8b4b.lovable.app/auth?confirmed=true", "https://19b1415d-588d-40a6-86dc-890da8cb8b4b.lovableproject.com/reset-password", "https://19b1415d-588d-40a6-86dc-890da8cb8b4b.lovableproject.com/auth?confirmed=true"]
 
 [functions.reset-password]
 verify_jwt = false
