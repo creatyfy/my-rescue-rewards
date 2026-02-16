@@ -31,7 +31,20 @@ export const normalizeTrustedBaseUrl = (candidate?: string | null): string | nul
 
 export const getAppBaseUrl = () => {
   const candidate = resolveEnvBaseUrl()?.toString().trim();
-  const baseUrl = normalizeTrustedBaseUrl(candidate) ?? window.location.origin;
+  const envUrl = normalizeTrustedBaseUrl(candidate);
 
-  return baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  if (envUrl) {
+    return envUrl.endsWith("/") ? envUrl.slice(0, -1) : envUrl;
+  }
+
+  const origin = window.location.origin;
+
+  // If running on a Lovable preview URL, use the published URL instead
+  // so that end-users (who don't have Lovable access) get valid links.
+  if (origin.includes("lovableproject.com") || origin.includes("id-preview--")) {
+    const publishedUrl = "https://my-rescue-rewards.lovable.app";
+    return publishedUrl;
+  }
+
+  return origin.endsWith("/") ? origin.slice(0, -1) : origin;
 };
