@@ -424,7 +424,8 @@ export default function Auth() {
         }
 
         if (loginResult.status === "error") {
-          throw new Error(loginResult.message || "Não foi possível autenticar.");
+          toast.error(loginResult.message || "Credenciais inválidas. Verifique seu e-mail e senha.");
+          return;
         }
 
         setPendingConfirmationEmail("");
@@ -446,11 +447,12 @@ export default function Auth() {
         throw new Error(message || "Não foi possível concluir o cadastro.");
       }
 
+      setMode("login");
       setPendingConfirmationEmail(normalizedEmail);
       toast.success(
-        getErrorMessage(data) ||
-          "Cadastro realizado! Verifique seu e-mail para confirmar a conta.",
+        "Cadastro realizado! Verifique seu e-mail para confirmar a conta.",
       );
+      setFormData((prev) => ({ ...prev, password: "", confirmPassword: "", name: "", cpf: "", phone: "" }));
     } catch (error) {
       const duplicateMessage = getDuplicateFieldMessage(error);
       if (duplicateMessage) {
