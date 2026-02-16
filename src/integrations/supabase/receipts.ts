@@ -42,28 +42,32 @@ export const fetchStoreByQrValue = async (
   }
 };
 
-export const submitReceiptForCurrentUser = async ({
+/**
+ * Unified receipt submission: sends file + metadata in a single multipart request.
+ * The backend validates everything before uploading the file, avoiding orphan files.
+ */
+export const submitReceiptWithFile = async ({
   qrCodeToken,
   purchaseValue,
-  receiptPath,
+  file,
   turnstileToken,
 }: {
   qrCodeToken: string;
   purchaseValue: number;
-  receiptPath: string;
+  file: File;
   turnstileToken: string;
 }): Promise<SubmittedReceipt | null> => {
-  const { data, error } = await supabase.functions.invoke("submit-receipt", {
-    body: {
-      qrCodeToken,
-      purchaseValue,
-      receiptPath,
-      turnstileToken,
-    },
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("qrCodeToken", qrCodeToken);
+  formData.append("purchaseValue", String(purchaseValue));
+  formData.append("turnstileToken", turnstileToken);
+
+  const { data, error } = await supabase.functions.invoke("submit-receipt-v2", {
+    body: formData,
   });
 
   if (error) {
-    // Try to extract structured error from response
     const contextStatus = (error as { context?: { status?: number } }).context?.status;
     const errorData = data as { errors?: string[] } | null;
     const message = errorData?.errors?.[0] || error.message || "Erro ao enviar comprovante.";
