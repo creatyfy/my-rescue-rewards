@@ -434,7 +434,12 @@ export default function Auth() {
     }
 
     if (name === "phone") {
-      const digits = value.replace(/\D/g, "").slice(0, 11);
+      let digits = value.replace(/\D/g, "");
+      // Strip leading "55" if user typed country code manually
+      if (digits.startsWith("55") && digits.length > 11) {
+        digits = digits.slice(2);
+      }
+      digits = digits.slice(0, 11);
       setFormData({ ...formData, phone: digits ? `55${digits}` : "" });
       setFieldValidationState("phone", "idle");
       return;
@@ -698,7 +703,7 @@ export default function Auth() {
                   id="phone"
                   name="phone"
                   type="tel"
-                  placeholder="35988925480"
+                  placeholder="DDD + número: 11987654321"
                   value={getPhoneDigits(formData.phone)}
                   onChange={handleChange}
                   onBlur={() => handleUniqueFieldBlur("phone")}
