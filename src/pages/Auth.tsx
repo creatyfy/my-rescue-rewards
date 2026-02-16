@@ -9,6 +9,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Phone, FileText } from "lucide-react";
 import logoHorizontal from "@/assets/logo-horizontal.png";
 import { getDuplicateFieldMessage } from "@/lib/duplicate-errors";
+import { isValidCpf } from "@/lib/cpf-validation";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 type AuthMode = "login" | "register";
@@ -222,6 +223,15 @@ export default function Auth() {
       return "idle";
     }
 
+    // Validate CPF algorithm locally before calling the server
+    if (field === "cpf") {
+      const cpfDigitsVal = getCpfDigits(value);
+      if (!isValidCpf(cpfDigitsVal)) {
+        setFieldValidationState(field, "invalid", "CPF inválido. Verifique os dígitos informados.");
+        return "invalid";
+      }
+    }
+
     const normalizedValue = getNormalizedValue(field, value);
     const requestId = ++validationRequestId.current[field];
     setFieldValidationState(field, "loading");
@@ -245,6 +255,10 @@ export default function Auth() {
 
       if (error) {
         const status = (error as { context?: { status?: number } }).context?.status;
+        if (status === 400) {
+          setFieldValidationState(field, "invalid", "CPF inválido. Verifique os dígitos informados.");
+          return "invalid";
+        }
         if (status === 409) {
           setFieldValidationState(field, "invalid", getValidationMessage(field));
           return "invalid";
