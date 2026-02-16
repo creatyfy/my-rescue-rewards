@@ -32,6 +32,7 @@ export default function Auth() {
   const [isResendingConfirmation, setIsResendingConfirmation] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
   const [turnstileError, setTurnstileError] = useState("");
+  const [formError, setFormError] = useState("");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const turnstileWidgetId = useRef<string | null>(null);
@@ -349,6 +350,7 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setFormError("");
 
     try {
       const cpfDigits = getCpfDigits(formData.cpf);
@@ -356,7 +358,7 @@ export default function Auth() {
       const normalizedEmail = formData.email.trim().toLowerCase();
 
       if (mode === "register" && formData.password !== formData.confirmPassword) {
-        toast.error("As senhas não conferem.");
+        setFormError("As senhas não conferem.");
         return;
       }
 
@@ -366,7 +368,7 @@ export default function Auth() {
           fieldValidation.email.status === "loading" ||
           fieldValidation.phone.status === "loading")
       ) {
-        toast.error("Aguarde a validação dos campos.");
+        setFormError("Aguarde a validação dos campos.");
         return;
       }
 
@@ -376,12 +378,12 @@ export default function Auth() {
           fieldValidation.email.status === "invalid" ||
           fieldValidation.phone.status === "invalid")
       ) {
-        toast.error("Corrija os campos antes de continuar.");
+        setFormError("Corrija os campos antes de continuar.");
         return;
       }
 
       if (turnstileSiteKey && !turnstileToken) {
-        toast.error("Confirme o desafio de segurança antes de continuar.");
+        setFormError("Confirme o desafio de segurança antes de continuar.");
         return;
       }
 
@@ -447,21 +449,21 @@ export default function Auth() {
         throw new Error(message || "Não foi possível concluir o cadastro.");
       }
 
-      setMode("login");
-      setPendingConfirmationEmail(normalizedEmail);
-      toast.success(
-        "Cadastro realizado! Verifique seu e-mail para confirmar a conta.",
-      );
-      setFormData((prev) => ({ ...prev, password: "", confirmPassword: "", name: "", cpf: "", phone: "" }));
+      // Redirect to verify email page
+      navigate("/verifique-seu-email", { state: { email: normalizedEmail } });
     } catch (error) {
       const duplicateMessage = getDuplicateFieldMessage(error);
       if (duplicateMessage) {
-        toast.error(duplicateMessage);
+        setFormError(duplicateMessage);
         return;
       }
 
       const message = error instanceof Error ? error.message : "";
-      toast.error(message || "Não foi possível autenticar. Tente novamente.");
+      if (mode === "register") {
+        setFormError(message || "Não foi possível concluir o cadastro. Tente novamente.");
+      } else {
+        toast.error(message || "Não foi possível autenticar. Tente novamente.");
+      }
     } finally {
       resetTurnstile();
       setIsLoading(false);
@@ -895,6 +897,12 @@ export default function Auth() {
               >
                 Esqueceu a senha?
               </Link>
+            </div>
+          )}
+
+          {mode === "register" && formError && (
+            <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive" role="alert">
+              {formError}
             </div>
           )}
 

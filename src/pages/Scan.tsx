@@ -20,14 +20,28 @@ import { toast } from "@/components/ui/sonner";
 import {
   fetchReceiptEstablishments,
   fetchStoreByQrValue,
-  submitReceiptForCurrentUser,
+  submitReceiptWithFile,
 } from "@/integrations/supabase/receipts";
-import { uploadReceiptForCurrentUser } from "@/integrations/supabase/storage";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
 
 type ScanStep = "ready" | "scan" | "form" | "manual" | "success";
 
 const MAX_RECEIPT_SIZE = 10 * 1024 * 1024;
+
+const formatCurrency = (value: string): string => {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  const numericValue = parseInt(digits, 10) / 100;
+  return numericValue.toLocaleString("pt-BR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
+
+const parseCurrency = (formatted: string): number => {
+  const clean = formatted.replace(/\./g, "").replace(",", ".");
+  return parseFloat(clean) || 0;
+};
 
 export default function Scan() {
   const [searchParams] = useSearchParams();
@@ -167,8 +181,8 @@ export default function Scan() {
     e.preventDefault();
     if (!receiptFile || !qrCodeToken) return;
 
-    const parsedValue = Number.parseFloat(purchaseValue);
-    if (Number.isNaN(parsedValue) || parsedValue < 10) {
+    const parsedValue = parseCurrency(purchaseValue);
+    if (isNaN(parsedValue) || parsedValue < 10) {
       toast.error("Valor mínimo é R$ 10,00.");
       return;
     }
@@ -180,11 +194,10 @@ export default function Scan() {
 
     try {
       setIsSubmitting(true);
-      const receiptPath = await uploadReceiptForCurrentUser(receiptFile);
-      await submitReceiptForCurrentUser({
+      await submitReceiptWithFile({
         qrCodeToken,
         purchaseValue: parsedValue,
-        receiptPath,
+        file: receiptFile,
         turnstileToken,
       });
       toast.success("Comprovante enviado para análise.");
@@ -216,12 +229,12 @@ export default function Scan() {
       setFileError(validationError);
     }
 
-    const parsedValue = Number.parseFloat(purchaseValue);
-    if (Number.isNaN(parsedValue) || parsedValue < 10) {
+    const parsedValue = parseCurrency(purchaseValue);
+    if (isNaN(parsedValue) || parsedValue < 10) {
       toast.error("Valor mínimo é R$ 10,00.");
     }
 
-    if (!selectedStore || !receiptFile || validationError || Number.isNaN(parsedValue) || parsedValue < 10) {
+    if (!selectedStore || !receiptFile || validationError || isNaN(parsedValue) || parsedValue < 10) {
       return;
     }
 
@@ -237,11 +250,10 @@ export default function Scan() {
 
     try {
       setIsSubmitting(true);
-      const receiptPath = await uploadReceiptForCurrentUser(receiptFile);
-      await submitReceiptForCurrentUser({
+      await submitReceiptWithFile({
         qrCodeToken: selectedStore.qrCodeToken,
         purchaseValue: parsedValue,
-        receiptPath,
+        file: receiptFile,
         turnstileToken,
       });
       setEstablishmentName(selectedStore.name);
@@ -562,23 +574,22 @@ export default function Scan() {
                   </span>
                   <Input
                     id="value"
-                    type="number"
-                    min="10"
-                    step="0.01"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="0,00"
                     value={purchaseValue}
-                    onChange={(e) => setPurchaseValue(e.target.value)}
+                    onChange={(e) => setPurchaseValue(formatCurrency(e.target.value))}
                     className="pl-10"
                     required
                   />
                 </div>
-                {purchaseValue && parseFloat(purchaseValue) >= 10 && (
+                {purchaseValue && parseCurrency(purchaseValue) >= 10 && (
                   <p className="text-xs text-success flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
-                    Você receberá {Math.floor(parseFloat(purchaseValue))} pontos
+                    Você receberá {Math.floor(parseCurrency(purchaseValue) * 10).toLocaleString('pt-BR')} pontos
                   </p>
                 )}
-                {purchaseValue && parseFloat(purchaseValue) < 10 && (
+                {purchaseValue && parseCurrency(purchaseValue) > 0 && parseCurrency(purchaseValue) < 10 && (
                   <p className="text-xs text-destructive flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
                     Valor mínimo é R$ 10,00
@@ -646,7 +657,7 @@ export default function Scan() {
                 <Button
                   type="submit"
                   className="flex-1"
-                  disabled={isSubmitting || !purchaseValue || parseFloat(purchaseValue) < 10 || !receiptImage || (!turnstileToken && !!turnstileSiteKey)}
+                  disabled={isSubmitting || !purchaseValue || parseCurrency(purchaseValue) < 10 || !receiptImage || (!turnstileToken && !!turnstileSiteKey)}
                 >
                   {isSubmitting ? "Enviando..." : "Enviar"}
                 </Button>
@@ -721,23 +732,22 @@ export default function Scan() {
                   </span>
                   <Input
                     id="value-manual"
-                    type="number"
-                    min="10"
-                    step="0.01"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="0,00"
                     value={purchaseValue}
-                    onChange={(e) => setPurchaseValue(e.target.value)}
+                    onChange={(e) => setPurchaseValue(formatCurrency(e.target.value))}
                     className="pl-10"
                     required
                   />
                 </div>
-                {purchaseValue && parseFloat(purchaseValue) >= 10 && (
+                {purchaseValue && parseCurrency(purchaseValue) >= 10 && (
                   <p className="text-xs text-success flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
-                    Você receberá {Math.floor(parseFloat(purchaseValue) * 10).toLocaleString('pt-BR')} pontos
+                    Você receberá {Math.floor(parseCurrency(purchaseValue) * 10).toLocaleString('pt-BR')} pontos
                   </p>
                 )}
-                {purchaseValue && parseFloat(purchaseValue) < 10 && (
+                {purchaseValue && parseCurrency(purchaseValue) > 0 && parseCurrency(purchaseValue) < 10 && (
                   <p className="text-xs text-destructive flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
                     Valor mínimo é R$ 10,00
@@ -819,7 +829,7 @@ export default function Scan() {
                   disabled={
                     isSubmitting ||
                     !purchaseValue ||
-                    parseFloat(purchaseValue) < 10 ||
+                    parseCurrency(purchaseValue) < 10 ||
                     !receiptFile ||
                     Boolean(storeError) ||
                     isLoadingStores ||
@@ -848,7 +858,7 @@ export default function Scan() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Pontos estimados:</span>
                 <span className="font-display font-bold text-lg text-foreground">
-                  +{Math.floor(parseFloat(purchaseValue) * 10).toLocaleString('pt-BR')} pts
+                  +{Math.floor(parseCurrency(purchaseValue) * 10).toLocaleString('pt-BR')} pts
                 </span>
               </div>
             </div>

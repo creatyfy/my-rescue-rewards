@@ -18,3 +18,9 @@ verify_jwt = false
 
 [functions.resend-confirmation]
 verify_jwt = false
+
+[functions.submit-receipt-v2]
+verify_jwt = false
+
+[functions.update-profile]
+verify_jwt = false

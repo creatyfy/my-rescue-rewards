@@ -87,43 +87,47 @@ export const updateCurrentUserProfile = async (input: ProfileUpdateInput): Promi
     throw new Error("Usuário não autenticado.");
   }
 
-  const payload: {
-    user_id: string;
-    full_name?: string | null;
-    cpf?: string | null;
-    phone?: string | null;
-    avatar_url?: string | null;
-  } = {
-    user_id: userData.user.id,
-  };
+  const payload: Record<string, string | null> = {};
 
   if (typeof input.fullName !== "undefined") {
-    payload.full_name = input.fullName;
-  }
-
-  if (typeof input.cpf !== "undefined") {
-    payload.cpf = input.cpf;
+    payload.full_name = input.fullName ?? null;
   }
 
   if (typeof input.phone !== "undefined") {
-    payload.phone = input.phone;
+    payload.phone = input.phone ?? null;
   }
 
   if (typeof input.avatarUrl !== "undefined") {
-    payload.avatar_url = input.avatarUrl;
+    payload.avatar_url = input.avatarUrl ?? null;
   }
 
-  const { data, error } = await (supabase as any)
-    .from("profiles")
-    .upsert(payload, { onConflict: "user_id" })
-    .select("full_name, cpf, phone, avatar_url, created_at")
-    .single();
+  if (Object.keys(payload).length === 0) {
+    // Nothing to update, just return current profile
+    const current = await fetchCurrentUserProfile();
+    if (!current) throw new Error("Perfil não encontrado.");
+    return current;
+  }
+
+  const { data, error } = await supabase.functions.invoke("update-profile", {
+    body: payload,
+  });
 
   if (error) {
-    throw error;
+    const errorData = data as { errors?: string[] } | null;
+    const message = errorData?.errors?.[0] || error.message || "Erro ao atualizar perfil.";
+    throw new Error(message);
   }
 
-  return mapProfile(data ?? null, userData.user);
+  const result = data as {
+    success?: boolean;
+    profile?: ProfileRecord;
+  } | null;
+
+  if (!result?.success || !result.profile) {
+    throw new Error("Não foi possível atualizar o perfil.");
+  }
+
+  return mapProfile(result.profile, userData.user);
 };
 
 export const updateCurrentUserPassword = async ({
