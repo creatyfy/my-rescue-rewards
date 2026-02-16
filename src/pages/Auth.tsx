@@ -50,6 +50,13 @@ export default function Auth() {
 
   useEffect(() => {
     const requestedMode = searchParams.get("mode");
+    const confirmed = searchParams.get("confirmed");
+
+    if (confirmed === "true") {
+      setMode("login");
+      toast.success("E-mail confirmado com sucesso! Agora você pode fazer login.");
+      return;
+    }
 
     if (requestedMode === "register") {
       setMode("register");
