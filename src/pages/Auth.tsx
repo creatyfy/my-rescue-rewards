@@ -347,6 +347,23 @@ export default function Auth() {
     return () => window.clearTimeout(timeout);
   }, [formData.phone, mode]);
 
+  useEffect(() => {
+    if (mode !== "register") {
+      return;
+    }
+
+    if (!shouldValidateField("email", formData.email)) {
+      setFieldValidationState("email", "idle");
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void validateUniqueField("email", formData.email);
+    }, 600);
+
+    return () => window.clearTimeout(timeout);
+  }, [formData.email, mode]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
