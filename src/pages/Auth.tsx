@@ -709,7 +709,10 @@ export default function Auth() {
                   type="text"
                   placeholder="Seu nome"
                   value={formData.name}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    const lettersOnly = e.target.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, "");
+                    handleChange({ ...e, target: { ...e.target, name: "name", value: lettersOnly } } as React.ChangeEvent<HTMLInputElement>);
+                  }}
                   className="pl-10"
                   required
                 />

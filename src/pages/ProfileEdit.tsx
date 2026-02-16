@@ -110,7 +110,10 @@ export default function ProfileEdit() {
                 id="fullName"
                 placeholder="Seu nome"
                 value={form.fullName}
-                onChange={handleChange("fullName")}
+                onChange={(e) => {
+                  const lettersOnly = e.target.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, "");
+                  setForm((prev) => ({ ...prev, fullName: lettersOnly }));
+                }}
                 disabled={isLoading}
               />
             </div>
