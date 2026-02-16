@@ -1,7 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 import { fileTypeFromBuffer } from "https://esm.sh/file-type@19.6.0";
-import { Image } from "https://deno.land/x/imagescript@1.3.0/mod.ts";
 import { verifyTurnstileToken } from "../_shared/turnstile.ts";
 
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -127,28 +126,13 @@ serve(async (req) => {
     return jsonResponse({ errors: ["Tipo de arquivo inválido. Apenas JPG e PNG são permitidos."] }, 400);
   }
 
-  // 7. Re-encode image
-  let processedImage: Uint8Array;
-  try {
-    const decoded = await Image.decode(fileBuffer);
-    processedImage = detectedType.mime === "image/png"
-      ? await decoded.encode()
-      : await decoded.encodeJPEG(90);
-  } catch {
-    return jsonResponse({ errors: ["Falha ao processar imagem. Envie uma imagem válida."] }, 400);
-  }
-
-  if (processedImage.byteLength === 0 || processedImage.byteLength > MAX_FILE_SIZE_BYTES) {
-    return jsonResponse({ errors: ["Imagem processada é inválida ou excede o limite."] }, 400);
-  }
-
-  // 8. Upload to Storage
+  // 7. Upload to Storage (validated file, skip heavy re-encoding)
   const extension = getExtensionFromMime(detectedType.mime);
   const filePath = `${userData.user.id}/${crypto.randomUUID()}.${extension}`;
 
   const { error: uploadError } = await supabase.storage
     .from("receipts")
-    .upload(filePath, processedImage, {
+    .upload(filePath, fileBuffer, {
       contentType: detectedType.mime,
       upsert: false,
     });
