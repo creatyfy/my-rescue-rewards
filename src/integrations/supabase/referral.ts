@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 export interface ReferralStats {
   total_referred: number;
@@ -55,5 +56,5 @@ export async function fetchReferralStats(userId: string): Promise<ReferralStats>
 
 /** Build the shareable referral link */
 export function buildReferralLink(code: string): string {
-  return `https://my-rescue-rewards.lovable.app/auth?mode=register&ref=${code}`;
+  return `${getAppBaseUrl()}/auth?mode=register&ref=${code}`;
 }
