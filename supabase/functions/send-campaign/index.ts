@@ -71,21 +71,30 @@ serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  // Fetch all active user IDs from profiles
-  const { data: profiles, error: profilesError } = await adminClient
-    .from("profiles")
-    .select("user_id");
+  // Fetch all active user IDs from profiles and optionally the store name
+  const [profilesResult, storeResult] = await Promise.all([
+    adminClient.from("profiles").select("user_id"),
+    store_id
+      ? adminClient.from("establishments").select("name").eq("id", store_id).single()
+      : Promise.resolve({ data: null, error: null }),
+  ]);
 
-  if (profilesError) {
-    console.error("Erro ao buscar usuários:", profilesError);
+  if (profilesResult.error) {
+    console.error("Erro ao buscar usuários:", profilesResult.error);
     return jsonResponse({ error: "Erro ao buscar usuários ativos." }, 500);
   }
 
-  const userIds: string[] = (profiles ?? []).map((p: { user_id: string }) => p.user_id);
+  const userIds: string[] = (profilesResult.data ?? []).map((p: { user_id: string }) => p.user_id);
 
   if (userIds.length === 0) {
     return jsonResponse({ error: "Nenhum usuário ativo encontrado." }, 400);
   }
+
+  // Build notification message enriched with store name when available
+  const storeName: string | null = storeResult.data?.name ?? null;
+  const notificationMessage = storeName
+    ? `[${storeName}] ${message}`
+    : message;
 
   // Save campaign record first
   const { data: campaign, error: campaignError } = await adminClient
@@ -118,7 +127,7 @@ serve(async (req) => {
     const notifications = userIds.map((uid) => ({
       user_id: uid,
       title,
-      message,
+      message: notificationMessage,
       tipo: "campanha_promocional" as const,
       is_read: false,
       arquivada: false,
