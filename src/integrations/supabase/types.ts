@@ -44,6 +44,44 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          message: string
+          status: string
+          store_id: string | null
+          title: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          message: string
+          status?: string
+          store_id?: string | null
+          title: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          status?: string
+          store_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishments: {
         Row: {
           active: boolean
