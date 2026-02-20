@@ -7,6 +7,7 @@ import { AdminReceiptsPanel } from "@/components/admin/AdminReceiptsPanel";
 import { AdminRedemptionsPanel } from "@/components/admin/AdminRedemptionsPanel";
 import { AdminReportsPanel } from "@/components/admin/AdminReportsPanel";
 import { AdminUsersPanel } from "@/components/admin/AdminUsersPanel";
+import { AdminCampaignsPanel } from "@/components/admin/AdminCampaignsPanel";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
@@ -43,6 +44,10 @@ export default function Admin() {
       reports: {
         label: "Relatórios",
         content: <AdminReportsPanel />,
+      },
+      campaigns: {
+        label: "Campanhas",
+        content: <AdminCampaignsPanel />,
       },
     }),
     [],
