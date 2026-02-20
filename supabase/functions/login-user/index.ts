@@ -157,6 +157,13 @@ serve(async (req) => {
   });
 
   if (error) {
+    const msg = error.message?.toLowerCase() ?? "";
+    if (msg.includes("email_not_confirmed") || msg.includes("email not confirmed")) {
+      return jsonResponse(
+        { errors: ["Seu cadastro está aguardando confirmação de e-mail."] },
+        403,
+      );
+    }
     return jsonResponse({ errors: ["Credenciais inválidas."] }, 401);
   }
 
