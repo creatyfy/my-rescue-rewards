@@ -72,6 +72,14 @@ export default function Auth() {
     };
   }, [navigate]);
 
+  // Capture ref code from URL and store in sessionStorage
+  useEffect(() => {
+    const refCode = searchParams.get("ref");
+    if (refCode) {
+      sessionStorage.setItem("referral_code", refCode.trim().toUpperCase());
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     const requestedMode = searchParams.get("mode");
     const confirmed = searchParams.get("confirmed");
@@ -453,6 +461,8 @@ export default function Auth() {
         return;
       }
 
+      const storedRefCode = sessionStorage.getItem("referral_code") || undefined;
+
       const { response, data } = await callAuthFunction("register-user", {
         full_name: formData.name,
         email: normalizedEmail,
@@ -460,12 +470,16 @@ export default function Auth() {
         phone: phoneDigits,
         password: formData.password,
         turnstileToken,
+        ...(storedRefCode ? { ref_code: storedRefCode } : {}),
       });
 
       if (!response.ok) {
         const message = getErrorMessage(data);
         throw new Error(message || "Não foi possível concluir o cadastro.");
       }
+
+      // Clear ref code after successful registration
+      sessionStorage.removeItem("referral_code");
 
       // Redirect to verify email page
       navigate("/verifique-seu-email", { state: { email: normalizedEmail } });
