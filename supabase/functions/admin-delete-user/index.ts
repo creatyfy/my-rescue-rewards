@@ -174,11 +174,11 @@ serve(async (req) => {
       console.warn("Erro ao limpar endereços de resgate:", redemptionUpdateError.message);
     }
 
-    // Delete user from auth.users to allow re-registration with same email/cpf/phone
+    // Delete user from auth.users — frees up email, CPF and phone for re-registration
     const { error: userDeleteError } = await supabaseAdmin.auth.admin.deleteUser(targetUserId);
 
     if (userDeleteError) {
-      console.warn("Erro ao deletar usuário do auth:", userDeleteError.message);
+      throw new Error(`Erro ao deletar usuário do auth: ${userDeleteError.message}`);
     }
 
     // Log admin action
