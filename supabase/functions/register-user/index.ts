@@ -159,7 +159,7 @@ const processReferral = async (
     sha256Hex(cpf.replace(/\D/g, "")),
   ]);
 
-  const { error: bonusErr } = await supabase.rpc("process_referral_bonus", {
+  const { data: bonusData, error: bonusErr } = await supabase.rpc("process_referral_bonus", {
     p_referrer_id:      referrerId,
     p_referred_user_id: newUserId,
     p_email_hash:       emailHash,
@@ -168,8 +168,26 @@ const processReferral = async (
 
   if (bonusErr) {
     console.warn("process_referral_bonus error:", bonusErr.message);
+    return;
+  }
+
+  // Notify referrer when the bonus is actually granted
+  const result = bonusData as { points_granted?: boolean } | null;
+  if (result?.points_granted) {
+    const { error: notifErr } = await supabase.from("notifications").insert({
+      user_id: referrerId,
+      title: "Indicação bem-sucedida! 🎉",
+      message: "Um amigo se cadastrou usando seu link de convite. Você ganhou 100 pontos de bônus!",
+      tipo: "indicacao_aceita",
+      is_read: false,
+      arquivada: false,
+    });
+    if (notifErr) {
+      console.warn("Erro ao inserir notificação de indicação:", notifErr.message);
+    }
   }
 };
+
 
 // ── Main handler ──────────────────────────────────────────────────────────────
 
