@@ -19,6 +19,7 @@ import {
   Shield,
   FileText,
   Trash2,
+  Gift,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -129,6 +130,11 @@ export default function Profile() {
             icon: FileText,
             label: "Relatório da conta",
             path: "/profile/notifications",
+          },
+          {
+            icon: Gift,
+            label: "Indique e Ganhe",
+            path: "/profile/referral",
           },
         ]),
     {

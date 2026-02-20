@@ -22,6 +22,7 @@ import Admin from "./pages/Admin";
 import Help from "./pages/Help";
 import Settings from "./pages/Settings";
 import AuthGuard from "./components/auth/AuthGuard";
+import Referral from "./pages/Referral";
 
 const queryClient = new QueryClient();
 
@@ -130,6 +131,14 @@ const App = () => (
             element={
               <AuthGuard>
                 <Settings />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/profile/referral"
+            element={
+              <AuthGuard>
+                <Referral />
               </AuthGuard>
             }
           />

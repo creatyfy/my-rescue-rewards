@@ -348,6 +348,75 @@ export type Database = {
           },
         ]
       }
+      referral_codes: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      referral_events: {
+        Row: {
+          cpf_hash: string
+          created_at: string
+          email_hash: string
+          id: string
+          points_granted: boolean
+          referred_user_id: string
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          cpf_hash: string
+          created_at?: string
+          email_hash: string
+          id?: string
+          points_granted?: boolean
+          referred_user_id: string
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          cpf_hash?: string
+          created_at?: string
+          email_hash?: string
+          id?: string
+          points_granted?: boolean
+          referred_user_id?: string
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      referral_welcome_shown: {
+        Row: {
+          shown_at: string
+          user_id: string
+        }
+        Insert: {
+          shown_at?: string
+          user_id: string
+        }
+        Update: {
+          shown_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -379,7 +448,18 @@ export type Database = {
         Args: { p_target_user_id: string }
         Returns: boolean
       }
+      generate_referral_code: {
+        Args: { p_code: string; p_user_id: string }
+        Returns: undefined
+      }
       get_pending_points: { Args: { p_user_id: string }; Returns: number }
+      get_referral_stats: {
+        Args: { p_user_id: string }
+        Returns: {
+          total_points_earned: number
+          total_referred: number
+        }[]
+      }
       get_store_by_qr_value: {
         Args: { p_qr_value: string }
         Returns: {
@@ -401,6 +481,10 @@ export type Database = {
           receipt_status: Database["public"]["Enums"]["receipt_status"]
           redemption_status: Database["public"]["Enums"]["redemption_status"]
         }[]
+      }
+      has_referral_welcome_been_shown: {
+        Args: { p_user_id: string }
+        Returns: boolean
       }
       has_role: {
         Args: {
@@ -443,6 +527,19 @@ export type Database = {
           p_target_table?: string
         }
         Returns: string
+      }
+      mark_referral_welcome_shown: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
+      process_referral_bonus: {
+        Args: {
+          p_cpf_hash: string
+          p_email_hash: string
+          p_referred_user_id: string
+          p_referrer_id: string
+        }
+        Returns: Json
       }
       promote_user_to_admin: {
         Args: { p_target_user_id: string }

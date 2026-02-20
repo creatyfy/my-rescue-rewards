@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { ReferralWelcomeModal } from "@/components/referral/ReferralWelcomeModal";
 import { AdminReportsPanel } from "@/components/admin/AdminReportsPanel";
 import { PointsCard } from "@/components/points/PointsCard";
 import { QuickActions } from "@/components/points/QuickActions";
@@ -155,6 +156,7 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
+      {!isAdmin && !adminLoading && <ReferralWelcomeModal />}
       {adminLoading ? (
         <div className="container px-4 py-6">
           <Card className="p-6">

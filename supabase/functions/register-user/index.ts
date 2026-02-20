@@ -12,10 +12,7 @@ const corsHeaders = {
 const jsonResponse = (payload: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(payload), {
     status,
-    headers: {
-      ...corsHeaders,
-      "Content-Type": "application/json",
-    },
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
 const MAX_BODY_SIZE = 10_000;
@@ -25,17 +22,11 @@ const readBodyWithLimit = async (
 ): Promise<{ ok: true; bodyText: string } | { ok: false; response: Response }> => {
   const contentLength = req.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_SIZE) {
-    return {
-      ok: false,
-      response: jsonResponse({ errors: ["Payload excede o limite permitido."] }, 413),
-    };
+    return { ok: false, response: jsonResponse({ errors: ["Payload excede o limite permitido."] }, 413) };
   }
 
   if (!req.body) {
-    return {
-      ok: false,
-      response: jsonResponse({ errors: ["Payload ausente."] }, 400),
-    };
+    return { ok: false, response: jsonResponse({ errors: ["Payload ausente."] }, 400) };
   }
 
   const reader = req.body.getReader();
@@ -44,16 +35,11 @@ const readBodyWithLimit = async (
 
   while (true) {
     const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
+    if (done) break;
     if (value) {
       total += value.length;
       if (total > MAX_BODY_SIZE) {
-        return {
-          ok: false,
-          response: jsonResponse({ errors: ["Payload excede o limite permitido."] }, 413),
-        };
+        return { ok: false, response: jsonResponse({ errors: ["Payload excede o limite permitido."] }, 413) };
       }
       chunks.push(value);
     }
@@ -66,95 +52,133 @@ const readBodyWithLimit = async (
     offset += chunk.length;
   }
 
-  return {
-    ok: true,
-    bodyText: new TextDecoder().decode(buffer),
-  };
+  return { ok: true, bodyText: new TextDecoder().decode(buffer) };
 };
 
 const cpfDigitsOnlyRegex = /^\d{11}$/;
 const phoneDigitsOnlyRegex = /^\d{10,11}$/;
 
 const isValidCpf = (cpf: string) => {
-  if (!cpfDigitsOnlyRegex.test(cpf)) {
-    return false;
-  }
-
-  if (/^(\d)\1{10}$/.test(cpf)) {
-    return false;
-  }
+  if (!cpfDigitsOnlyRegex.test(cpf)) return false;
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
 
   const digits = cpf.split("").map(Number);
 
-  const firstVerifier =
-    (digits
-      .slice(0, 9)
-      .reduce((acc, digit, index) => acc + digit * (10 - index), 0) *
-      10) %
-    11;
+  const firstVerifier = (digits.slice(0, 9).reduce((acc, digit, index) => acc + digit * (10 - index), 0) * 10) % 11;
   const firstDigit = firstVerifier === 10 ? 0 : firstVerifier;
+  if (firstDigit !== digits[9]) return false;
 
-  if (firstDigit !== digits[9]) {
-    return false;
-  }
-
-  const secondVerifier =
-    (digits
-      .slice(0, 10)
-      .reduce((acc, digit, index) => acc + digit * (11 - index), 0) *
-      10) %
-    11;
+  const secondVerifier = (digits.slice(0, 10).reduce((acc, digit, index) => acc + digit * (11 - index), 0) * 10) % 11;
   const secondDigit = secondVerifier === 10 ? 0 : secondVerifier;
-
   return secondDigit === digits[10];
 };
 
 const registerPayloadSchema = z
   .object({
-    turnstileToken: z
-      .string({ required_error: "turnstileToken é obrigatório." })
-      .trim()
-      .min(1, "turnstileToken é obrigatório."),
-    full_name: z
-      .string({ required_error: "full_name é obrigatório." })
-      .trim()
-      .min(3, "full_name deve ter no mínimo 3 caracteres.")
-      .max(100, "full_name deve ter no máximo 100 caracteres."),
-    email: z
-      .string({ required_error: "email é obrigatório." })
-      .trim()
-      .email("email deve estar em um formato válido."),
-    cpf: z
-      .string({ required_error: "cpf é obrigatório." })
-      .trim()
-      .regex(cpfDigitsOnlyRegex, "cpf deve conter apenas números e 11 dígitos.")
-      .refine(isValidCpf, "cpf inválido pelo algoritmo oficial."),
-    phone: z
-      .string({ required_error: "phone é obrigatório." })
-      .trim()
-      .regex(phoneDigitsOnlyRegex, "phone deve conter apenas números com 10 ou 11 dígitos."),
-    password: z
-      .string({ required_error: "password é obrigatório." })
-      .min(6, "password deve ter no mínimo 6 caracteres."),
+    turnstileToken: z.string({ required_error: "turnstileToken é obrigatório." }).trim().min(1),
+    full_name: z.string({ required_error: "full_name é obrigatório." }).trim().min(3).max(100),
+    email: z.string({ required_error: "email é obrigatório." }).trim().email(),
+    cpf: z.string({ required_error: "cpf é obrigatório." }).trim().regex(cpfDigitsOnlyRegex).refine(isValidCpf, "cpf inválido pelo algoritmo oficial."),
+    phone: z.string({ required_error: "phone é obrigatório." }).trim().regex(phoneDigitsOnlyRegex),
+    password: z.string({ required_error: "password é obrigatório." }).min(6),
+    ref_code: z.string().trim().toUpperCase().optional(),
   })
   .strict("Campos extras não são permitidos.");
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+// ── Referral helpers ──────────────────────────────────────────────────────────
+
+/** SHA-256 digest as hex string */
+const sha256Hex = async (text: string): Promise<string> => {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+};
+
+/** Generate a unique 8-char alphanumeric code (base36, uppercase) */
+const generateReferralCode = (): string => {
+  const uuid = crypto.randomUUID().replace(/-/g, "");
+  const hex = BigInt("0x" + uuid.slice(0, 12));
+  return hex.toString(36).toUpperCase().slice(0, 8).padStart(8, "0");
+};
+
+/** Insert referral code for newly created user, retrying on duplicate code */
+const createReferralCode = async (
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+): Promise<string | null> => {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const code = generateReferralCode();
+    const { error } = await supabase.rpc("generate_referral_code", {
+      p_user_id: userId,
+      p_code: code,
+    });
+    if (!error) return code;
+    // If the error is NOT a unique constraint violation, abort early
+    if (!error.message?.includes("unique") && !error.message?.includes("duplicate")) {
+      console.warn("generate_referral_code error:", error.message);
+      return null;
+    }
+  }
+  console.warn("Failed to generate unique referral code after 5 attempts");
+  return null;
+};
+
+/** Process referral bonus atomically */
+const processReferral = async (
+  supabase: ReturnType<typeof createClient>,
+  refCode: string,
+  newUserId: string,
+  email: string,
+  cpf: string,
+): Promise<void> => {
+  // Find referrer by code
+  const { data: codeRow, error: lookupErr } = await supabase
+    .from("referral_codes")
+    .select("user_id")
+    .eq("code", refCode)
+    .maybeSingle();
+
+  if (lookupErr || !codeRow) {
+    console.warn("Referral code not found or lookup error:", refCode, lookupErr?.message);
+    return;
   }
 
-  if (req.method !== "POST") {
-    return new Response("Método não permitido", {
-      status: 405,
-      headers: corsHeaders,
-    });
+  const referrerId = codeRow.user_id as string;
+
+  // Prevent self-referral
+  if (referrerId === newUserId) {
+    console.warn("Self-referral attempt blocked for user:", newUserId);
+    return;
   }
+
+  const [emailHash, cpfHash] = await Promise.all([
+    sha256Hex(email.toLowerCase().trim()),
+    sha256Hex(cpf.replace(/\D/g, "")),
+  ]);
+
+  const { error: bonusErr } = await supabase.rpc("process_referral_bonus", {
+    p_referrer_id:      referrerId,
+    p_referred_user_id: newUserId,
+    p_email_hash:       emailHash,
+    p_cpf_hash:         cpfHash,
+  });
+
+  if (bonusErr) {
+    console.warn("process_referral_bonus error:", bonusErr.message);
+  }
+};
+
+// ── Main handler ──────────────────────────────────────────────────────────────
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return new Response("Método não permitido", { status: 405, headers: corsHeaders });
 
   const bodyReadResult = await readBodyWithLimit(req);
-  if (!bodyReadResult.ok) {
-    return bodyReadResult.response;
-  }
+  if (!bodyReadResult.ok) return bodyReadResult.response;
 
   let parsedBody: unknown;
   try {
@@ -168,11 +192,7 @@ serve(async (req) => {
       ? (parsedBody as { turnstileToken?: string }).turnstileToken
       : undefined;
 
-  const turnstileValidation = await verifyTurnstileToken(
-    turnstileToken,
-    req.headers.get("CF-Connecting-IP"),
-  );
-
+  const turnstileValidation = await verifyTurnstileToken(turnstileToken, req.headers.get("CF-Connecting-IP"));
   if (!turnstileValidation.success) {
     return jsonResponse({ errors: [turnstileValidation.message] }, turnstileValidation.status);
   }
@@ -180,13 +200,7 @@ serve(async (req) => {
   const validationResult = registerPayloadSchema.safeParse(parsedBody);
   if (!validationResult.success) {
     return jsonResponse(
-      {
-        errors: validationResult.error.issues.map((issue) =>
-          issue.path.length > 0
-            ? `${issue.path.join(".")}: ${issue.message}`
-            : issue.message,
-        ),
-      },
+      { errors: validationResult.error.issues.map((issue) => issue.path.length > 0 ? `${issue.path.join(".")}: ${issue.message}` : issue.message) },
       400,
     );
   }
@@ -203,17 +217,14 @@ serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  const { full_name, email, cpf, phone, password } = validationResult.data;
+  const { full_name, email, cpf, phone, password, ref_code } = validationResult.data;
 
+  // 1. Create user
   const { data, error } = await supabase.auth.admin.createUser({
     email,
     password,
     email_confirm: false,
-    user_metadata: {
-      full_name,
-      cpf,
-      phone: `55${phone}`,
-    },
+    user_metadata: { full_name, cpf, phone: `55${phone}` },
   });
 
   if (error) {
@@ -221,29 +232,36 @@ serve(async (req) => {
     return jsonResponse({ errors: ["Não foi possível concluir o cadastro."] }, 400);
   }
 
-  // Send confirmation email via anon-key client
+  const newUserId = data.user.id;
+
+  // 2. Post-registration: referral code + bonus (non-blocking)
+  try {
+    // Generate and store the new user's own referral code
+    await createReferralCode(supabase, newUserId);
+
+    // If a ref_code was supplied, process the bonus
+    if (ref_code) {
+      await processReferral(supabase, ref_code, newUserId, email, cpf);
+    }
+  } catch (referralErr) {
+    // Referral errors MUST NOT fail the registration
+    console.warn("Non-critical referral error:", referralErr);
+  }
+
+  // 3. Send confirmation email via anon-key client
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
   if (supabaseAnonKey) {
-    const anonClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: { persistSession: false },
-    });
+    const anonClient = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
     const { error: resendError } = await anonClient.auth.resend({
       type: "signup",
       email,
-      options: {
-        emailRedirectTo: "https://my-rescue-rewards.lovable.app/auth?confirmed=true",
-      },
+      options: { emailRedirectTo: "https://my-rescue-rewards.lovable.app/auth?confirmed=true" },
     });
-    if (resendError) {
-      console.warn("Erro ao enviar e-mail de confirmação:", resendError.message);
-    }
+    if (resendError) console.warn("Erro ao enviar e-mail de confirmação:", resendError.message);
   }
 
   return jsonResponse(
-    {
-      success: true,
-      message: "Cadastro realizado com sucesso. Verifique seu e-mail para confirmar a conta.",
-    },
+    { success: true, message: "Cadastro realizado com sucesso. Verifique seu e-mail para confirmar a conta." },
     201,
   );
 });
