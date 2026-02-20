@@ -118,10 +118,13 @@ export function NotificationPanel() {
         return "❌";
       case "resgate_aprovado":
         return "🎁";
+      case "indicacao_aceita":
+        return "🤝";
       default:
         return "📢";
     }
   };
+
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>

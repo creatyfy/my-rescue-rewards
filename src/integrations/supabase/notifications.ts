@@ -3,7 +3,10 @@ import { supabase } from "./client";
 export type NotificationType = 
   | "comprovante_aprovado" 
   | "comprovante_recusado" 
-  | "resgate_aprovado";
+  | "resgate_aprovado"
+  | "indicacao_aceita"
+  | "campanha_promocional";
+
 
 export interface Notification {
   id: string;
