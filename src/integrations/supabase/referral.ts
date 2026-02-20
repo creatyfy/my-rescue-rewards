@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 export interface ReferralStats {
   total_referred: number;
@@ -55,6 +56,6 @@ export async function fetchReferralStats(userId: string): Promise<ReferralStats>
 
 /** Build the shareable referral link */
 export function buildReferralLink(code: string): string {
-  const base = import.meta.env.VITE_APP_URL ?? "https://my-rescue-rewards.lovable.app";
+  const base = getAppBaseUrl();
   return `${base}/auth?mode=register&ref=${code}`;
 }
