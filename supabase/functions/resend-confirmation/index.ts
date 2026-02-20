@@ -88,11 +88,13 @@ serve(async (req) => {
 
   const { email, redirectTo } = validation.data;
 
+  const siteUrl = Deno.env.get("VITE_PUBLIC_SITE_URL") || "https://my-rescue-rewards.lovable.app";
+
   const { error } = await supabaseAdmin.auth.resend({
     type: "signup",
     email,
     options: {
-      emailRedirectTo: redirectTo || "https://my-rescue-rewards.lovable.app/dashboard",
+      emailRedirectTo: redirectTo || `${siteUrl}/dashboard`,
     },
   });
 

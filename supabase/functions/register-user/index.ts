@@ -252,10 +252,11 @@ serve(async (req) => {
   const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
   if (supabaseAnonKey) {
     const anonClient = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } });
+    const siteUrl = Deno.env.get("VITE_PUBLIC_SITE_URL") || "https://my-rescue-rewards.lovable.app";
     const { error: resendError } = await anonClient.auth.resend({
       type: "signup",
       email,
-      options: { emailRedirectTo: "https://my-rescue-rewards.lovable.app/dashboard" },
+      options: { emailRedirectTo: `${siteUrl}/dashboard` },
     });
     if (resendError) console.warn("Erro ao enviar e-mail de confirmação:", resendError.message);
   }
