@@ -199,7 +199,7 @@ export function NotificationPanel() {
                       >
                         {notification.title}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 break-words overflow-hidden">
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-4 break-all">
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground/70 mt-1">
