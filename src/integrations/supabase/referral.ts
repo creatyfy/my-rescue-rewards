@@ -56,5 +56,5 @@ export async function fetchReferralStats(userId: string): Promise<ReferralStats>
 
 /** Build the shareable referral link */
 export function buildReferralLink(code: string): string {
-  return `${getAppBaseUrl()}/auth?mode=register&ref=${code}`;
+  return `${getAppBaseUrl()}/r/${code}`;
 }

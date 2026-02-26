@@ -23,6 +23,7 @@ import Help from "./pages/Help";
 import Settings from "./pages/Settings";
 import AuthGuard from "./components/auth/AuthGuard";
 import Referral from "./pages/Referral";
+import ReferralRedirect from "./pages/ReferralRedirect";
 
 const queryClient = new QueryClient();
 
@@ -142,6 +143,7 @@ const App = () => (
               </AuthGuard>
             }
           />
+          <Route path="/r/:code" element={<ReferralRedirect />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
