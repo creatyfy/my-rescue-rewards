@@ -165,7 +165,7 @@ export function NotificationPanel() {
           </div>
         </div>
 
-        <ScrollArea className="h-[300px]">
+        <ScrollArea className="max-h-[400px]">
           {isLoading ? (
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
               Carregando...
@@ -199,7 +199,7 @@ export function NotificationPanel() {
                       >
                         {notification.title}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                      <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-wrap break-words">
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground/70 mt-1">
