@@ -165,7 +165,7 @@ export function NotificationPanel() {
           </div>
         </div>
 
-        <ScrollArea className="max-h-[400px]">
+        <ScrollArea className="h-[350px]">
           {isLoading ? (
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
               Carregando...
