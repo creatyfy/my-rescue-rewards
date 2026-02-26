@@ -199,7 +199,7 @@ export function NotificationPanel() {
                       >
                         {notification.title}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-line break-words [overflow-wrap:anywhere]">
+                      <p className="text-xs text-muted-foreground mt-0.5 whitespace-pre-line break-words [overflow-wrap:break-word] leading-relaxed">
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground/70 mt-1">
