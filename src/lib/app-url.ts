@@ -41,8 +41,8 @@ export const getAppBaseUrl = () => {
 
   // If running on a Lovable preview URL, use the published URL instead
   // so that end-users (who don't have Lovable access) get valid links.
-  if (origin.includes("lovableproject.com") || origin.includes("id-preview--")) {
-    const publishedUrl = "https://my-rescue-rewards.lovable.app";
+  if (origin.includes("lovableproject.com") || origin.includes("id-preview--") || origin.includes("lovable.app")) {
+    const publishedUrl = "https://meuresgate.com.br";
     return publishedUrl;
   }
 
