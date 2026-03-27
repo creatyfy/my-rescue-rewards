@@ -1,29 +1,26 @@
 project_id = "rymywtllzgysesdzstof"
 
 [auth]
-enable_signup = true
-enable_anonymous_sign_ins = false
+  enable_anonymous_sign_ins = false
+  enable_signup = true
+  [auth.email]
+    double_confirm_changes = true
+    enable_confirmations = true
+    enable_signup = true
+  [auth.url]
+    additional_redirect_urls = ["https://my-rescue-rewards.lovable.app/dashboard", "https://my-rescue-rewards.lovable.app/auth?confirmed=true", "https://my-rescue-rewards.lovable.app/reset-password", "https://id-preview--19b1415d-588d-40a6-86dc-890da8cb8b4b.lovable.app/reset-password", "https://id-preview--19b1415d-588d-40a6-86dc-890da8cb8b4b.lovable.app/auth?confirmed=true", "https://id-preview--19b1415d-588d-40a6-86dc-890da8cb8b4b.lovable.app/dashboard", "https://19b1415d-588d-40a6-86dc-890da8cb8b4b.lovableproject.com/reset-password", "https://19b1415d-588d-40a6-86dc-890da8cb8b4b.lovableproject.com/auth?confirmed=true", "https://19b1415d-588d-40a6-86dc-890da8cb8b4b.lovableproject.com/dashboard"]
+    site_url = "https://my-rescue-rewards.lovable.app"
 
-[auth.email]
-enable_signup = true
-double_confirm_changes = true
-enable_confirmations = true
-
-[auth.url]
-site_url = "https://my-rescue-rewards.lovable.app"
-additional_redirect_urls = ["https://my-rescue-rewards.lovable.app/dashboard", "https://my-rescue-rewards.lovable.app/auth?confirmed=true", "https://my-rescue-rewards.lovable.app/reset-password", "https://id-preview--19b1415d-588d-40a6-86dc-890da8cb8b4b.lovable.app/reset-password", "https://id-preview--19b1415d-588d-40a6-86dc-890da8cb8b4b.lovable.app/auth?confirmed=true", "https://id-preview--19b1415d-588d-40a6-86dc-890da8cb8b4b.lovable.app/dashboard", "https://19b1415d-588d-40a6-86dc-890da8cb8b4b.lovableproject.com/reset-password", "https://19b1415d-588d-40a6-86dc-890da8cb8b4b.lovableproject.com/auth?confirmed=true", "https://19b1415d-588d-40a6-86dc-890da8cb8b4b.lovableproject.com/dashboard"]
-
-[functions.reset-password]
-verify_jwt = false
-
-[functions.resend-confirmation]
-verify_jwt = false
-
-[functions.submit-receipt-v2]
-verify_jwt = false
-
-[functions.update-profile]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = true
+  [functions.resend-confirmation]
+    verify_jwt = false
+  [functions.reset-password]
+    verify_jwt = false
+  [functions.submit-receipt-v2]
+    verify_jwt = false
+  [functions.update-profile]
+    verify_jwt = false
