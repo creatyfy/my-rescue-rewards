@@ -115,11 +115,17 @@ export default function Scan() {
   };
 
   const extractQrToken = (payload: string) => {
+    const trimmed = payload.trim();
     try {
-      const url = new URL(payload);
-      return url.searchParams.get("token") || url.searchParams.get("qr") || payload;
+      const url = new URL(trimmed);
+      const fromParam = url.searchParams.get("token") || url.searchParams.get("qr");
+      if (fromParam) return fromParam.trim();
+      // Fallback: use last path segment (e.g. https://.../r/<token>)
+      const segments = url.pathname.split("/").filter(Boolean);
+      const last = segments[segments.length - 1];
+      return (last || trimmed).trim();
     } catch {
-      return payload;
+      return trimmed;
     }
   };
 
@@ -142,13 +148,14 @@ export default function Scan() {
     setIsValidatingQr(true);
 
     const token = extractQrToken(payload);
-    console.log("QR Code detectado:", token);
+    console.log("QR Code detectado. Payload bruto:", JSON.stringify(payload), "Token extraído:", JSON.stringify(token));
 
     try {
       const store = await fetchStoreByQrValue(token);
 
       if (!store) {
-        toast.error("QR Code inválido ou loja não encontrada.");
+        const preview = token.length > 40 ? `${token.slice(0, 40)}…` : token;
+        toast.error(`QR Code não reconhecido. Valor lido: ${preview}`);
         isProcessingRef.current = false;
         setIsValidatingQr(false);
         return;
