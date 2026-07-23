@@ -46,14 +46,15 @@ const MARKETING = {
 /* Acento AZUL da marca (combina com a imagem do hero e o logo) — aplicado
    SÓ na landing via override das CSS vars. O app logado continua teal. */
 const brandBlue: React.CSSProperties = {
-  ["--primary" as never]: "221 83% 53%",
+  // Azul calibrado a partir da própria imagem do hero (HSL ~213°, azure vivo).
+  ["--primary" as never]: "213 92% 46%",
   ["--primary-foreground" as never]: "0 0% 100%",
-  ["--ring" as never]: "221 83% 53%",
-  ["--accent" as never]: "214 100% 96%",
-  ["--accent-foreground" as never]: "221 83% 45%",
-  ["--gradient-primary" as never]: "linear-gradient(135deg, hsl(221 83% 55%) 0%, hsl(211 90% 50%) 100%)",
-  ["--gradient-hero" as never]: "linear-gradient(180deg, hsl(221 83% 53% / 0.08) 0%, transparent 55%)",
-  ["--shadow-primary" as never]: "0 10px 30px -6px hsl(221 83% 53% / 0.35)",
+  ["--ring" as never]: "213 92% 46%",
+  ["--accent" as never]: "213 100% 96%",
+  ["--accent-foreground" as never]: "213 92% 40%",
+  ["--gradient-primary" as never]: "linear-gradient(135deg, hsl(213 94% 50%) 0%, hsl(214 96% 42%) 100%)",
+  ["--gradient-hero" as never]: "linear-gradient(180deg, hsl(213 92% 46% / 0.08) 0%, transparent 55%)",
+  ["--shadow-primary" as never]: "0 10px 30px -6px hsl(213 92% 46% / 0.35)",
 };
 
 /* ------------------------------------------------------------------ */
