@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { getAppBaseUrl } from "@/lib/app-url";
+import { isNativePlatform } from "@/lib/native";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Phone, FileText } from "lucide-react";
 import logoHorizontal from "@/assets/logo-horizontal.png";
@@ -37,6 +38,7 @@ export default function Auth() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const turnstileWidgetId = useRef<string | null>(null);
+  const turnstileResolveRef = useRef<((token: string) => void) | null>(null);
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseAnonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -133,6 +135,36 @@ export default function Auth() {
     setTurnstileToken("");
     setTurnstileError("");
   };
+
+  // Alguns ambientes (ex.: WebView do app) às vezes fazem o 1º token do
+  // Turnstile ser rejeitado. Esta função reseta o widget e espera um token
+  // novo (com timeout), pra a gente reenviar o login de forma transparente.
+  const requestFreshTurnstileToken = (): Promise<string> =>
+    new Promise((resolve) => {
+      if (!turnstileSiteKey || !turnstileWidgetId.current || !window.turnstile) {
+        resolve("");
+        return;
+      }
+      let settled = false;
+      const finish = (token: string) => {
+        if (settled) return;
+        settled = true;
+        turnstileResolveRef.current = null;
+        resolve(token);
+      };
+      turnstileResolveRef.current = finish;
+      try {
+        window.turnstile.reset(turnstileWidgetId.current);
+      } catch {
+        finish("");
+        return;
+      }
+      // fallback: se não vier token novo em 6s, desiste (mantém o fluxo)
+      setTimeout(() => finish(""), 6000);
+    });
+
+  const isCaptchaError = (message?: string): boolean =>
+    !!message && /turnstile|captcha|desafio de seguran/i.test(message);
 
   useEffect(() => {
     resetTurnstile();
@@ -437,10 +469,28 @@ export default function Auth() {
       }
 
       if (mode === "login") {
-        const loginResult = await authenticateLoginWithEmailConfirmation(
+        let loginResult = await authenticateLoginWithEmailConfirmation(
           normalizedEmail,
           formData.password,
+          turnstileToken,
         );
+
+        // Se falhou por causa do captcha, gera um token novo e tenta 1x mais,
+        // de forma transparente (resolve o "só funciona na segunda tentativa").
+        if (
+          loginResult.status === "error" &&
+          turnstileSiteKey &&
+          isCaptchaError(loginResult.message)
+        ) {
+          const freshToken = await requestFreshTurnstileToken();
+          if (freshToken) {
+            loginResult = await authenticateLoginWithEmailConfirmation(
+              normalizedEmail,
+              formData.password,
+              freshToken,
+            );
+          }
+        }
 
         if (loginResult.status === "pending_confirmation") {
           setPendingConfirmationEmail(normalizedEmail);
@@ -627,12 +677,13 @@ export default function Auth() {
   const authenticateLoginWithEmailConfirmation = async (
     email: string,
     password: string,
+    captchaToken: string,
   ): Promise<{ status: LoginAuthStatus; message?: string }> => {
     try {
       const { response, data } = await callAuthFunction("login-user", {
         email,
         password,
-        turnstileToken,
+        turnstileToken: captchaToken,
       });
 
       if (!response.ok) {
@@ -681,17 +732,20 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="p-4">
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Voltar
-        </Link>
-      </header>
+    <div className="min-h-screen bg-background flex flex-col safe-area-top">
+      {/* Header — o "Voltar" só faz sentido no site (volta pra landing);
+          no app nativo a raiz já é o login, então escondemos. */}
+      {!isNativePlatform() && (
+        <header className="p-4">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar
+          </Link>
+        </header>
+      )}
 
       <div className="flex-1 flex flex-col justify-center px-6 py-12 max-w-sm mx-auto w-full">
         {/* Logo */}
@@ -910,6 +964,9 @@ export default function Auth() {
                 onVerify={(token) => {
                   setTurnstileToken(token);
                   setTurnstileError("");
+                  if (token && turnstileResolveRef.current) {
+                    turnstileResolveRef.current(token);
+                  }
                 }}
                 onExpire={() => setTurnstileError("O desafio expirou. Tente novamente.")}
                 onError={() => setTurnstileError("Não foi possível validar o captcha.")}

@@ -9,7 +9,7 @@ interface HeaderProps {
 
 export function Header({ title }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border/50">
+    <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border/50 safe-area-top">
       <div className="container flex items-center justify-between h-14 px-4">
         <div className="flex items-center gap-2 flex-shrink-0 w-10">
           <SidebarTrigger />

@@ -289,7 +289,7 @@ export default function Store() {
             <p className="text-muted-foreground">Nenhum produto encontrado</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {filteredProducts.map((product) => (
               <ProductCard
                 key={product.id}

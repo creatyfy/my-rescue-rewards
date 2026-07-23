@@ -336,3 +336,20 @@
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 0.92; transform: translateY(0); }
 }
+
+/* ==========================================================================
+   Áreas seguras — evita conteúdo embaixo da status bar (topo) e da barra de
+   gestos (base) no app nativo. Na web/Android sem notch, env() = 0 (sem efeito).
+   ========================================================================== */
+@layer utilities {
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-area-x {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+}
