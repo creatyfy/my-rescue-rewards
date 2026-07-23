@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { isNativePlatform } from "./lib/native";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -38,7 +39,13 @@ const App = () => (
       <BrowserRouter>
         <NativeBootstrap />
         <Routes>
-          <Route path="/" element={<Index />} />
+          {/* No app nativo, a raiz vai direto pro login (a landing de
+              marketing é só do site). O /auth já redireciona pro /dashboard
+              se houver sessão ativa. */}
+          <Route
+            path="/"
+            element={isNativePlatform() ? <Navigate to="/auth" replace /> : <Index />}
+          />
           <Route path="/auth" element={<Auth />} />
           <Route path="/verifique-seu-email" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
