@@ -48,6 +48,9 @@ workflows:
     scripts:
       - *install_deps
       - *build_web
+      - name: Selecionar JDK 21 (exigido pelo Capacitor 8)
+        script: |
+          echo "JAVA_HOME=$(/usr/libexec/java_home -v 21)" >> $CM_ENV
       - name: Gerar keystore.properties a partir da keystore do Codemagic
         script: |
           cat > "$CM_BUILD_DIR/android/keystore.properties" <<EOF
@@ -93,6 +96,9 @@ workflows:
     scripts:
       - *install_deps
       - *build_web
+      - name: Selecionar JDK 21 (exigido pelo Capacitor 8)
+        script: |
+          echo "JAVA_HOME=$(/usr/libexec/java_home -v 21)" >> $CM_ENV
       - name: Gerar keystore.properties a partir da keystore do Codemagic
         script: |
           cat > "$CM_BUILD_DIR/android/keystore.properties" <<EOF
