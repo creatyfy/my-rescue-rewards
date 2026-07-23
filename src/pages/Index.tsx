@@ -18,7 +18,7 @@ import {
 import logoHorizontal from "@/assets/logo-horizontal.png";
 import heroApp from "@/assets/hero-app.png";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -35,11 +35,24 @@ import type { Partner, Prize } from "@/integrations/supabase/landing";
 /* ------------------------------------------------------------------ */
 const MARKETING = {
   socialProof: "Mais de 10.000 usuários já acumulando pontos",
+  // avatares da prova social (iniciais fictícias + gradiente)
+  avatars: [
+    { grad: "from-primary to-cyan-400", initials: "JC" },
+    { grad: "from-amber-400 to-secondary", initials: "MS" },
+    { grad: "from-emerald-400 to-teal-500", initials: "RA" },
+    { grad: "from-sky-400 to-primary", initials: "AL" },
+  ],
+  // `to` = número final; `fmt` formata durante a contagem
   stats: [
-    { icon: Store, value: "+500", label: "Lojas parceiras" },
-    { icon: TrendingUp, value: "+1 milhão", label: "Pontos distribuídos" },
-    { icon: Gift, value: "+20 mil", label: "Resgates realizados" },
-    { icon: Sparkles, value: "98%", label: "Clientes satisfeitos" },
+    { icon: Store, to: 500, fmt: (n: number) => `+${Math.round(n)}`, label: "Lojas parceiras" },
+    {
+      icon: TrendingUp,
+      to: 1_000_000,
+      fmt: (n: number) => (n >= 1_000_000 ? "+1 milhão" : `+${Math.round(n / 1000)} mil`),
+      label: "Pontos distribuídos",
+    },
+    { icon: Gift, to: 20_000, fmt: (n: number) => `+${Math.round(n / 1000)} mil`, label: "Resgates realizados" },
+    { icon: Sparkles, to: 98, fmt: (n: number) => `${Math.round(n)}%`, label: "Clientes satisfeitos" },
   ],
 };
 
@@ -190,17 +203,22 @@ export default function Index() {
               {/* Prova social */}
               <div className="mt-8 flex items-center gap-4 justify-center lg:justify-start">
                 <div className="flex -space-x-3">
-                  {["from-primary to-cyan-400", "from-secondary to-amber-400", "from-emerald-400 to-teal-500", "from-sky-400 to-indigo-500"].map((g, i) => (
+                  {MARKETING.avatars.map((a, i) => (
                     <div
                       key={i}
-                      className={`w-9 h-9 rounded-full bg-gradient-to-br ${g} ring-2 ring-background`}
-                    />
+                      className={`w-9 h-9 rounded-full bg-gradient-to-br ${a.grad} ring-2 ring-background flex items-center justify-center text-[11px] font-bold text-white`}
+                    >
+                      {a.initials}
+                    </div>
                   ))}
                 </div>
                 <div className="text-left">
-                  <div className="flex items-center gap-0.5 text-secondary">
+                  <div className="flex items-center gap-0.5">
                     {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-current" />
+                      <Star
+                        key={i}
+                        className="w-4 h-4 fill-current text-primary [filter:drop-shadow(0_0_5px_hsl(var(--primary)/0.85))]"
+                      />
                     ))}
                   </div>
                   <p className="text-sm text-muted-foreground">{MARKETING.socialProof}</p>
@@ -208,8 +226,25 @@ export default function Index() {
               </div>
             </div>
 
-            {/* Visual (mockup construído em CSS, sem assets externos) */}
+            {/* Visual (imagem do app) */}
             <HeroVisual />
+          </div>
+        </div>
+      </section>
+
+      {/* ============================ Números ============================ */}
+      <section className="container px-4 -mt-2 pb-4">
+        <div className="max-w-6xl mx-auto rounded-3xl gradient-primary shadow-primary p-8 md:p-10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            {statItems.map((s, i) => (
+              <div key={i} className="text-center text-primary-foreground">
+                <s.icon className="w-6 h-6 mx-auto mb-2 opacity-90" />
+                <div className="font-display text-3xl md:text-4xl font-bold tabular-nums">
+                  <StatCounter to={s.to} fmt={s.fmt} />
+                </div>
+                <div className="text-sm text-primary-foreground/80 mt-1">{s.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -301,21 +336,6 @@ export default function Index() {
           {prizes.map((prize) => (
             <PrizeCard key={prize.id} prize={prize} />
           ))}
-        </div>
-      </section>
-
-      {/* ============================ Números ============================ */}
-      <section className="container px-4 pb-16">
-        <div className="max-w-6xl mx-auto rounded-3xl gradient-primary p-8 md:p-10">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {statItems.map((s, i) => (
-              <div key={i} className="text-center text-primary-foreground">
-                <s.icon className="w-6 h-6 mx-auto mb-2 opacity-90" />
-                <div className="font-display text-3xl md:text-4xl font-bold">{s.value}</div>
-                <div className="text-sm text-primary-foreground/80 mt-1">{s.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -459,6 +479,49 @@ export default function Index() {
 /* Subcomponentes                                                      */
 /* ------------------------------------------------------------------ */
 
+// Contador que anima de 0 até `to` quando entra na viewport (efeito premium).
+function StatCounter({
+  to,
+  fmt,
+  durationMs = 1800,
+}: {
+  to: number;
+  fmt: (n: number) => string;
+  durationMs?: number;
+}) {
+  const [value, setValue] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !started.current) {
+            started.current = true;
+            const start = performance.now();
+            const step = (now: number) => {
+              const p = Math.min((now - start) / durationMs, 1);
+              const eased = 1 - Math.pow(1 - p, 3); // easeOutCubic
+              setValue(to * eased);
+              if (p < 1) requestAnimationFrame(step);
+              else setValue(to);
+            };
+            requestAnimationFrame(step);
+          }
+        });
+      },
+      { threshold: 0.4 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [to, durationMs]);
+
+  return <span ref={ref}>{fmt(value)}</span>;
+}
+
 function SectionHeading({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="text-center mb-12">
@@ -569,9 +632,12 @@ function PrizeCard({ prize }: { prize: Prize }) {
 function TestimonialCard({ text, name, since }: { text: string; name: string; since: string }) {
   return (
     <div className="p-6 rounded-2xl bg-card border border-border/50 shadow-soft">
-      <div className="flex items-center gap-0.5 text-secondary mb-3">
+      <div className="flex items-center gap-0.5 mb-3">
         {[...Array(5)].map((_, i) => (
-          <Star key={i} className="w-4 h-4 fill-current" />
+          <Star
+            key={i}
+            className="w-4 h-4 fill-current text-primary [filter:drop-shadow(0_0_5px_hsl(var(--primary)/0.85))]"
+          />
         ))}
       </div>
       <p className="text-foreground mb-5 leading-relaxed">"{text}"</p>
