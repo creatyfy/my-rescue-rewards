@@ -25,12 +25,14 @@ import AuthGuard from "./components/auth/AuthGuard";
 import Referral from "./pages/Referral";
 import ReferralRedirect from "./pages/ReferralRedirect";
 import { NativeBootstrap } from "./components/NativeBootstrap";
+import { AnimatedSplash } from "./components/AnimatedSplash";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <AnimatedSplash />
       <Toaster />
       <Sonner />
       <BrowserRouter>

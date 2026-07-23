@@ -250,3 +250,89 @@
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
 }
+
+/* ==========================================================================
+   Splash animado nativo (AnimatedSplash.tsx)
+   ========================================================================== */
+.splash-root {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+  /* mesmo gradiente do splash estático nativo (assets/splash.png) */
+  background: radial-gradient(circle at 50% 42%, #1cc2ee 0%, #0b98c6 55%, #078cb0 100%);
+  opacity: 1;
+  transition: opacity 0.55s ease;
+  will-change: opacity;
+  overflow: hidden;
+}
+.splash-root--leaving {
+  opacity: 0;
+}
+
+.splash-logo {
+  display: flex;
+  align-items: center;
+  /* escala com a largura da tela: encosta no máximo nos limites em px em
+     telas grandes, e encolhe proporcionalmente em celulares estreitos */
+  gap: min(14px, 3vw);
+  animation: splash-glow 2s ease-in-out 1.6s both;
+  will-change: filter;
+}
+
+.splash-symbol {
+  height: min(118px, 25.5vw);
+  width: auto;
+  opacity: 0;
+  animation: splash-symbol-in 1.5s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
+  will-change: transform, opacity;
+}
+
+.splash-wordmark {
+  height: min(62px, 13.4vw);
+  width: auto;
+  opacity: 0;
+  animation: splash-wordmark-in 1.5s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
+  will-change: transform, opacity;
+}
+
+.splash-tagline {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  animation: splash-tagline-in 0.9s ease-out 2.2s both;
+}
+
+/* símbolo entra da esquerda e "encontra" o texto no centro */
+@keyframes splash-symbol-in {
+  0%   { opacity: 0; transform: translateX(-70px) scale(0.82); }
+  70%  { opacity: 1; transform: translateX(6px) scale(1.04); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+/* texto entra da direita e "encontra" o símbolo no centro */
+@keyframes splash-wordmark-in {
+  0%   { opacity: 0; transform: translateX(70px) scale(0.82); }
+  70%  { opacity: 1; transform: translateX(-6px) scale(1.04); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+/* brilho pulsa quando os dois se encontram */
+@keyframes splash-glow {
+  0%   { filter: drop-shadow(0 0 0 rgba(255, 255, 255, 0)); }
+  35%  { filter: drop-shadow(0 0 22px rgba(255, 255, 255, 0.75)); }
+  100% { filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.25)); }
+}
+
+@keyframes splash-tagline-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 0.92; transform: translateY(0); }
+}

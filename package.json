@@ -16,7 +16,7 @@
     "cap:sync": "vite build && cap sync",
     "cap:android": "vite build && cap sync android && cap open android",
     "cap:ios": "vite build && cap sync ios && cap open ios",
-    "cap:assets": "capacitor-assets generate --iconBackgroundColor '#10b0e0' --splashBackgroundColor '#10b0e0'"
+    "cap:assets": "capacitor-assets generate --iconBackgroundColor \"#10b0e0\" --splashBackgroundColor \"#10b0e0\""
   },
   "dependencies": {
     "@capacitor-mlkit/barcode-scanning": "^8.1.0",
