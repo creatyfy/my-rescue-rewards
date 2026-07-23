@@ -153,7 +153,7 @@ export default function Index() {
                 Instalar
               </Button>
             )}
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex">
               <Link to="/auth">Já tenho conta</Link>
             </Button>
             <Button size="sm" asChild>
@@ -234,15 +234,15 @@ export default function Index() {
 
       {/* ============================ Números ============================ */}
       <section className="container px-4 -mt-2 pb-4">
-        <div className="max-w-6xl mx-auto rounded-3xl gradient-primary shadow-primary p-8 md:p-10">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="max-w-6xl mx-auto rounded-3xl gradient-primary shadow-primary p-6 sm:p-8 md:p-10">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-x-3 gap-y-6 md:gap-6">
             {statItems.map((s, i) => (
               <div key={i} className="text-center text-primary-foreground">
                 <s.icon className="w-6 h-6 mx-auto mb-2 opacity-90" />
-                <div className="font-display text-3xl md:text-4xl font-bold tabular-nums">
+                <div className="font-display text-2xl sm:text-3xl md:text-4xl font-bold tabular-nums whitespace-nowrap leading-tight">
                   <StatCounter to={s.to} fmt={s.fmt} />
                 </div>
-                <div className="text-sm text-primary-foreground/80 mt-1">{s.label}</div>
+                <div className="text-xs sm:text-sm text-primary-foreground/80 mt-1">{s.label}</div>
               </div>
             ))}
           </div>
