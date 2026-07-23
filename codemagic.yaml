@@ -28,6 +28,49 @@ definitions:
 
 workflows:
   # --------------------------------------------------------------------------
+  #  ANDROID APK (TESTE)  ->  gera app-release.apk assinado pra instalar no
+  #  celular. Não publica em loja. Use este workflow pra testar o app.
+  # --------------------------------------------------------------------------
+  android-apk:
+    name: Meu Resgate — Android APK (teste)
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      android_signing:
+        - meuresgate_keystore
+      vars:
+        PACKAGE_NAME: "br.com.meuresgate.app"
+      node: 20
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/.gradle/caches
+    scripts:
+      - *install_deps
+      - *build_web
+      - name: Gerar keystore.properties a partir da keystore do Codemagic
+        script: |
+          cat > "$CM_BUILD_DIR/android/keystore.properties" <<EOF
+          storeFile=$CM_KEYSTORE_PATH
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          EOF
+      - name: Build do APK (release assinado)
+        script: |
+          cd android
+          ./gradlew assembleRelease
+    artifacts:
+      - android/app/build/outputs/apk/release/*.apk
+    publishing:
+      email:
+        recipients:
+          - i9plex@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  # --------------------------------------------------------------------------
   #  ANDROID  ->  gera app-release.aab assinado
   # --------------------------------------------------------------------------
   android:
