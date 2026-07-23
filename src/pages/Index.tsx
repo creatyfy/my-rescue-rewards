@@ -7,9 +7,7 @@ import {
   ChevronRight,
   Sparkles,
   Download,
-  Check,
   Smartphone,
-  Share,
   Store,
   Zap,
   ShieldCheck,
@@ -18,6 +16,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import logoHorizontal from "@/assets/logo-horizontal.png";
+import heroApp from "@/assets/hero-app.png";
 import { usePWAInstall } from "@/hooks/usePWAInstall";
 import { useState } from "react";
 import {
@@ -42,6 +41,19 @@ const MARKETING = {
     { icon: Gift, value: "+20 mil", label: "Resgates realizados" },
     { icon: Sparkles, value: "98%", label: "Clientes satisfeitos" },
   ],
+};
+
+/* Acento AZUL da marca (combina com a imagem do hero e o logo) — aplicado
+   SÓ na landing via override das CSS vars. O app logado continua teal. */
+const brandBlue: React.CSSProperties = {
+  ["--primary" as never]: "221 83% 53%",
+  ["--primary-foreground" as never]: "0 0% 100%",
+  ["--ring" as never]: "221 83% 53%",
+  ["--accent" as never]: "214 100% 96%",
+  ["--accent-foreground" as never]: "221 83% 45%",
+  ["--gradient-primary" as never]: "linear-gradient(135deg, hsl(221 83% 55%) 0%, hsl(211 90% 50%) 100%)",
+  ["--gradient-hero" as never]: "linear-gradient(180deg, hsl(221 83% 53% / 0.08) 0%, transparent 55%)",
+  ["--shadow-primary" as never]: "0 10px 30px -6px hsl(221 83% 53% / 0.35)",
 };
 
 /* ------------------------------------------------------------------ */
@@ -104,7 +116,7 @@ export default function Index() {
   const statItems = MARKETING.stats;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={brandBlue}>
       {/* ============================= Header ============================= */}
       <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container px-4 h-16 flex items-center justify-between">
@@ -116,6 +128,7 @@ export default function Index() {
             <a href="#como-funciona" className="hover:text-foreground transition-colors">Como funciona</a>
             <a href="#parceiros" className="hover:text-foreground transition-colors">Parceiros</a>
             <a href="#premios" className="hover:text-foreground transition-colors">Prêmios</a>
+            <a href="#contato" className="hover:text-foreground transition-colors">Contato</a>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -150,12 +163,12 @@ export default function Index() {
                 <span className="text-sm font-medium text-foreground">Programa de fidelidade inteligente</span>
               </div>
 
-              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6 leading-[1.1]">
+              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold text-foreground mb-6 leading-[1.05] tracking-tight">
                 Transforme suas compras em{" "}
                 <span className="text-primary">recompensas</span>.
               </h1>
 
-              <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto lg:mx-0">
+              <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-lg mx-auto lg:mx-0">
                 Acumule pontos em lojas parceiras e troque por produtos exclusivos.
                 Simples, rápido e vantajoso.
               </p>
@@ -353,46 +366,55 @@ export default function Index() {
       </section>
 
       {/* ============================= Footer ============================ */}
-      <footer className="border-t border-border/50 mt-8">
-        <div className="container px-4 py-12">
-          <div className="grid md:grid-cols-4 gap-8">
+      <footer id="contato" className="mt-8 bg-[#0f1b2d] text-slate-300">
+        <div className="container px-4 py-14">
+          <div className="grid md:grid-cols-4 gap-10">
             <div>
-              <img src={logoHorizontal} alt="Meu Resgate" className="h-8 w-auto mb-4" />
-              <p className="text-sm text-muted-foreground max-w-xs">
-                Seu programa de fidelidade inteligente. Acumule pontos e troque por prêmios.
+              <img src={logoHorizontal} alt="Meu Resgate" className="h-8 w-auto mb-4 brightness-0 invert" />
+              <p className="text-sm text-slate-400 max-w-xs">
+                Seu programa de fidelidade inteligente. Acumule pontos em lojas parceiras e troque por prêmios.
               </p>
             </div>
-            <FooterCol
-              title="Navegação"
-              links={[
-                { label: "Como funciona", href: "#como-funciona" },
-                { label: "Parceiros", href: "#parceiros" },
-                { label: "Prêmios", href: "#premios" },
-              ]}
-            />
-            <FooterCol
-              title="Minha conta"
-              links={[
-                { label: "Entrar", href: "/auth" },
-                { label: "Criar conta", href: "/auth?mode=register" },
-              ]}
-              asRoutes
-            />
+
             <div>
-              <h4 className="font-display font-semibold text-foreground mb-3">Baixe nosso app</h4>
-              <p className="text-sm text-muted-foreground mb-3">
-                Acesse mais rápido direto do seu celular.
+              <h4 className="font-display font-semibold text-white mb-3">Navegação</h4>
+              <ul className="space-y-2 text-sm">
+                <li><a href="#como-funciona" className="text-slate-400 hover:text-white transition-colors">Como funciona</a></li>
+                <li><a href="#parceiros" className="text-slate-400 hover:text-white transition-colors">Parceiros</a></li>
+                <li><a href="#premios" className="text-slate-400 hover:text-white transition-colors">Prêmios</a></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-display font-semibold text-white mb-3">Minha conta</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/auth" className="text-slate-400 hover:text-white transition-colors">Entrar</Link></li>
+                <li><Link to="/auth?mode=register" className="text-slate-400 hover:text-white transition-colors">Criar conta</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-display font-semibold text-white mb-3">Contato</h4>
+              <p className="text-sm text-slate-400 mb-4">
+                Fale com a gente:<br />
+                <a href="mailto:contato@meuresgate.com.br" className="text-white hover:underline">contato@meuresgate.com.br</a>
               </p>
-              {(!isInstalled) && (
-                <Button variant="outline" size="sm" onClick={handleInstallClick} className="gap-2">
+              {!isInstalled && (
+                <Button
+                  size="sm"
+                  onClick={handleInstallClick}
+                  className="gap-2 bg-white text-[#0f1b2d] hover:bg-slate-200"
+                >
                   <Download className="w-4 h-4" />
-                  Instalar app
+                  Baixar o app
                 </Button>
               )}
             </div>
           </div>
-          <div className="mt-10 pt-6 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">© 2026 Meu Resgate. Todos os direitos reservados.</p>
+
+          <div className="mt-12 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-sm text-slate-500">© 2026 Meu Resgate. Todos os direitos reservados.</p>
+            <p className="text-sm text-slate-500">Feito com 💙 para você acumular e resgatar.</p>
           </div>
         </div>
       </footer>
@@ -548,88 +570,24 @@ function TestimonialCard({ text, name, since }: { text: string; name: string; si
   );
 }
 
-function FooterCol({
-  title,
-  links,
-  asRoutes,
-}: {
-  title: string;
-  links: { label: string; href: string }[];
-  asRoutes?: boolean;
-}) {
-  return (
-    <div>
-      <h4 className="font-display font-semibold text-foreground mb-3">{title}</h4>
-      <ul className="space-y-2">
-        {links.map((l) => (
-          <li key={l.label}>
-            {asRoutes ? (
-              <Link to={l.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {l.label}
-              </Link>
-            ) : (
-              <a href={l.href} className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                {l.label}
-              </a>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/* -------- Visuais construídos em CSS (sem assets de terceiros) -------- */
+/* -------- Visual do hero -------- */
 
 function HeroVisual() {
   return (
-    <div className="relative mx-auto w-full max-w-sm lg:max-w-md">
-      {/* Card "celular" */}
-      <div className="relative rounded-[2.5rem] border-8 border-foreground/90 bg-card shadow-large overflow-hidden aspect-[9/16] max-h-[520px] mx-auto">
-        <div className="gradient-primary p-6 text-primary-foreground">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-              <Gift className="w-4 h-4" />
-            </div>
-            <span className="font-display font-bold">Meu Resgate</span>
-          </div>
-          <p className="text-sm text-primary-foreground/80">Saldo de pontos</p>
-          <p className="font-display text-4xl font-bold mb-1">2.560</p>
-          <p className="text-xs text-primary-foreground/70">pontos disponíveis</p>
-        </div>
-        <div className="p-5 space-y-3">
-          <div className="rounded-xl bg-primary/10 flex items-center gap-3 p-3">
-            <QrCode className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-foreground">Escanear QR Code</span>
-          </div>
-          <div className="rounded-xl border border-border/50 p-3">
-            <p className="text-xs text-muted-foreground mb-1">10 pontos por R$1</p>
-            <p className="text-sm font-medium text-foreground">em compras nos parceiros</p>
-          </div>
-          <div className="rounded-xl border border-border/50 p-3 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-success/20 flex items-center justify-center">
-              <Check className="w-4 h-4 text-success" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-foreground">Resgate aprovado</p>
-              <p className="text-xs text-muted-foreground">Parabéns!</p>
-            </div>
-          </div>
-        </div>
+    <div className="relative flex items-center justify-center">
+      {/* Glow de fundo pra dar profundidade e look premium */}
+      <div className="absolute inset-0 -z-10 flex items-center justify-center">
+        <div className="w-[85%] h-[85%] rounded-full bg-primary/20 blur-3xl" />
       </div>
+      <div className="absolute top-6 right-10 -z-10 w-40 h-40 rounded-full bg-secondary/20 blur-3xl" />
 
-      {/* Badges flutuantes */}
-      <div className="absolute -top-4 -left-4 md:-left-8 animate-float">
-        <div className="points-badge shadow-gold">
-          <Star className="w-4 h-4 fill-current" /> +250 pontos
-        </div>
-      </div>
-      <div className="absolute bottom-16 -right-4 md:-right-8 animate-float" style={{ animationDelay: "1.5s" }}>
-        <div className="bg-card border border-border/50 shadow-medium rounded-xl px-3 py-2 flex items-center gap-2">
-          <QrCode className="w-4 h-4 text-primary" />
-          <span className="text-sm font-medium text-foreground">QR Lido</span>
-        </div>
-      </div>
+      {/* Imagem do app (já traz moedas, badges e QR embutidos) */}
+      <img
+        src={heroApp}
+        alt="App Meu Resgate — acumule pontos e troque por prêmios"
+        className="relative w-full max-w-lg drop-shadow-2xl animate-float select-none"
+        draggable={false}
+      />
     </div>
   );
 }

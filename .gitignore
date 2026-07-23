@@ -23,5 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Supabase CLI temp
-supabase/.temp
+# Supabase — arquivos locais/CLI e DADOS SENSÍVEIS (NÃO versionar)
+supabase/.temp/
+supabase/.branches/
+supabase/migrations/20260720120000_load_production_data.sql
