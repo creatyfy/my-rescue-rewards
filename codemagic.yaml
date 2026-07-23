@@ -63,16 +63,17 @@ workflows:
           /usr/libexec/java_home -V 2>&1 || true
           JDK21=$(/usr/libexec/java_home -v 21 2>/dev/null || true)
           if [ -z "$JDK21" ]; then
-            echo "JDK 21 ausente; instalando Temurin 21 via Homebrew..."
-            brew install --cask temurin@21
-            JDK21=$(/usr/libexec/java_home -v 21)
+            echo "JDK 21 ausente; instalando Temurin 21..."
+            brew install --cask temurin@21 || brew install temurin@21 || true
+            JDK21=$(/usr/libexec/java_home -v 21 2>/dev/null || true)
           fi
+          if [ -z "$JDK21" ]; then echo "ERRO: JDK 21 indisponivel na imagem"; exit 1; fi
           export JAVA_HOME="$JDK21"
-          echo "== Usando JAVA_HOME=$JAVA_HOME =="
-          java -version
+          echo "== JAVA_HOME=$JAVA_HOME =="
+          "$JAVA_HOME/bin/java" -version
           cd android
           chmod +x ./gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease -Dorg.gradle.java.home="$JAVA_HOME" --no-daemon
     artifacts:
       - android/app/build/outputs/apk/release/*.apk
     publishing:
@@ -118,14 +119,15 @@ workflows:
           set -e
           JDK21=$(/usr/libexec/java_home -v 21 2>/dev/null || true)
           if [ -z "$JDK21" ]; then
-            brew install --cask temurin@21
-            JDK21=$(/usr/libexec/java_home -v 21)
+            brew install --cask temurin@21 || brew install temurin@21 || true
+            JDK21=$(/usr/libexec/java_home -v 21 2>/dev/null || true)
           fi
+          if [ -z "$JDK21" ]; then echo "ERRO: JDK 21 indisponivel na imagem"; exit 1; fi
           export JAVA_HOME="$JDK21"
-          java -version
+          "$JAVA_HOME/bin/java" -version
           cd android
           chmod +x ./gradlew
-          ./gradlew bundleRelease
+          ./gradlew bundleRelease -Dorg.gradle.java.home="$JAVA_HOME" --no-daemon
     artifacts:
       - android/app/build/outputs/**/*.aab
       - android/app/build/outputs/**/mapping.txt
