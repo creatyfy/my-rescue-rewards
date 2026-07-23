@@ -1,0 +1,127 @@
+# ============================================================================
+#  Codemagic CI/CD — Meu Resgate (Capacitor + Vite/React)
+#  Compila e assina o app para Android (.aab) e iOS (.ipa) sem precisar de Mac.
+#
+#  ANTES do primeiro build, configure na conta do Codemagic (ver checklist que
+#  te passei no chat):
+#   - Conectar o repositório GitHub creatyfy/my-rescue-rewards
+#   - Android: subir a keystore em "Code signing identities" com reference name
+#     >>> meuresgate_keystore <<<  (alias: meuresgate)
+#   - iOS: adicionar a integração "App Store Connect API key" com nome
+#     >>> meuresgate_asc <<<  (Issuer ID + Key ID + arquivo .p8)
+#   - (publicação) Grupos de variáveis:
+#       google_play  -> GCLOUD_SERVICE_ACCOUNT_CREDENTIALS (JSON da conta de
+#                       serviço do Google Play, marcado como "secure")
+# ============================================================================
+
+definitions:
+  # Passos compartilhados entre Android e iOS (build do site + sincronização).
+  scripts:
+    - &install_deps
+      name: Instalar dependências (npm)
+      script: npm ci
+    - &build_web
+      name: Build do site + cap sync
+      script: |
+        npx vite build
+        npx cap sync
+
+workflows:
+  # --------------------------------------------------------------------------
+  #  ANDROID  ->  gera app-release.aab assinado
+  # --------------------------------------------------------------------------
+  android:
+    name: Meu Resgate — Android
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      android_signing:
+        - meuresgate_keystore
+      groups:
+        - google_play          # remova esta linha se ainda não for publicar
+      vars:
+        PACKAGE_NAME: "br.com.meuresgate.app"
+      node: 20
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/.gradle/caches
+    scripts:
+      - *install_deps
+      - *build_web
+      - name: Gerar keystore.properties a partir da keystore do Codemagic
+        script: |
+          cat > "$CM_BUILD_DIR/android/keystore.properties" <<EOF
+          storeFile=$CM_KEYSTORE_PATH
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          EOF
+      - name: Build do AAB (release)
+        script: |
+          cd android
+          ./gradlew bundleRelease
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/mapping.txt
+    publishing:
+      email:
+        recipients:
+          - i9plex@gmail.com
+        notify:
+          success: true
+          failure: true
+      # Publica automaticamente na faixa de teste interno da Play Store.
+      # Requer: app já criado na Play Console + GCLOUD_SERVICE_ACCOUNT_CREDENTIALS.
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: false
+
+  # --------------------------------------------------------------------------
+  #  iOS  ->  gera Meu Resgate.ipa e envia pro TestFlight
+  # --------------------------------------------------------------------------
+  ios:
+    name: Meu Resgate — iOS
+    max_build_duration: 90
+    instance_type: mac_mini_m2
+    integrations:
+      app_store_connect: meuresgate_asc
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: br.com.meuresgate.app
+      vars:
+        BUNDLE_ID: "br.com.meuresgate.app"
+        APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
+      node: 20
+      xcode: latest
+      cocoapods: default
+    cache:
+      cache_paths:
+        - $HOME/.npm
+    scripts:
+      - *install_deps
+      - *build_web
+      - name: Configurar perfis de assinatura (automático via API key)
+        script: |
+          xcode-project use-profiles
+      - name: Build do IPA
+        script: |
+          xcode-project build-ipa \
+            --project "ios/App/App.xcodeproj" \
+            --scheme "App"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - i9plex@gmail.com
+        notify:
+          success: true
+          failure: true
+      # Envia a build pro TestFlight automaticamente.
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
