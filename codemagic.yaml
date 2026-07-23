@@ -40,7 +40,7 @@ workflows:
         - meuresgate_keystore
       vars:
         PACKAGE_NAME: "br.com.meuresgate.app"
-      node: 20
+      node: 22
     cache:
       cache_paths:
         - $HOME/.npm
@@ -84,7 +84,7 @@ workflows:
         - google_play          # remova esta linha se ainda não for publicar
       vars:
         PACKAGE_NAME: "br.com.meuresgate.app"
-      node: 20
+      node: 22
     cache:
       cache_paths:
         - $HOME/.npm
@@ -137,7 +137,7 @@ workflows:
       vars:
         BUNDLE_ID: "br.com.meuresgate.app"
         APP_STORE_CONNECT_ISSUER_ID: $APP_STORE_CONNECT_ISSUER_ID
-      node: 20
+      node: 22
       xcode: latest
       cocoapods: default
     cache:
