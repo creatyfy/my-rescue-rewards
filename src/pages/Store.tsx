@@ -246,7 +246,7 @@ export default function Store() {
   }, [previewDialogOpen]);
 
   return (
-    <AppLayout title="Loja" showBack>
+    <AppLayout title="Loja">
       <div className="container px-4 py-6">
         {/* Points Balance */}
         <div className="flex items-center justify-between p-4 mb-6 rounded-xl bg-accent border border-border/50">

@@ -182,7 +182,7 @@ export default function Profile() {
   };
 
   return (
-    <AppLayout title="Perfil" showBack>
+    <AppLayout title="Perfil">
       <div className="container px-4 py-6">
         {/* User Info Card */}
         <div className="bg-card rounded-2xl border border-border/50 shadow-soft p-6 mb-6">

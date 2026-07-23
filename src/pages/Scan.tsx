@@ -115,9 +115,9 @@ export default function Scan() {
     }
   };
 
-  const handleNativePhoto = async () => {
+  const handleNativePhoto = async (source: "camera" | "photos" = "camera") => {
     try {
-      const file = await takePhotoNative("camera");
+      const file = await takePhotoNative(source);
       if (!file) return;
       const validationError = validateReceiptFile(file, false);
       setFileError(validationError);
@@ -498,7 +498,7 @@ export default function Scan() {
   }, [searchParams]);
 
   return (
-    <AppLayout title="Escanear QR" showBack>
+    <AppLayout title="Escanear QR">
       <div className="container px-4 py-6">
         {step === "ready" && (
           <div className="flex flex-col items-center max-w-sm mx-auto">
@@ -658,7 +658,6 @@ export default function Scan() {
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
                     onChange={(event) => handleFileChange(event)}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                     required
@@ -674,25 +673,34 @@ export default function Scan() {
                       <>
                         <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                         <p className="text-sm font-medium text-foreground">
-                          Toque para tirar uma foto
+                          Toque para adicionar
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          do comprovante de compra
+                          foto ou da galeria
                         </p>
                       </>
                     )}
                   </div>
                 </div>
                 {isNativePlatform() && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleNativePhoto}
-                    className="w-full mt-2"
-                  >
-                    <Camera className="w-4 h-4 mr-2" />
-                    Tirar foto com a câmera
-                  </Button>
+                  <div className="grid grid-cols-2 gap-2 mt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleNativePhoto("camera")}
+                    >
+                      <Camera className="w-4 h-4 mr-2" />
+                      Câmera
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => handleNativePhoto("photos")}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Galeria
+                    </Button>
+                  </div>
                 )}
                 {fileError && (
                   <p className="text-xs text-destructive flex items-center gap-1" role="alert">

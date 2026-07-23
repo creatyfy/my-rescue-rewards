@@ -123,6 +123,13 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    /* impede o "efeito elástico" / arrastar da página no app nativo */
+    overscroll-behavior: none;
+    overflow-x: hidden;
+  }
+
+  html {
+    overscroll-behavior: none;
   }
 
   :focus-visible {
