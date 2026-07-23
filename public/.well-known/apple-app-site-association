@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "M8ANBT9754.br.com.meuresgate.app",
+        "paths": ["*"]
+      }
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "643025218270",
+    "project_id": "meu-resgate",
+    "storage_bucket": "meu-resgate.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:643025218270:android:1b485d363029109f34b04f",
+        "android_client_info": {
+          "package_name": "br.com.meuresgate.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAIrhpeJlGgCQLWO6lAfuwYaHZll4SAU9A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

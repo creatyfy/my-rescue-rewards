@@ -24,6 +24,7 @@ import Settings from "./pages/Settings";
 import AuthGuard from "./components/auth/AuthGuard";
 import Referral from "./pages/Referral";
 import ReferralRedirect from "./pages/ReferralRedirect";
+import { NativeBootstrap } from "./components/NativeBootstrap";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <NativeBootstrap />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/auth" element={<Auth />} />

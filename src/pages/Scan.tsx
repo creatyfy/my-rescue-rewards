@@ -23,6 +23,7 @@ import {
   submitReceiptWithFile,
 } from "@/integrations/supabase/receipts";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
+import { isNativePlatform, scanQrNative, takePhotoNative } from "@/lib/native";
 
 type ScanStep = "ready" | "scan" | "form" | "manual" | "success";
 
@@ -111,6 +112,30 @@ export default function Scan() {
         setReceiptImage(null);
         setReceiptPreviewType("pdf");
       }
+    }
+  };
+
+  const handleNativePhoto = async () => {
+    try {
+      const file = await takePhotoNative("camera");
+      if (!file) return;
+      const validationError = validateReceiptFile(file, false);
+      setFileError(validationError);
+      if (validationError) {
+        setReceiptFile(null);
+        setReceiptImage(null);
+        setReceiptPreviewType(null);
+        return;
+      }
+      setReceiptFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReceiptImage(reader.result as string);
+        setReceiptPreviewType("image");
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      setFileError(err instanceof Error ? err.message : "Não foi possível abrir a câmera.");
     }
   };
 
@@ -327,9 +352,32 @@ export default function Scan() {
     let mounted = true;
 
     const initScanner = async () => {
+      // NATIVO (Android/iOS): usa o scanner ML Kit em vez do html5-qrcode.
+      if (isNativePlatform()) {
+        try {
+          setIsLoadingCamera(true);
+          const value = await scanQrNative();
+          if (!mounted) return;
+          setIsLoadingCamera(false);
+          if (value) {
+            void handleQrDetected(value);
+          } else {
+            setStep("ready"); // usuário cancelou
+          }
+        } catch (err) {
+          if (!mounted) return;
+          setIsLoadingCamera(false);
+          setCameraError(
+            err instanceof Error ? err.message : "Não foi possível abrir a câmera.",
+          );
+        }
+        return;
+      }
+
+      // WEB: html5-qrcode
       // Wait for DOM to be ready
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       if (!mounted) return;
 
       const container = document.getElementById("qr-reader-container");
@@ -635,6 +683,17 @@ export default function Scan() {
                     )}
                   </div>
                 </div>
+                {isNativePlatform() && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleNativePhoto}
+                    className="w-full mt-2"
+                  >
+                    <Camera className="w-4 h-4 mr-2" />
+                    Tirar foto com a câmera
+                  </Button>
+                )}
                 {fileError && (
                   <p className="text-xs text-destructive flex items-center gap-1" role="alert">
                     <AlertCircle className="w-3 h-3" />

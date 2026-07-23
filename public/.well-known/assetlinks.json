@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.com.meuresgate.app",
+      "sha256_cert_fingerprints": [
+        "SUBSTITUIR_PELA_SHA256_DO_CERTIFICADO_DE_RELEASE_NA_FASE_6"
+      ]
+    }
+  }
+]

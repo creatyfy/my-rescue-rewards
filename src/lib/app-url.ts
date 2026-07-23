@@ -1,3 +1,7 @@
+import { isNativePlatform } from "@/lib/native";
+
+const PUBLIC_SITE_URL = "https://meuresgate.com.br";
+
 const resolveEnvBaseUrl = () =>
   import.meta.env.VITE_PUBLIC_SITE_URL ||
   import.meta.env.VITE_APP_URL ||
@@ -30,6 +34,13 @@ export const normalizeTrustedBaseUrl = (candidate?: string | null): string | nul
 };
 
 export const getAppBaseUrl = () => {
+  // No app nativo, window.location.origin é capacitor://localhost e não serve
+  // como link de email. Usamos o domínio público (universal link) para que o
+  // link do email reabra o app.
+  if (isNativePlatform()) {
+    return PUBLIC_SITE_URL;
+  }
+
   const candidate = resolveEnvBaseUrl()?.toString().trim();
   const envUrl = normalizeTrustedBaseUrl(candidate);
 
