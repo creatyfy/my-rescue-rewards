@@ -48,9 +48,6 @@ workflows:
     scripts:
       - *install_deps
       - *build_web
-      - name: Selecionar JDK 21 (exigido pelo Capacitor 8)
-        script: |
-          echo "JAVA_HOME=$(/usr/libexec/java_home -v 21)" >> $CM_ENV
       - name: Gerar keystore.properties a partir da keystore do Codemagic
         script: |
           cat > "$CM_BUILD_DIR/android/keystore.properties" <<EOF
@@ -61,6 +58,18 @@ workflows:
           EOF
       - name: Build do APK (release assinado)
         script: |
+          set -e
+          echo "== JDKs disponiveis =="
+          /usr/libexec/java_home -V 2>&1 || true
+          JDK21=$(/usr/libexec/java_home -v 21 2>/dev/null || true)
+          if [ -z "$JDK21" ]; then
+            echo "JDK 21 ausente; instalando Temurin 21 via Homebrew..."
+            brew install --cask temurin@21
+            JDK21=$(/usr/libexec/java_home -v 21)
+          fi
+          export JAVA_HOME="$JDK21"
+          echo "== Usando JAVA_HOME=$JAVA_HOME =="
+          java -version
           cd android
           chmod +x ./gradlew
           ./gradlew assembleRelease
@@ -96,9 +105,6 @@ workflows:
     scripts:
       - *install_deps
       - *build_web
-      - name: Selecionar JDK 21 (exigido pelo Capacitor 8)
-        script: |
-          echo "JAVA_HOME=$(/usr/libexec/java_home -v 21)" >> $CM_ENV
       - name: Gerar keystore.properties a partir da keystore do Codemagic
         script: |
           cat > "$CM_BUILD_DIR/android/keystore.properties" <<EOF
@@ -109,6 +115,14 @@ workflows:
           EOF
       - name: Build do AAB (release)
         script: |
+          set -e
+          JDK21=$(/usr/libexec/java_home -v 21 2>/dev/null || true)
+          if [ -z "$JDK21" ]; then
+            brew install --cask temurin@21
+            JDK21=$(/usr/libexec/java_home -v 21)
+          fi
+          export JAVA_HOME="$JDK21"
+          java -version
           cd android
           chmod +x ./gradlew
           ./gradlew bundleRelease
