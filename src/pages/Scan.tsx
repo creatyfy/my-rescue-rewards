@@ -498,7 +498,7 @@ export default function Scan() {
   }, [searchParams]);
 
   return (
-    <AppLayout title="Escanear QR">
+    <AppLayout title="Escanear QR" showNav={step === "ready"}>
       <div className="container px-4 py-6">
         {step === "ready" && (
           <div className="flex flex-col items-center justify-center text-center max-w-sm mx-auto min-h-[calc(100dvh-13rem)]">
