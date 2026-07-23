@@ -106,7 +106,7 @@ export default function Index() {
   const { data: prizesData } = usePrizes();
 
   const partners = partnersData && partnersData.length > 0 ? partnersData : demoPartners;
-  const prizes = (prizesData && prizesData.length > 0 ? prizesData : demoPrizes).slice(0, 8);
+  const prizes = (prizesData && prizesData.length > 0 ? prizesData : demoPrizes).slice(0, 12);
 
   const handleInstallClick = async () => {
     if (isIOSDevice) setShowIOSInstructions(true);
@@ -275,18 +275,14 @@ export default function Index() {
       </section>
 
       {/* ========================= Lojas parceiras ======================= */}
-      <section id="parceiros" className="container px-4 py-8">
-        <div className="flex items-end justify-between mb-8 max-w-6xl mx-auto">
-          <div>
+      <section id="parceiros" className="py-8">
+        <div className="container px-4 mb-8">
+          <div className="max-w-6xl mx-auto">
             <h2 className="font-display text-2xl md:text-3xl font-bold text-foreground">Lojas parceiras</h2>
             <p className="text-muted-foreground mt-1">Acumule pontos em estabelecimentos parceiros.</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 max-w-6xl mx-auto">
-          {partners.slice(0, 12).map((p) => (
-            <PartnerCard key={p.id} partner={p} />
-          ))}
-        </div>
+        <PartnersMarquee partners={partners} />
       </section>
 
       {/* ============================= Prêmios =========================== */}
@@ -299,7 +295,7 @@ export default function Index() {
             <p className="text-muted-foreground mt-1">Produtos exclusivos esperando por você.</p>
           </div>
         </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
+        <div className="flex flex-wrap justify-center gap-3 max-w-6xl mx-auto">
           {prizes.map((prize) => (
             <PrizeCard key={prize.id} prize={prize} />
           ))}
@@ -505,9 +501,29 @@ function BenefitCard({ icon, title, desc }: { icon: React.ReactNode; title: stri
   );
 }
 
+// Carrossel infinito de lojas parceiras (desliza continuamente).
+function PartnersMarquee({ partners }: { partners: Partner[] }) {
+  const base = partners.length ? partners : demoPartners;
+  // repete até ter itens suficientes pra preencher a tela, depois duplica
+  // o conjunto pra o loop em -50% ser perfeitamente contínuo.
+  const filled: Partner[] = [];
+  while (filled.length < 10) filled.push(...base);
+  const track = [...filled, ...filled];
+
+  return (
+    <div className="relative overflow-hidden marquee-pause [mask-image:linear-gradient(to_right,transparent,#000_6%,#000_94%,transparent)]">
+      <div className="flex gap-4 w-max animate-marquee py-1">
+        {track.map((p, i) => (
+          <PartnerCard key={i} partner={p} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PartnerCard({ partner }: { partner: Partner }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-card border border-border/50 shadow-soft hover:shadow-medium transition-all duration-300 hover:-translate-y-1">
+    <div className="shrink-0 w-44 flex flex-col items-center justify-center gap-2 p-5 rounded-2xl bg-card border border-border/50 shadow-soft">
       {partner.logoUrl ? (
         <img src={partner.logoUrl} alt={partner.name} className="h-12 w-12 object-contain rounded-lg" />
       ) : (
@@ -522,7 +538,7 @@ function PartnerCard({ partner }: { partner: Partner }) {
 
 function PrizeCard({ prize }: { prize: Prize }) {
   return (
-    <div className="group rounded-2xl bg-card border border-border/50 shadow-soft hover:shadow-medium transition-all duration-300 hover:-translate-y-1 overflow-hidden">
+    <div className="group w-[150px] sm:w-[168px] rounded-xl bg-card border border-border/50 shadow-soft hover:shadow-medium transition-all duration-300 hover:-translate-y-1 overflow-hidden">
       <div className="aspect-square bg-muted/40 overflow-hidden">
         <img
           src={prize.imageUrl || FALLBACK_PRIZE_IMAGE}
@@ -533,14 +549,14 @@ function PrizeCard({ prize }: { prize: Prize }) {
           }}
         />
       </div>
-      <div className="p-4">
-        <h3 className="font-medium text-foreground text-sm mb-2 truncate">{prize.name}</h3>
-        <div className="flex items-center gap-1.5 mb-3">
-          <Star className="w-4 h-4 text-secondary fill-current" />
-          <span className="font-display font-bold text-foreground">{formatPoints(prize.pointsCost)}</span>
-          <span className="text-xs text-muted-foreground">pontos</span>
+      <div className="p-2.5">
+        <h3 className="font-medium text-foreground text-xs mb-1.5 truncate">{prize.name}</h3>
+        <div className="flex items-center gap-1 mb-2">
+          <Star className="w-3.5 h-3.5 text-secondary fill-current shrink-0" />
+          <span className="font-display font-bold text-foreground text-sm">{formatPoints(prize.pointsCost)}</span>
+          <span className="text-[10px] text-muted-foreground">pts</span>
         </div>
-        <Button size="sm" className="w-full" asChild>
+        <Button size="sm" className="w-full h-8 text-xs" asChild>
           <Link to="/auth?mode=register">Resgatar</Link>
         </Button>
       </div>
