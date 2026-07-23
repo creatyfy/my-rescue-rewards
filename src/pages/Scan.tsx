@@ -501,7 +501,7 @@ export default function Scan() {
     <AppLayout title="Escanear QR">
       <div className="container px-4 py-6">
         {step === "ready" && (
-          <div className="flex flex-col items-center max-w-sm mx-auto">
+          <div className="flex flex-col items-center justify-center text-center max-w-sm mx-auto min-h-[calc(100dvh-13rem)]">
             <div className="w-24 h-24 mx-auto mb-6 rounded-3xl gradient-primary flex items-center justify-center shadow-primary">
               <Camera className="w-12 h-12 text-primary-foreground" />
             </div>

@@ -116,7 +116,7 @@ export default function History() {
           </Button>
         </div>
         {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap md:gap-3 md:overflow-visible md:pb-0 scrollbar-hide">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 md:flex-wrap md:gap-3 md:overflow-visible md:pb-0 scrollbar-hide">
           <Button
             variant={filter === "all" ? "default" : "outline"}
             size="sm"
