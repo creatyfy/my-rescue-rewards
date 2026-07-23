@@ -48,13 +48,10 @@
             android:name="com.google.mlkit.vision.DEPENDENCIES"
             android:value="barcode_ui" />
 
-        <!-- Ícone e cor da notificação push (silhueta branca do símbolo) -->
+        <!-- Ícone da notificação push (silhueta branca do símbolo) -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_stat_notify" />
-        <meta-data
-            android:name="com.google.firebase.messaging.default_notification_color"
-            android:resource="@color/notification_color" />
     </application>
 
     <!-- Permissions -->

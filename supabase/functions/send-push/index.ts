@@ -129,8 +129,6 @@ Deno.serve(async (req) => {
             priority: "high",
             notification: {
               icon: "ic_stat_notify",
-              color: "#10B0E0",
-              image: "https://meuresgate.com.br/push-logo.png",
             },
           },
           apns: { headers: { "apns-priority": "10" } },
