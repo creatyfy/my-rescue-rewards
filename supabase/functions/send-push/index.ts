@@ -67,7 +67,18 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: "Método não permitido" }), { status: 405 });
   }
   try {
-    const { user_id, title, body, data } = await req.json();
+    const payload = await req.json();
+    // Aceita chamada direta {user_id,title,body,data} OU payload de Database
+    // Webhook (INSERT em public.notifications → record.user_id/title/message).
+    let user_id: string, title: string, body: string | undefined, data: Record<string, unknown> | undefined;
+    if (payload && payload.record) {
+      user_id = payload.record.user_id;
+      title = payload.record.title;
+      body = payload.record.message;
+      data = { notification_id: String(payload.record.id ?? ""), tipo: String(payload.record.tipo ?? "") };
+    } else {
+      ({ user_id, title, body, data } = payload);
+    }
     if (!user_id || !title) {
       return new Response(JSON.stringify({ error: "user_id e title são obrigatórios" }), {
         status: 400,
@@ -114,7 +125,14 @@ Deno.serve(async (req) => {
           data: data
             ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)]))
             : undefined,
-          android: { priority: "high" },
+          android: {
+            priority: "high",
+            notification: {
+              icon: "ic_stat_notify",
+              color: "#10B0E0",
+              image: "https://meuresgate.com.br/push-logo.png",
+            },
+          },
           apns: { headers: { "apns-priority": "10" } },
         },
       };
