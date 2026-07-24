@@ -48,6 +48,13 @@ export default defineConfig(() => ({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // Não deixa o service worker do PWA servir o app (SPA) nessas rotas —
+        // elas são páginas estáticas próprias (privacidade, termos, etc.).
+        navigateFallbackDenylist: [
+          /^\/privacidade/,
+          /^\/termos/,
+          /^\/exclusao-de-conta/,
+        ],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
