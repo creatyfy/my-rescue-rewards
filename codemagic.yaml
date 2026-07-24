@@ -85,7 +85,64 @@ workflows:
           failure: true
 
   # --------------------------------------------------------------------------
-  #  ANDROID  ->  gera app-release.aab assinado
+  #  ANDROID AAB (PUBLICAÇÃO MANUAL)  ->  gera app-release.aab assinado pra
+  #  você BAIXAR e subir você mesmo no Play Console (canal de teste fechado).
+  #  Não publica automático, não precisa de chave de serviço do Google.
+  #  USE ESTE para enviar o app pra Play Store.
+  # --------------------------------------------------------------------------
+  android-aab:
+    name: Meu Resgate — Android AAB (baixar e subir manual)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      android_signing:
+        - meuresgate_keystore
+      vars:
+        PACKAGE_NAME: "br.com.meuresgate.app"
+      node: 22
+    cache:
+      cache_paths:
+        - $HOME/.npm
+        - $HOME/.gradle/caches
+    scripts:
+      - *install_deps
+      - *build_web
+      - name: Gerar keystore.properties a partir da keystore do Codemagic
+        script: |
+          cat > "$CM_BUILD_DIR/android/keystore.properties" <<EOF
+          storeFile=$CM_KEYSTORE_PATH
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          keyPassword=$CM_KEY_PASSWORD
+          EOF
+      - name: Build do AAB (release assinado)
+        script: |
+          set -e
+          JDK21=$(/usr/libexec/java_home -v 21 2>/dev/null || true)
+          if [ -z "$JDK21" ]; then
+            brew install --cask temurin@21 || brew install temurin@21 || true
+            JDK21=$(/usr/libexec/java_home -v 21 2>/dev/null || true)
+          fi
+          if [ -z "$JDK21" ]; then echo "ERRO: JDK 21 indisponivel na imagem"; exit 1; fi
+          export JAVA_HOME="$JDK21"
+          "$JAVA_HOME/bin/java" -version
+          cd android
+          chmod +x ./gradlew
+          ./gradlew bundleRelease -Dorg.gradle.java.home="$JAVA_HOME" --no-daemon
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/mapping.txt
+    publishing:
+      email:
+        recipients:
+          - i9plex@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  # --------------------------------------------------------------------------
+  #  ANDROID  ->  gera app-release.aab assinado E publica automático (avançado)
+  #  Só use quando tiver a chave de serviço do Google Play configurada.
   # --------------------------------------------------------------------------
   android:
     name: Meu Resgate — Android
