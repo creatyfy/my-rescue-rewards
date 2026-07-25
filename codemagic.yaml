@@ -269,18 +269,17 @@ workflows:
           # 4) Importar o certificado no keychain e aplicar os perfis no projeto
           keychain add-certificates
           xcode-project use-profiles
-      - name: Definir build number (incrementa a partir do TestFlight)
+      - name: Definir build number (contador da Codemagic)
         script: |
           set -e
-          # Pega o último build já enviado ao TestFlight e soma 1.
-          LATEST=$(app-store-connect get-latest-testflight-build-number "$BUNDLE_ID" 2>/dev/null || echo 0)
-          case "$LATEST" in ''|*[!0-9]*) LATEST=0 ;; esac
-          NEW=$(( LATEST + 1 ))
-          echo "Build number: TestFlight=$LATEST -> novo=$NEW"
-          # Atualiza CURRENT_PROJECT_VERSION (Debug e Release) no projeto.
-          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $NEW;/g" \
+          # BUILD_NUMBER da Codemagic incrementa a cada build; garante > 1.
+          NEW="${BUILD_NUMBER:-2}"
+          if [ "$NEW" -le 1 ]; then NEW=2; fi
+          echo "Definindo CURRENT_PROJECT_VERSION = $NEW"
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9][0-9]*;/CURRENT_PROJECT_VERSION = $NEW;/g" \
             "$CM_BUILD_DIR/ios/App/App.xcodeproj/project.pbxproj"
-          echo "CURRENT_PROJECT_VERSION definido para $NEW"
+          echo "Resultado no projeto:"
+          grep CURRENT_PROJECT_VERSION "$CM_BUILD_DIR/ios/App/App.xcodeproj/project.pbxproj"
       - name: Build do IPA
         script: |
           xcode-project build-ipa \
