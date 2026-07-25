@@ -4,6 +4,15 @@ import { Capacitor } from "@capacitor/core";
 export const isNativePlatform = (): boolean => Capacitor.isNativePlatform();
 
 /**
+ * true só no Android nativo. Usado para o scanner de QR: o ML Kit (nativo) só
+ * funciona no Android. No iOS o projeto usa Swift Package Manager e o ML Kit
+ * (que depende de CocoaPods) não entra — então o iOS usa o scanner via
+ * html5-qrcode (câmera do webview), igual à versão web.
+ */
+export const isAndroidNative = (): boolean =>
+  Capacitor.isNativePlatform() && Capacitor.getPlatform() === "android";
+
+/**
  * Abre o scanner nativo de QR (ML Kit) e devolve o valor lido, ou null se
  * o usuário cancelar. Lança erro se a permissão de câmera for negada.
  */

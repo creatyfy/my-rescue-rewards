@@ -23,7 +23,7 @@ import {
   submitReceiptWithFile,
 } from "@/integrations/supabase/receipts";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
-import { isNativePlatform, scanQrNative, takePhotoNative } from "@/lib/native";
+import { isNativePlatform, isAndroidNative, scanQrNative, takePhotoNative } from "@/lib/native";
 
 type ScanStep = "ready" | "scan" | "form" | "manual" | "success";
 
@@ -352,8 +352,9 @@ export default function Scan() {
     let mounted = true;
 
     const initScanner = async () => {
-      // NATIVO (Android/iOS): usa o scanner ML Kit em vez do html5-qrcode.
-      if (isNativePlatform()) {
+      // ANDROID: usa o scanner ML Kit nativo. iOS cai no html5-qrcode abaixo
+      // (ML Kit não funciona no iOS com Swift Package Manager).
+      if (isAndroidNative()) {
         try {
           setIsLoadingCamera(true);
           const value = await scanQrNative();
