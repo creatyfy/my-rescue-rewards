@@ -229,9 +229,14 @@ workflows:
         script: |
           set -e
           keychain initialize
-          # Cria o certificado de distribuição e o perfil app_store se ainda não existirem
+          # Gera uma chave privada nova para o certificado de distribuição.
+          # Necessário porque os certificados existentes na conta foram criados
+          # em outro lugar e a Codemagic não tem a chave privada deles.
+          openssl genrsa -out /tmp/ios_dist_key.pem 2048
+          # Cria um certificado de distribuição com essa chave e o perfil app_store.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
             --type IOS_APP_STORE \
+            --certificate-key=@file:/tmp/ios_dist_key.pem \
             --create
           keychain add-certificates
           xcode-project use-profiles
