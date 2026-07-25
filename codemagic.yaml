@@ -235,6 +235,15 @@ workflows:
           # 1) gerar chave + certificado, 2) achar o bundle pelo resource id
           # (sem filtro de plataforma), 3) criar o perfil ligando os dois.
 
+          # 0) Revoga certificados de distribuição antigos. Cada build gera uma
+          #    chave privada nova; como não guardamos a chave dos anteriores,
+          #    eles são inúteis, e a Apple bloqueia criar um novo se já existe um.
+          app-store-connect certificates list --json 2>/dev/null > /tmp/certs.json || echo "[]" > /tmp/certs.json
+          for cid in $(python3 -c "import json; d=json.load(open('/tmp/certs.json')); d=[d] if isinstance(d,dict) else d; print('\n'.join(c['id'] for c in d if 'DISTRIBUTION' in str((c.get('attributes') or {}).get('certificateType') or c.get('certificateType') or '').upper()))" 2>/dev/null); do
+            echo "Revogando certificado de distribuicao antigo: $cid"
+            app-store-connect certificates delete "$cid" || true
+          done
+
           # 1) Chave privada nova + certificado de distribuição (salvo em p12)
           openssl genrsa -out /tmp/ios_dist_key.pem 2048
           CERT_ID=$(app-store-connect certificates create \
