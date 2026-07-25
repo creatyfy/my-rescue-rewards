@@ -234,9 +234,13 @@ workflows:
           # em outro lugar e a Codemagic não tem a chave privada deles.
           openssl genrsa -out /tmp/ios_dist_key.pem 2048
           # Cria um certificado de distribuição com essa chave e o perfil app_store.
+          # --platform UNIVERSAL: o App ID foi registrado como "Universal" (iOS,
+          # macOS, etc.), então o filtro padrão IOS não o encontrava.
           app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --platform UNIVERSAL \
             --type IOS_APP_STORE \
             --certificate-key=@file:/tmp/ios_dist_key.pem \
+            --strict-match-identifier \
             --create
           keychain add-certificates
           xcode-project use-profiles
