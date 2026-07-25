@@ -225,23 +225,39 @@ workflows:
     scripts:
       - *install_deps
       - *build_web
-      - name: Buscar/criar certificado e perfil de assinatura (via API key)
+      - name: Criar certificado e perfil de assinatura (modo explícito)
         script: |
           set -e
           keychain initialize
-          # Gera uma chave privada nova para o certificado de distribuição.
-          # Necessário porque os certificados existentes na conta foram criados
-          # em outro lugar e a Codemagic não tem a chave privada deles.
+
+          # O App ID é "Universal", então fetch-signing-files (que filtra por
+          # plataforma) não o encontra. Fazemos a assinatura de forma explícita:
+          # 1) gerar chave + certificado, 2) achar o bundle pelo resource id
+          # (sem filtro de plataforma), 3) criar o perfil ligando os dois.
+
+          # 1) Chave privada nova + certificado de distribuição (salvo em p12)
           openssl genrsa -out /tmp/ios_dist_key.pem 2048
-          # Cria um certificado de distribuição com essa chave e o perfil app_store.
-          # --platform UNIVERSAL: o App ID foi registrado como "Universal" (iOS,
-          # macOS, etc.), então o filtro padrão IOS não o encontrava.
-          app-store-connect fetch-signing-files "$BUNDLE_ID" \
-            --platform UNIVERSAL \
-            --type IOS_APP_STORE \
+          CERT_ID=$(app-store-connect certificates create \
+            --type IOS_DISTRIBUTION \
             --certificate-key=@file:/tmp/ios_dist_key.pem \
+            --save \
+            --json | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['id'] if isinstance(d, dict) else d[0]['id'])")
+          echo "Certificado criado: $CERT_ID"
+
+          # 2) Resource ID do bundle existente (listagem SEM filtro de plataforma)
+          BUNDLE_RES_ID=$(app-store-connect bundle-ids list \
+            --bundle-id-identifier "$BUNDLE_ID" \
             --strict-match-identifier \
-            --create
+            --json | python3 -c "import sys,json; d=json.load(sys.stdin); assert d, 'bundle nao encontrado'; print(d[0]['id'])")
+          echo "Bundle resource ID: $BUNDLE_RES_ID"
+
+          # 3) Criar o perfil app_store ligando bundle + certificado (salvo em disco)
+          app-store-connect profiles create "$BUNDLE_RES_ID" \
+            --certificate-ids "$CERT_ID" \
+            --type IOS_APP_STORE \
+            --save
+
+          # 4) Importar o certificado no keychain e aplicar os perfis no projeto
           keychain add-certificates
           xcode-project use-profiles
       - name: Build do IPA
