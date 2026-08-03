@@ -30,3 +30,4 @@ supabase/migrations/20260720120000_load_production_data.sql
 keystore.properties
 *.jks
 signing/
+.env

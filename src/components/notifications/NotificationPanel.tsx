@@ -136,7 +136,11 @@ export function NotificationPanel() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent
+        className="w-80 p-0"
+        align="end"
+        collisionPadding={{ top: 56, bottom: 16, left: 8, right: 8 }}
+      >
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h3 className="font-semibold text-sm">Notificações</h3>
           <div className="flex items-center gap-1">
@@ -165,7 +169,7 @@ export function NotificationPanel() {
           </div>
         </div>
 
-        <ScrollArea className="h-[350px]">
+        <ScrollArea className="h-[min(350px,55vh)]">
           {isLoading ? (
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
               Carregando...

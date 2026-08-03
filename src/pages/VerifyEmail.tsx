@@ -64,7 +64,7 @@ export default function VerifyEmail() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col safe-area-top">
       <header className="p-4">
         <Link
           to="/auth"

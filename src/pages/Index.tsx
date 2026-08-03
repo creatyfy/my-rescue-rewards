@@ -133,7 +133,7 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background" style={brandBlue}>
       {/* ============================= Header ============================= */}
-      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-border/50 bg-background/80 backdrop-blur-xl safe-area-top">
         <div className="container px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center">
             <img src={logoHorizontal} alt="Meu Resgate" className="h-9 w-auto" />

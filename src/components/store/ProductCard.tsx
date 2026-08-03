@@ -61,10 +61,10 @@ export function ProductCard({
       </div>
 
       <div className="p-4">
-        <h3 className="font-display font-semibold text-base text-foreground mb-1 line-clamp-1">
+        <h3 className="font-display font-semibold text-sm sm:text-base text-foreground mb-1 leading-snug break-words">
           {name}
         </h3>
-        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+        <p className="text-xs text-muted-foreground mb-3 line-clamp-3">
           {description}
         </p>
 
