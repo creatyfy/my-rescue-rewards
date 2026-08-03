@@ -92,7 +92,7 @@ async function sendApns(
   data: Record<string, string> | undefined, host: string,
 ): Promise<Response> {
   const payload = {
-    aps: { alert: { title, body }, sound: "default" },
+    aps: { alert: { title, body }, sound: "notification.wav" },
     ...(data ?? {}),
   };
   return await fetch(`https://${host}/3/device/${token}`, {
@@ -166,7 +166,14 @@ Deno.serve(async (req) => {
               token,
               notification: { title, body: body ?? "" },
               data: dataStr,
-              android: { priority: "high", notification: { icon: "ic_stat_notify" } },
+              android: {
+                priority: "high",
+                notification: {
+                  icon: "ic_stat_notify",
+                  sound: "notification",
+                  channel_id: "meu_resgate_default",
+                },
+              },
             },
           };
           const r = await fetch(url, {
