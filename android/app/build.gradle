@@ -24,7 +24,8 @@ android {
         applicationId "br.com.meuresgate.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode (System.getenv("BUILD_NUMBER") ?: "1").toInteger()
+        def envBuildNumber = System.getenv("BUILD_NUMBER")
+        versionCode envBuildNumber ? envBuildNumber.toInteger() : 1
         versionName "1.0.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
