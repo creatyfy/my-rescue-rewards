@@ -838,6 +838,33 @@ export const deleteEstablishment = async (id: string): Promise<{ archived: boole
   throw error;
 };
 
+// Ativa/desativa a loja (desativada = não gera cupons, não aceita comprovantes,
+// some para os usuários). Reversível.
+export const setEstablishmentActive = async (id: string, active: boolean) => {
+  const { error } = await supabase
+    .from("establishments")
+    .update({ active })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  return true;
+};
+
+// Exclusão TOTAL a critério do admin: apaga a loja + comprovantes + pontos
+// gerados por eles (cascata feita na função segura admin_delete_establishment).
+export const adminDeleteEstablishmentFull = async (id: string) => {
+  const { error } = await supabase.rpc("admin_delete_establishment", { p_id: id });
+
+  if (error) {
+    throw error;
+  }
+
+  return true;
+};
+
 export const createProduct = async (input: {
   name: string;
   description?: string | null;

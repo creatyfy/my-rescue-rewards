@@ -10,12 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/sonner";
 import {
   AdminEstablishment,
+  adminDeleteEstablishmentFull,
   createEstablishment,
-  deleteEstablishment,
   fetchAdminEstablishments,
+  setEstablishmentActive,
   updateEstablishment,
 } from "@/integrations/supabase/admin";
-import { Download, Pencil, Plus, Trash2 } from "lucide-react";
+import { Download, Pencil, Plus, Power, PowerOff, Trash2 } from "lucide-react";
 
 const buildQrCodeUrl = (token: string) =>
   `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(token)}`;
@@ -51,6 +52,8 @@ export function AdminEstablishmentsPanel() {
   const [formState, setFormState] = useState<EstablishmentFormState>(emptyFormState);
   const [saving, setSaving] = useState(false);
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<AdminEstablishment | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadEstablishments = async () => {
     try {
@@ -140,26 +143,40 @@ export function AdminEstablishmentsPanel() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleToggleActive = async (item: AdminEstablishment) => {
+    const nextActive = !item.active;
     try {
-      const result = await deleteEstablishment(id);
-      if (result.archived) {
-        // Tinha comprovantes vinculados: foi desativado em vez de excluído,
-        // para preservar o histórico.
-        setItems((prev) =>
-          prev.map((item) => (item.id === id ? { ...item, active: false } : item)),
-        );
-        toast.success(
-          "A loja possui comprovantes vinculados e foi desativada (em vez de excluída) para preservar o histórico.",
-        );
-      } else {
-        setItems((prev) => prev.filter((item) => item.id !== id));
-        toast.success("Estabelecimento removido.");
-      }
+      await setEstablishmentActive(item.id, nextActive);
+      setItems((prev) =>
+        prev.map((i) => (i.id === item.id ? { ...i, active: nextActive } : i)),
+      );
+      toast.success(
+        nextActive
+          ? "Loja ativada."
+          : "Loja desativada: não gera mais cupons nem aceita novos comprovantes e some para os usuários. O histórico fica preservado.",
+      );
     } catch (error) {
-      console.error("Erro ao remover estabelecimento:", error);
-      const message = error instanceof Error ? error.message : "Não foi possível remover o estabelecimento.";
+      console.error("Erro ao alterar status da loja:", error);
+      toast.error("Não foi possível alterar o status da loja.");
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDelete) {
+      return;
+    }
+    try {
+      setDeleting(true);
+      await adminDeleteEstablishmentFull(confirmDelete.id);
+      setItems((prev) => prev.filter((i) => i.id !== confirmDelete.id));
+      toast.success("Loja excluída junto com seus comprovantes e pontos.");
+      setConfirmDelete(null);
+    } catch (error) {
+      console.error("Erro ao excluir estabelecimento:", error);
+      const message = error instanceof Error ? error.message : "Não foi possível excluir a loja.";
       toast.error(message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -312,8 +329,25 @@ export function AdminEstablishmentsPanel() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => handleToggleActive(item)}
+                        >
+                          {item.active ? (
+                            <>
+                              <PowerOff className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Desativar</span>
+                            </>
+                          ) : (
+                            <>
+                              <Power className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Ativar</span>
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className="border-destructive/50 text-destructive hover:bg-destructive/10"
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => setConfirmDelete(item)}
                         >
                           <Trash2 className="h-4 w-4 sm:mr-1" />
                           <span className="hidden sm:inline">Excluir</span>
@@ -456,6 +490,47 @@ export function AdminEstablishmentsPanel() {
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Salvando..." : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(confirmDelete)}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDelete(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Excluir "{confirmDelete?.name}"?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              Isto apaga <strong>permanentemente</strong> a loja e <strong>todos os
+              comprovantes vinculados a ela</strong>, incluindo os{" "}
+              <strong>pontos que esses comprovantes geraram</strong> — o que pode
+              alterar o saldo de usuários.
+            </p>
+            <p>
+              Essa ação <strong>não pode ser desfeita</strong>. Se você só quer tirar a
+              loja do ar, use <strong>Desativar</strong>.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setConfirmDelete(null)}
+              disabled={deleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleConfirmDelete}
+              disabled={deleting}
+            >
+              {deleting ? "Excluindo..." : "Excluir tudo"}
             </Button>
           </DialogFooter>
         </DialogContent>
