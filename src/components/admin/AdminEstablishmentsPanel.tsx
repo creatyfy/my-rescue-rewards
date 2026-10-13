@@ -142,9 +142,20 @@ export function AdminEstablishmentsPanel() {
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteEstablishment(id);
-      setItems((prev) => prev.filter((item) => item.id !== id));
-      toast.success("Estabelecimento removido.");
+      const result = await deleteEstablishment(id);
+      if (result.archived) {
+        // Tinha comprovantes vinculados: foi desativado em vez de excluído,
+        // para preservar o histórico.
+        setItems((prev) =>
+          prev.map((item) => (item.id === id ? { ...item, active: false } : item)),
+        );
+        toast.success(
+          "A loja possui comprovantes vinculados e foi desativada (em vez de excluída) para preservar o histórico.",
+        );
+      } else {
+        setItems((prev) => prev.filter((item) => item.id !== id));
+        toast.success("Estabelecimento removido.");
+      }
     } catch (error) {
       console.error("Erro ao remover estabelecimento:", error);
       const message = error instanceof Error ? error.message : "Não foi possível remover o estabelecimento.";

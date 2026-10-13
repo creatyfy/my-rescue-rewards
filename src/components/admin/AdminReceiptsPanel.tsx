@@ -405,25 +405,29 @@ export function AdminReceiptsPanel() {
                         <Pencil className="h-4 w-4 sm:mr-1" />
                         <span className="hidden sm:inline">Editar</span>
                       </Button>
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={() => handleReview(receipt.id, "approved")}
-                        aria-label="Aprovar comprovante"
-                      >
-                        <CheckCircle className="h-4 w-4 sm:mr-1" />
-                        <span className="hidden sm:inline">Aprovar</span>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-destructive/50 text-destructive hover:bg-destructive/10"
-                        onClick={() => handleReview(receipt.id, "rejected")}
-                        aria-label="Rejeitar comprovante"
-                      >
-                        <XCircle className="h-4 w-4 sm:mr-1" />
-                        <span className="hidden sm:inline">Rejeitar</span>
-                      </Button>
+                      {status === "pending" && (
+                        <>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleReview(receipt.id, "approved")}
+                            aria-label="Aprovar comprovante"
+                          >
+                            <CheckCircle className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Aprovar</span>
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                            onClick={() => handleReview(receipt.id, "rejected")}
+                            aria-label="Rejeitar comprovante"
+                          >
+                            <XCircle className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Rejeitar</span>
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

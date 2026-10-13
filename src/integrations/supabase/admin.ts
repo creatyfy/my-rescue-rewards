@@ -812,14 +812,30 @@ export const updateEstablishment = async (input: {
   return data as AdminEstablishment;
 };
 
-export const deleteEstablishment = async (id: string) => {
+export const deleteEstablishment = async (id: string): Promise<{ archived: boolean }> => {
   const { error } = await supabase.from("establishments").delete().eq("id", id);
 
-  if (error) {
-    throw error;
+  if (!error) {
+    return { archived: false };
   }
 
-  return true;
+  // 23503 = violação de chave estrangeira: a loja tem comprovantes vinculados.
+  // Não dá pra apagar sem perder o histórico, então apenas desativamos
+  // (mesmo padrão usado nos produtos).
+  if (error.code === "23503") {
+    const { error: archiveError } = await supabase
+      .from("establishments")
+      .update({ active: false })
+      .eq("id", id);
+
+    if (archiveError) {
+      throw archiveError;
+    }
+
+    return { archived: true };
+  }
+
+  throw error;
 };
 
 export const createProduct = async (input: {
