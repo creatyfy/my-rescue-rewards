@@ -14,6 +14,7 @@ import { toast } from "@/components/ui/sonner";
 import { useCepLookup } from "@/hooks/useCepLookup";
 import {
   createOrder,
+  fetchLastDeliveryAddress,
   type DeliveryData,
   type StoreSettings,
   type UserContact,
@@ -74,6 +75,18 @@ export function BuyCheckoutDialog({
       setAmountDue(0);
       setCopied(false);
       resetCep();
+      // pré-preenche com o último endereço usado, se houver
+      let active = true;
+      fetchLastDeliveryAddress()
+        .then((last) => {
+          if (active && last) setDelivery(last);
+        })
+        .catch(() => {
+          /* sem endereço salvo: mantém vazio */
+        });
+      return () => {
+        active = false;
+      };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, product?.id]);

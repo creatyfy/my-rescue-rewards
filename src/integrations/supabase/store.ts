@@ -251,6 +251,38 @@ export const fetchMyOrders = async (): Promise<Order[]> => {
   }
 };
 
+// Busca o último endereço de entrega usado pelo usuário (do pedido mais recente
+// que tenha endereço). Usado para pré-preencher o checkout de compra.
+export const fetchLastDeliveryAddress = async (): Promise<DeliveryData | null> => {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return null;
+  try {
+    const { data, error } = await (supabase as any)
+      .from("orders")
+      .select(
+        "delivery_cep, delivery_address, delivery_number, delivery_neighborhood, delivery_city, delivery_state, created_at",
+      )
+      .eq("user_id", userData.user.id)
+      .not("delivery_address", "is", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    const d = data as Record<string, unknown>;
+    if (!d.delivery_address) return null;
+    return {
+      cep: (d.delivery_cep as string) ?? "",
+      address: (d.delivery_address as string) ?? "",
+      number: (d.delivery_number as string) ?? "",
+      neighborhood: (d.delivery_neighborhood as string) ?? "",
+      city: (d.delivery_city as string) ?? "",
+      state: (d.delivery_state as string) ?? "",
+    };
+  } catch {
+    return null;
+  }
+};
+
 export const fetchCurrentUserBalance = async (): Promise<number> => {
   const { data: userData, error: userError } = await supabase.auth.getUser();
 
