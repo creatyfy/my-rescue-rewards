@@ -20,6 +20,7 @@ type ProductFormState = {
   pointsManualEdit: boolean;
   pointsConfirmed: boolean;
   stock: string;
+  priceReais: string;
   imageUrl: string;
   imageFile: File | null;
   active: boolean;
@@ -32,6 +33,7 @@ const emptyFormState: ProductFormState = {
   pointsManualEdit: false,
   pointsConfirmed: false,
   stock: "",
+  priceReais: "",
   imageUrl: "",
   imageFile: null,
   active: true
@@ -75,6 +77,7 @@ export function AdminProductsPanel() {
       pointsConfirmed: true,
       // Produto existente já está confirmado
       stock: String(item.stock),
+      priceReais: item.price_reais != null ? String(item.price_reais) : "",
       imageUrl: item.image_url ?? "",
       imageFile: null,
       active: item.active
@@ -156,6 +159,7 @@ export function AdminProductsPanel() {
           pointsCalculated,
           pointsManualEdit: formState.pointsManualEdit,
           stock,
+          priceReais: formState.priceReais ? Number(formState.priceReais) : null,
           imageFile: formState.imageFile,
           imageUrl: formState.imageUrl || null,
           active: formState.active
@@ -171,6 +175,7 @@ export function AdminProductsPanel() {
           pointsCalculated,
           pointsManualEdit: formState.pointsManualEdit,
           stock,
+          priceReais: formState.priceReais ? Number(formState.priceReais) : null,
           imageFile: formState.imageFile,
           imageUrl: formState.imageUrl || null,
           active: formState.active
@@ -390,6 +395,18 @@ export function AdminProductsPanel() {
               ...prev,
               stock: event.target.value
             }))} />
+            </div>
+
+            {/* Preço de venda em dinheiro (opcional). Só com preço o produto pode ser comprado em R$. */}
+            <div className="grid gap-2">
+              <Label htmlFor="product-price">Preço de venda (R$) — opcional</Label>
+              <Input id="product-price" type="number" min={0} step="0.01" placeholder="Ex: 49.90 (deixe vazio para só resgate por pontos)" value={formState.priceReais} onChange={event => setFormState(prev => ({
+              ...prev,
+              priceReais: event.target.value
+            }))} />
+              <p className="text-xs text-muted-foreground">
+                Preenchendo este campo, o produto ganha o botão “Comprar” na loja (pagamento em dinheiro). Vazio = continua só como resgate por pontos.
+              </p>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="product-image">Imagem (upload)</Label>

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { ProductCard } from "@/components/store/ProductCard";
 import { RedemptionSuccessModal } from "@/components/store/RedemptionSuccessModal";
+import { BuyCheckoutDialog } from "@/components/store/BuyCheckoutDialog";
 import { Search, Filter, Coins, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -18,10 +19,12 @@ import { toast } from "@/components/ui/sonner";
 import {
   DeliveryData,
   UserContact,
+  StoreSettings,
   resolveCurrentUserPrivileges,
   fetchCurrentUserBalance,
   fetchCurrentUserContact,
   fetchProducts,
+  fetchStoreSettings,
   redeemProduct,
 } from "@/integrations/supabase/store";
 import { useCepLookup } from "@/hooks/useCepLookup";
@@ -30,10 +33,13 @@ export default function Store() {
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<
-    Array<{ id: string; name: string; description: string; imageUrl: string; pointsCost: number; stock: number }>
+    Array<{ id: string; name: string; description: string; imageUrl: string; pointsCost: number; stock: number; priceReais: number | null }>
   >([]);
   const [userPoints, setUserPoints] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
+  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [buyProductId, setBuyProductId] = useState<string | null>(null);
   const [redeemDialogOpen, setRedeemDialogOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
@@ -58,17 +64,19 @@ export default function Store() {
     const loadStoreData = async () => {
       setLoading(true);
       try {
-        const [productsData, balance, contact, privileges] = await Promise.all([
+        const [productsData, balance, contact, privileges, settings] = await Promise.all([
           fetchProducts(),
           fetchCurrentUserBalance(),
           fetchCurrentUserContact(),
           resolveCurrentUserPrivileges(),
+          fetchStoreSettings(),
         ]);
 
         setProducts(productsData);
         setUserPoints(balance);
         setUserContact(contact);
         setIsAdmin(privileges.canViewValueEquivalent);
+        setStoreSettings(settings);
       } catch (error) {
         console.error("Erro ao carregar loja:", error);
       } finally {
@@ -91,6 +99,11 @@ export default function Store() {
     () => products.find((product) => product.id === previewProductId) ?? null,
     [products, previewProductId],
   );
+  const buyProduct = useMemo(() => {
+    const p = products.find((product) => product.id === buyProductId);
+    if (!p || p.priceReais == null) return null;
+    return { id: p.id, name: p.name, pointsCost: p.pointsCost, priceReais: p.priceReais };
+  }, [products, buyProductId]);
 
   const isContactMissing =
     !userContact?.fullName || !userContact?.email || !userContact?.phone;
@@ -142,6 +155,11 @@ export default function Store() {
   const handleRedeem = (productId: string) => {
     setSelectedProductId(productId);
     setRedeemDialogOpen(true);
+  };
+
+  const handleBuy = (productId: string) => {
+    setBuyProductId(productId);
+    setBuyDialogOpen(true);
   };
 
   const handlePreviewImage = (productId: string, trigger: HTMLButtonElement) => {
@@ -297,6 +315,7 @@ export default function Store() {
                 userPoints={userPoints}
                 isAdmin={isAdmin}
                 onRedeem={handleRedeem}
+                onBuy={handleBuy}
                 onPreviewImage={handlePreviewImage}
               />
             ))}
@@ -523,6 +542,18 @@ export default function Store() {
         open={successModalOpen}
         onClose={() => setSuccessModalOpen(false)}
         userName={userContact?.fullName ?? null}
+      />
+
+      <BuyCheckoutDialog
+        open={buyDialogOpen}
+        onOpenChange={(o) => {
+          setBuyDialogOpen(o);
+          if (!o) setBuyProductId(null);
+        }}
+        product={buyProduct}
+        userPoints={userPoints}
+        userContact={userContact}
+        settings={storeSettings}
       />
     </AppLayout>
   );

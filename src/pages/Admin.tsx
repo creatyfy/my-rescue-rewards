@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { AdminEstablishmentsPanel } from "@/components/admin/AdminEstablishmentsPanel";
+import { AdminOrdersPanel } from "@/components/admin/AdminOrdersPanel";
 import { AdminProductsPanel } from "@/components/admin/AdminProductsPanel";
 import { AdminReceiptsPanel } from "@/components/admin/AdminReceiptsPanel";
 import { AdminRedemptionsPanel } from "@/components/admin/AdminRedemptionsPanel";
@@ -40,6 +41,10 @@ export default function Admin() {
       redemptions: {
         label: "Resgates",
         content: <AdminRedemptionsPanel />,
+      },
+      orders: {
+        label: "Pedidos",
+        content: <AdminOrdersPanel />,
       },
       reports: {
         label: "Relatórios",

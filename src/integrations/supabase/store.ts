@@ -7,6 +7,7 @@ type ProductRecord = {
   image_url: string | null;
   points_cost: number;
   stock: number;
+  price_reais: number | null;
 };
 
 type Product = {
@@ -16,6 +17,7 @@ type Product = {
   imageUrl: string;
   pointsCost: number;
   stock: number;
+  priceReais: number | null;
 };
 
 type RedemptionResult = {
@@ -122,13 +124,14 @@ const mapProduct = (product: ProductRecord): Product => ({
   imageUrl: product.image_url ?? FALLBACK_PRODUCT_IMAGE,
   pointsCost: product.points_cost,
   stock: product.stock,
+  priceReais: product.price_reais ?? null,
 });
 
 export const fetchProducts = async (): Promise<Product[]> => {
   try {
     const { data, error } = await (supabase as any)
       .from("products")
-      .select("id, name, description, image_url, points_cost, stock")
+      .select("id, name, description, image_url, points_cost, stock, price_reais")
       .eq("active", true)
       .order("created_at", { ascending: false });
 
@@ -138,6 +141,110 @@ export const fetchProducts = async (): Promise<Product[]> => {
     }
 
     return ((data ?? []) as ProductRecord[]).map(mapProduct);
+  } catch {
+    return [];
+  }
+};
+
+// ----- Loja com pagamento em dinheiro (compra + híbrido) -----
+
+export type StoreSettings = {
+  pointsToBrl: number;
+  maxPointsDiscountPct: number;
+  minCashReais: number;
+  deliveryFeeReais: number;
+  pixKey: string | null;
+  pixOwnerName: string | null;
+  whatsapp: string | null;
+  paymentInstructions: string | null;
+};
+
+export const fetchStoreSettings = async (): Promise<StoreSettings | null> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from("store_settings")
+      .select(
+        "points_to_brl, max_points_discount_pct, min_cash_reais, delivery_fee_reais, pix_key, pix_owner_name, whatsapp, payment_instructions",
+      )
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    return {
+      pointsToBrl: Number(data.points_to_brl ?? 0),
+      maxPointsDiscountPct: Number(data.max_points_discount_pct ?? 100),
+      minCashReais: Number(data.min_cash_reais ?? 0),
+      deliveryFeeReais: Number(data.delivery_fee_reais ?? 0),
+      pixKey: data.pix_key ?? null,
+      pixOwnerName: data.pix_owner_name ?? null,
+      whatsapp: data.whatsapp ?? null,
+      paymentInstructions: data.payment_instructions ?? null,
+    };
+  } catch {
+    return null;
+  }
+};
+
+export const createOrder = async (
+  productId: string,
+  pointsToUse: number,
+  delivery: DeliveryData,
+): Promise<string | null> => {
+  const { data, error } = await supabase.rpc("create_order" as never, {
+    p_product_id: productId,
+    p_points_to_use: pointsToUse,
+    p_delivery_cep: delivery.cep,
+    p_delivery_address: delivery.address,
+    p_delivery_number: delivery.number,
+    p_delivery_neighborhood: delivery.neighborhood,
+    p_delivery_city: delivery.city,
+    p_delivery_state: delivery.state,
+  } as never);
+  if (error) throw error;
+  return (data as string) ?? null;
+};
+
+export type OrderStatus =
+  | "pending_payment"
+  | "paid"
+  | "delivered"
+  | "cancelled"
+  | "expired";
+
+export type Order = {
+  id: string;
+  productName: string | null;
+  priceReais: number;
+  pointsApplied: number;
+  discountReais: number;
+  deliveryFeeReais: number;
+  amountReais: number;
+  status: OrderStatus;
+  createdAt: string;
+};
+
+export const fetchMyOrders = async (): Promise<Order[]> => {
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return [];
+  try {
+    const { data, error } = await (supabase as any)
+      .from("orders")
+      .select(
+        "id, product_name, price_reais, points_applied, discount_reais, delivery_fee_reais, amount_reais, status, created_at",
+      )
+      .eq("user_id", userData.user.id)
+      .order("created_at", { ascending: false });
+    if (error) return [];
+    return ((data ?? []) as Record<string, unknown>[]).map((o) => ({
+      id: o.id as string,
+      productName: (o.product_name as string) ?? null,
+      priceReais: Number(o.price_reais),
+      pointsApplied: Number(o.points_applied),
+      discountReais: Number(o.discount_reais),
+      deliveryFeeReais: Number(o.delivery_fee_reais),
+      amountReais: Number(o.amount_reais),
+      status: o.status as OrderStatus,
+      createdAt: o.created_at as string,
+    }));
   } catch {
     return [];
   }

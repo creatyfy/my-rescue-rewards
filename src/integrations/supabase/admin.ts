@@ -78,6 +78,7 @@ export type AdminProduct = {
   prize_value_reais: number | null;
   points_calculated: number | null;
   points_manual_edit: boolean;
+  price_reais: number | null;
   stock: number;
   active: boolean;
   created_at: string;
@@ -706,7 +707,7 @@ export const fetchAdminProducts = async (): Promise<AdminProduct[]> => {
   try {
     const { data, error } = await supabase
       .from("products")
-      .select("id, name, description, image_url, points_cost, prize_value_reais, points_calculated, points_manual_edit, stock, active, created_at")
+      .select("id, name, description, image_url, points_cost, prize_value_reais, points_calculated, points_manual_edit, price_reais, stock, active, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -872,6 +873,7 @@ export const createProduct = async (input: {
   prizeValueReais?: number | null;
   pointsCalculated?: number | null;
   pointsManualEdit?: boolean;
+  priceReais?: number | null;
   stock: number;
   imageFile?: File | null;
   imageUrl?: string | null;
@@ -890,11 +892,12 @@ export const createProduct = async (input: {
       prize_value_reais: input.prizeValueReais ?? null,
       points_calculated: input.pointsCalculated ?? null,
       points_manual_edit: input.pointsManualEdit ?? false,
+      price_reais: input.priceReais ?? null,
       stock: input.stock,
       image_url: imageUrl,
       active: input.active,
     })
-    .select("id, name, description, image_url, points_cost, prize_value_reais, points_calculated, points_manual_edit, stock, active, created_at")
+    .select("id, name, description, image_url, points_cost, prize_value_reais, points_calculated, points_manual_edit, price_reais, stock, active, created_at")
     .single();
 
   if (error) {
@@ -915,6 +918,7 @@ export const updateProduct = async (input: {
   prizeValueReais?: number | null;
   pointsCalculated?: number | null;
   pointsManualEdit?: boolean;
+  priceReais?: number | null;
   stock: number;
   imageFile?: File | null;
   imageUrl?: string | null;
@@ -933,12 +937,13 @@ export const updateProduct = async (input: {
       prize_value_reais: input.prizeValueReais ?? null,
       points_calculated: input.pointsCalculated ?? null,
       points_manual_edit: input.pointsManualEdit ?? false,
+      price_reais: input.priceReais ?? null,
       stock: input.stock,
       image_url: imageUrl,
       active: input.active,
     })
     .eq("id", input.id)
-    .select("id, name, description, image_url, points_cost, prize_value_reais, points_calculated, points_manual_edit, stock, active, created_at")
+    .select("id, name, description, image_url, points_cost, prize_value_reais, points_calculated, points_manual_edit, price_reais, stock, active, created_at")
     .single();
 
   if (error) {
@@ -972,4 +977,125 @@ export const deleteProduct = async (id: string) => {
   }
 
   throw error;
+};
+
+// ---------------------------------------------------------------------------
+// Pedidos (compras com dinheiro / pagamento híbrido) — Fase 2
+// ---------------------------------------------------------------------------
+
+export type AdminOrderStatus =
+  | "pending_payment"
+  | "paid"
+  | "delivered"
+  | "cancelled"
+  | "expired";
+
+export type AdminOrder = {
+  id: string;
+  user_id: string;
+  product_name: string | null;
+  price_reais: number;
+  points_applied: number;
+  discount_reais: number;
+  delivery_fee_reais: number;
+  amount_reais: number;
+  status: AdminOrderStatus;
+  payment_provider: string | null;
+  payment_id: string | null;
+  created_at: string;
+  paid_at: string | null;
+  delivery_cep: string | null;
+  delivery_address: string | null;
+  delivery_number: string | null;
+  delivery_neighborhood: string | null;
+  delivery_city: string | null;
+  delivery_state: string | null;
+};
+
+export const fetchAdminOrders = async (): Promise<AdminOrder[]> => {
+  try {
+    const { data, error } = await (supabase as any)
+      .from("orders")
+      .select(
+        `id, user_id, product_name, price_reais, points_applied, discount_reais,
+         delivery_fee_reais, amount_reais, status, payment_provider, payment_id,
+         created_at, paid_at, delivery_cep, delivery_address, delivery_number,
+         delivery_neighborhood, delivery_city, delivery_state`,
+      )
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.warn("orders table not available:", error.message);
+      return [];
+    }
+
+    return ((data ?? []) as Record<string, unknown>[]).map((o) => ({
+      id: o.id as string,
+      user_id: o.user_id as string,
+      product_name: (o.product_name as string) ?? null,
+      price_reais: Number(o.price_reais ?? 0),
+      points_applied: Number(o.points_applied ?? 0),
+      discount_reais: Number(o.discount_reais ?? 0),
+      delivery_fee_reais: Number(o.delivery_fee_reais ?? 0),
+      amount_reais: Number(o.amount_reais ?? 0),
+      status: o.status as AdminOrderStatus,
+      payment_provider: (o.payment_provider as string) ?? null,
+      payment_id: (o.payment_id as string) ?? null,
+      created_at: o.created_at as string,
+      paid_at: (o.paid_at as string) ?? null,
+      delivery_cep: (o.delivery_cep as string) ?? null,
+      delivery_address: (o.delivery_address as string) ?? null,
+      delivery_number: (o.delivery_number as string) ?? null,
+      delivery_neighborhood: (o.delivery_neighborhood as string) ?? null,
+      delivery_city: (o.delivery_city as string) ?? null,
+      delivery_state: (o.delivery_state as string) ?? null,
+    })) as AdminOrder[];
+  } catch {
+    return [];
+  }
+};
+
+// Confirma o pagamento de um pedido: debita os pontos aplicados (se houver),
+// baixa o estoque, marca como pago e notifica o cliente. Feito via RPC
+// SECURITY DEFINER (confirm_order_payment), restrito a admin.
+export const confirmOrderPayment = async (orderId: string) => {
+  const { error } = await supabase.rpc("confirm_order_payment" as never, {
+    p_order_id: orderId,
+  } as never);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return true;
+};
+
+// Marca um pedido já pago como entregue. Atualização direta na tabela orders
+// (permitida pela policy "Orders: admin update").
+export const markOrderDelivered = async (orderId: string) => {
+  const { error } = await (supabase as any)
+    .from("orders")
+    .update({ status: "delivered" })
+    .eq("id", orderId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return true;
+};
+
+// Cancela um pedido. Só deve ser usado em pedidos ainda não pagos — não
+// estorna pontos nem estoque (nada foi debitado antes do pagamento).
+export const cancelAdminOrder = async (orderId: string) => {
+  const { error } = await (supabase as any)
+    .from("orders")
+    .update({ status: "cancelled" })
+    .eq("id", orderId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return true;
 };

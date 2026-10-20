@@ -11,7 +11,9 @@ interface ProductCardProps {
   stock: number;
   userPoints: number;
   isAdmin?: boolean;
+  priceReais?: number | null;
   onRedeem?: (id: string) => void;
+  onBuy?: (id: string) => void;
   onPreviewImage?: (id: string, trigger: HTMLButtonElement) => void;
 }
 
@@ -24,7 +26,9 @@ export function ProductCard({
   stock,
   userPoints,
   isAdmin = false,
+  priceReais = null,
   onRedeem,
+  onBuy,
   onPreviewImage,
 }: ProductCardProps) {
   const canAfford = userPoints >= pointsCost;
@@ -85,15 +89,28 @@ export function ProductCard({
             )}
           </div>
 
-          <Button
-            variant={canRedeem ? "default" : "outline"}
-            size="sm"
-            disabled={!canRedeem}
-            onClick={() => onRedeem?.(id)}
-            className="text-[10px] sm:text-xs w-full sm:w-auto"
-          >
-            {!isAvailable ? "Esgotado" : !canAfford ? "Pontos insuf." : "Resgatar"}
-          </Button>
+          <div className="flex flex-col gap-1.5 w-full sm:w-auto">
+            <Button
+              variant={canRedeem ? "default" : "outline"}
+              size="sm"
+              disabled={!canRedeem}
+              onClick={() => onRedeem?.(id)}
+              className="text-[10px] sm:text-xs w-full sm:w-auto"
+            >
+              {!isAvailable ? "Esgotado" : !canAfford ? "Pontos insuf." : "Resgatar"}
+            </Button>
+            {priceReais != null && priceReais > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={!isAvailable}
+                onClick={() => onBuy?.(id)}
+                className="text-[10px] sm:text-xs w-full sm:w-auto"
+              >
+                {isAvailable ? `Comprar ${formatCurrency(priceReais)}` : "Esgotado"}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
