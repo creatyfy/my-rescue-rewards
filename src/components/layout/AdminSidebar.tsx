@@ -15,6 +15,17 @@ import { cn } from "@/lib/utils";
 import { adminNavItems, navItems } from "./sidebarMenuConfig";
 import { SidebarPreferences } from "./SidebarPreferences";
 import { useEffect, useMemo, useState } from "react";
+import {
+  AdminPendingCounts,
+  fetchAdminPendingCounts,
+} from "@/integrations/supabase/admin";
+
+// Mapeia cada item do menu admin ao contador de pendências correspondente.
+const COUNT_KEY_BY_PATH: Record<string, keyof AdminPendingCounts> = {
+  "/admin/receipts": "receipts",
+  "/admin/redemptions": "redemptions",
+  "/admin/orders": "orders",
+};
 
 interface AdminSidebarProps {
   isDarkMode: boolean;
@@ -42,6 +53,30 @@ export function AdminSidebar({
       setAdminMenuOpen(true);
     }
   }, [isAdminPath]);
+
+  // Contadores de pendências (comprovantes / resgates / pedidos) para os badges.
+  const [pendingCounts, setPendingCounts] = useState<AdminPendingCounts>({
+    receipts: 0,
+    redemptions: 0,
+    orders: 0,
+  });
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const counts = await fetchAdminPendingCounts();
+        if (active) setPendingCounts(counts);
+      } catch {
+        // silencioso: badge é só um indicador, não bloqueia o menu
+      }
+    };
+    load();
+    // atualiza ao navegar entre seções do admin
+    return () => {
+      active = false;
+    };
+  }, [location.pathname]);
 
   const adminBaseItems = navItems.filter(
     (item) => item.label === "Início" || item.label === "Perfil",
@@ -105,14 +140,25 @@ export function AdminSidebar({
                   {adminNavItems.map((item) => {
                     const itemSection = item.path.split("/")[2];
                     const isActive = isAdminPath && adminSection === itemSection;
+                    const countKey = COUNT_KEY_BY_PATH[item.path];
+                    const count = countKey ? pendingCounts[countKey] : 0;
                     return (
                       <SidebarMenuSubItem key={item.path}>
                         <SidebarMenuSubButton asChild isActive={isActive}>
                           <Link
                             to={item.path}
                             aria-current={isActive ? "page" : undefined}
+                            className="flex items-center justify-between gap-2"
                           >
                             <span>{item.label}</span>
+                            {count > 0 && (
+                              <span
+                                className="ml-auto inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-[0.65rem] font-semibold leading-none text-destructive-foreground"
+                                aria-label={`${count} pendente(s)`}
+                              >
+                                {count > 99 ? "99+" : count}
+                              </span>
+                            )}
                           </Link>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>

@@ -22,6 +22,7 @@ import {
   fetchAdminProfiles,
   fetchAdminUsers,
   markOrderDelivered,
+  markOrderShipped,
 } from "@/integrations/supabase/admin";
 import { UserProfileModal } from "./UserProfileModal";
 
@@ -116,6 +117,21 @@ export function AdminOrdersPanel() {
     }
   };
 
+  const handleMarkShipped = async (orderId: string) => {
+    try {
+      setUpdatingOrderId(orderId);
+      await markOrderShipped(orderId);
+      applyLocalStatus(orderId, "shipped");
+      toast.success("Pedido marcado como enviado. Cliente avisado.");
+    } catch (error) {
+      console.error("Erro ao marcar envio:", error);
+      const message = (error as { message?: string }).message ?? "Não foi possível atualizar o pedido.";
+      toast.error(message);
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
   const handleMarkDelivered = async (orderId: string) => {
     try {
       setUpdatingOrderId(orderId);
@@ -152,6 +168,12 @@ export function AdminOrdersPanel() {
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
             Pago
+          </span>
+        );
+      case "shipped":
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+            Enviado
           </span>
         );
       case "delivered":
@@ -217,7 +239,12 @@ export function AdminOrdersPanel() {
     {
       value: "paid",
       label: "Pagos",
-      emptyMessage: "Nenhum pedido pago aguardando entrega.",
+      emptyMessage: "Nenhum pedido pago aguardando envio.",
+    },
+    {
+      value: "shipped",
+      label: "Enviados",
+      emptyMessage: "Nenhum pedido enviado aguardando entrega.",
     },
     {
       value: "delivered",
@@ -359,6 +386,15 @@ export function AdminOrdersPanel() {
                               </Button>
                             </div>
                           ) : order.status === "paid" ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => handleMarkShipped(order.id)}
+                              disabled={isUpdating}
+                            >
+                              {isUpdating ? "Atualizando..." : "Marcar enviado"}
+                            </Button>
+                          ) : order.status === "shipped" ? (
                             <Button
                               type="button"
                               size="sm"

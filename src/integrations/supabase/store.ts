@@ -206,6 +206,7 @@ export const createOrder = async (
 export type OrderStatus =
   | "pending_payment"
   | "paid"
+  | "shipped"
   | "delivered"
   | "cancelled"
   | "expired";

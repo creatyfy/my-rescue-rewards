@@ -986,6 +986,7 @@ export const deleteProduct = async (id: string) => {
 export type AdminOrderStatus =
   | "pending_payment"
   | "paid"
+  | "shipped"
   | "delivered"
   | "cancelled"
   | "expired";
@@ -1070,13 +1071,27 @@ export const confirmOrderPayment = async (orderId: string) => {
   return true;
 };
 
-// Marca um pedido já pago como entregue. Atualização direta na tabela orders
-// (permitida pela policy "Orders: admin update").
+// Marca um pedido pago como enviado / saiu para entrega. Via RPC SECURITY
+// DEFINER (mark_order_shipped) — também notifica o cliente (push automático).
+export const markOrderShipped = async (orderId: string) => {
+  const { error } = await supabase.rpc("mark_order_shipped" as never, {
+    p_order_id: orderId,
+  } as never);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return true;
+};
+
+// Marca um pedido já pago como entregue. Via RPC SECURITY DEFINER
+// (mark_order_delivered) para também notificar o cliente (push automático
+// pelo gatilho existente na tabela notifications).
 export const markOrderDelivered = async (orderId: string) => {
-  const { error } = await (supabase as any)
-    .from("orders")
-    .update({ status: "delivered" })
-    .eq("id", orderId);
+  const { error } = await supabase.rpc("mark_order_delivered" as never, {
+    p_order_id: orderId,
+  } as never);
 
   if (error) {
     throw new Error(error.message);
@@ -1098,4 +1113,39 @@ export const cancelAdminOrder = async (orderId: string) => {
   }
 
   return true;
+};
+
+// ---------------------------------------------------------------------------
+// Contadores de pendências para os badges do menu admin
+// ---------------------------------------------------------------------------
+
+export type AdminPendingCounts = {
+  receipts: number; // comprovantes aguardando análise
+  redemptions: number; // resgates em análise
+  orders: number; // pedidos aguardando pagamento
+};
+
+export const fetchAdminPendingCounts = async (): Promise<AdminPendingCounts> => {
+  const counts: AdminPendingCounts = { receipts: 0, redemptions: 0, orders: 0 };
+
+  const [receiptsRes, redemptionsRes, ordersRes] = await Promise.all([
+    supabase
+      .from("receipts")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending"),
+    supabase
+      .from("redemptions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "em_analise"),
+    (supabase as any)
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending_payment"),
+  ]);
+
+  if (!receiptsRes.error) counts.receipts = receiptsRes.count ?? 0;
+  if (!redemptionsRes.error) counts.redemptions = redemptionsRes.count ?? 0;
+  if (!ordersRes.error) counts.orders = ordersRes.count ?? 0;
+
+  return counts;
 };
