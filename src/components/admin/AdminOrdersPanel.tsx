@@ -226,6 +226,27 @@ export function AdminOrdersPanel() {
     [activeStatus, orders],
   );
 
+  // Resumo de faturamento: receita = valor em dinheiro efetivamente recebido
+  // (pedidos pagos, enviados ou entregues). "Aguardando" é o potencial a receber.
+  const revenue = useMemo(() => {
+    const realizedStatuses: AdminOrderStatus[] = ["paid", "shipped", "delivered"];
+    const realized = orders.filter((o) => realizedStatuses.includes(o.status));
+    const totalRecebido = realized.reduce((s, o) => s + o.amount_reais, 0);
+    const vendas = realized.length;
+    const aguardando = orders
+      .filter((o) => o.status === "pending_payment")
+      .reduce((s, o) => s + o.amount_reais, 0);
+    const now = new Date();
+    const mesRecebido = realized
+      .filter((o) => {
+        const d = new Date(o.paid_at ?? o.created_at);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      })
+      .reduce((s, o) => s + o.amount_reais, 0);
+    const ticketMedio = vendas > 0 ? totalRecebido / vendas : 0;
+    return { totalRecebido, vendas, aguardando, mesRecebido, ticketMedio };
+  }, [orders]);
+
   const statusTabs: Array<{
     value: AdminOrderStatus;
     label: string;
@@ -267,6 +288,40 @@ export function AdminOrdersPanel() {
           quando receber o Pix e marque o pedido como entregue após a entrega.
         </p>
       </div>
+
+      {/* Resumo de faturamento */}
+      {!loading && (
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Card className="p-4">
+            <p className="text-xs text-muted-foreground">Receita recebida</p>
+            <p className="mt-1 text-2xl font-bold text-success tabular-nums">
+              {formatCurrency(revenue.totalRecebido)}
+            </p>
+            <p className="text-xs text-muted-foreground">{revenue.vendas} venda(s) paga(s)</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-xs text-muted-foreground">Recebido este mês</p>
+            <p className="mt-1 text-2xl font-bold text-foreground tabular-nums">
+              {formatCurrency(revenue.mesRecebido)}
+            </p>
+            <p className="text-xs text-muted-foreground">mês atual</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-xs text-muted-foreground">Aguardando pagamento</p>
+            <p className="mt-1 text-2xl font-bold text-pending tabular-nums">
+              {formatCurrency(revenue.aguardando)}
+            </p>
+            <p className="text-xs text-muted-foreground">potencial a receber</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-xs text-muted-foreground">Ticket médio</p>
+            <p className="mt-1 text-2xl font-bold text-foreground tabular-nums">
+              {formatCurrency(revenue.ticketMedio)}
+            </p>
+            <p className="text-xs text-muted-foreground">por venda paga</p>
+          </Card>
+        </div>
+      )}
 
       {loading ? (
         <Card className="p-6">

@@ -18,6 +18,7 @@ import ProfileNotifications from "./pages/ProfileNotifications";
 import ProfileSecurity from "./pages/ProfileSecurity";
 import ProfilePayments from "./pages/ProfilePayments";
 import History from "./pages/History";
+import MyOrders from "./pages/MyOrders";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import Help from "./pages/Help";
@@ -127,6 +128,14 @@ const App = () => (
             element={
               <AuthGuard>
                 <History />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/meus-pedidos"
+            element={
+              <AuthGuard>
+                <MyOrders />
               </AuthGuard>
             }
           />
