@@ -1259,3 +1259,52 @@ export const completeOrderDelivery = async (orderId: string, token: string) => {
   if (error) throw new Error(error.message);
   return true;
 };
+
+// ---- Convites de motoboy (pré-cadastro por e-mail) ----
+
+export type MotoboyInvite = {
+  email: string;
+  created_at: string;
+  claimed_at: string | null;
+  user_id: string | null;
+  full_name: string | null;
+  is_active: boolean;
+};
+
+// Admin pré-cadastra o e-mail de um motoboy. Se a conta já existir, promove na
+// hora ("promoted"); senão fica aguardando o cadastro ("invited").
+export const inviteMotoboy = async (email: string): Promise<"invited" | "promoted"> => {
+  const { data, error } = await supabase.rpc("invite_motoboy", { p_email: email });
+  if (error) throw new Error(error.message);
+  return (data as "invited" | "promoted") ?? "invited";
+};
+
+export const fetchMotoboyInvites = async (): Promise<MotoboyInvite[]> => {
+  const { data, error } = await supabase.rpc("list_motoboy_invites");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+    email: r.email as string,
+    created_at: r.created_at as string,
+    claimed_at: (r.claimed_at as string) ?? null,
+    user_id: (r.user_id as string) ?? null,
+    full_name: (r.full_name as string) ?? null,
+    is_active: Boolean(r.is_active),
+  }));
+};
+
+// Remove o convite. Se o motoboy já estava ativo, rebaixa para usuário comum.
+export const removeMotoboyInvite = async (
+  email: string,
+  userId: string | null,
+  isActive: boolean,
+) => {
+  if (userId && isActive) {
+    await setMotoboyRole(userId, false).catch(() => undefined);
+  }
+  const { error } = await supabase
+    .from("motoboy_invites")
+    .delete()
+    .eq("email", email.toLowerCase());
+  if (error) throw new Error(error.message);
+  return true;
+};

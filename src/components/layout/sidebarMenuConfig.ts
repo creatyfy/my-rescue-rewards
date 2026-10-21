@@ -27,5 +27,6 @@ export const adminNavItems = [
   { label: "Usuários", path: "/admin/users" },
   { label: "Resgates", path: "/admin/redemptions" },
   { label: "Pedidos", path: "/admin/orders" },
+  { label: "Motoboys", path: "/admin/motoboys" },
   { label: "Campanhas", path: "/admin/campaigns" },
 ];
