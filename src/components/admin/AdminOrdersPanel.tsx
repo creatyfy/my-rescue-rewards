@@ -33,6 +33,7 @@ export function AdminOrdersPanel() {
   const [loading, setLoading] = useState(true);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [activeStatus, setActiveStatus] = useState<AdminOrderStatus>("pending_payment");
+  const [revenuePeriod, setRevenuePeriod] = useState<"all" | "today" | "7d" | "30d">("all");
 
   // User profile modal state
   const [userModalOpen, setUserModalOpen] = useState(false);
@@ -226,26 +227,37 @@ export function AdminOrdersPanel() {
     [activeStatus, orders],
   );
 
-  // Resumo de faturamento: receita = valor em dinheiro efetivamente recebido
-  // (pedidos pagos, enviados ou entregues). "Aguardando" é o potencial a receber.
+  // Resumo de faturamento das vendas pagas (pagas, enviadas ou entregues),
+  // filtrado pelo período escolhido. Mostra a conta completa:
+  //   Bruto (preço cheio) − Desconto em pontos (R$) = Recebido em dinheiro.
   const revenue = useMemo(() => {
     const realizedStatuses: AdminOrderStatus[] = ["paid", "shipped", "delivered"];
-    const realized = orders.filter((o) => realizedStatuses.includes(o.status));
-    const totalRecebido = realized.reduce((s, o) => s + o.amount_reais, 0);
-    const vendas = realized.length;
-    const aguardando = orders
-      .filter((o) => o.status === "pending_payment")
-      .reduce((s, o) => s + o.amount_reais, 0);
     const now = new Date();
-    const mesRecebido = realized
-      .filter((o) => {
-        const d = new Date(o.paid_at ?? o.created_at);
-        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-      })
-      .reduce((s, o) => s + o.amount_reais, 0);
-    const ticketMedio = vendas > 0 ? totalRecebido / vendas : 0;
-    return { totalRecebido, vendas, aguardando, mesRecebido, ticketMedio };
-  }, [orders]);
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const limite =
+      revenuePeriod === "today"
+        ? startOfToday
+        : revenuePeriod === "7d"
+          ? now.getTime() - 7 * 24 * 60 * 60 * 1000
+          : revenuePeriod === "30d"
+            ? now.getTime() - 30 * 24 * 60 * 60 * 1000
+            : null;
+
+    const realized = orders.filter((o) => {
+      if (!realizedStatuses.includes(o.status)) return false;
+      if (limite === null) return true;
+      const t = new Date(o.paid_at ?? o.created_at).getTime();
+      return t >= limite;
+    });
+
+    const bruto = realized.reduce((s, o) => s + o.price_reais + o.delivery_fee_reais, 0);
+    const pontosAbatidos = realized.reduce((s, o) => s + o.points_applied, 0);
+    const descontoReais = realized.reduce((s, o) => s + o.discount_reais, 0);
+    const recebido = realized.reduce((s, o) => s + o.amount_reais, 0);
+    const vendas = realized.length;
+    const ticketMedio = vendas > 0 ? recebido / vendas : 0;
+    return { bruto, pontosAbatidos, descontoReais, recebido, vendas, ticketMedio };
+  }, [orders, revenuePeriod]);
 
   const statusTabs: Array<{
     value: AdminOrderStatus;
@@ -291,35 +303,64 @@ export function AdminOrdersPanel() {
 
       {/* Resumo de faturamento */}
       {!loading && (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground">Receita recebida</p>
-            <p className="mt-1 text-2xl font-bold text-success tabular-nums">
-              {formatCurrency(revenue.totalRecebido)}
-            </p>
-            <p className="text-xs text-muted-foreground">{revenue.vendas} venda(s) paga(s)</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground">Recebido este mês</p>
-            <p className="mt-1 text-2xl font-bold text-foreground tabular-nums">
-              {formatCurrency(revenue.mesRecebido)}
-            </p>
-            <p className="text-xs text-muted-foreground">mês atual</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground">Aguardando pagamento</p>
-            <p className="mt-1 text-2xl font-bold text-pending tabular-nums">
-              {formatCurrency(revenue.aguardando)}
-            </p>
-            <p className="text-xs text-muted-foreground">potencial a receber</p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-xs text-muted-foreground">Ticket médio</p>
-            <p className="mt-1 text-2xl font-bold text-foreground tabular-nums">
-              {formatCurrency(revenue.ticketMedio)}
-            </p>
-            <p className="text-xs text-muted-foreground">por venda paga</p>
-          </Card>
+        <div className="space-y-3">
+          {/* Filtro de período */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground mr-1">Período:</span>
+            {([
+              { v: "all", label: "Tudo" },
+              { v: "today", label: "Hoje" },
+              { v: "7d", label: "7 dias" },
+              { v: "30d", label: "30 dias" },
+            ] as const).map((p) => (
+              <Button
+                key={p.v}
+                type="button"
+                size="sm"
+                variant={revenuePeriod === p.v ? "default" : "outline"}
+                onClick={() => setRevenuePeriod(p.v)}
+              >
+                {p.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Card className="p-4">
+              <p className="text-xs text-muted-foreground">Recebido em dinheiro</p>
+              <p className="mt-1 text-2xl font-bold text-success tabular-nums">
+                {formatCurrency(revenue.recebido)}
+              </p>
+              <p className="text-xs text-muted-foreground">{revenue.vendas} venda(s) paga(s)</p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-xs text-muted-foreground">Abatido em pontos</p>
+              <p className="mt-1 text-2xl font-bold text-primary tabular-nums">
+                {revenue.pontosAbatidos.toLocaleString("pt-BR")}
+              </p>
+              <p className="text-xs text-muted-foreground">pontos usados como desconto</p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-xs text-muted-foreground">Pontos convertidos em R$</p>
+              <p className="mt-1 text-2xl font-bold text-foreground tabular-nums">
+                {formatCurrency(revenue.descontoReais)}
+              </p>
+              <p className="text-xs text-muted-foreground">desconto dado em pontos</p>
+            </Card>
+            <Card className="p-4">
+              <p className="text-xs text-muted-foreground">Valor bruto (produtos)</p>
+              <p className="mt-1 text-2xl font-bold text-foreground tabular-nums">
+                {formatCurrency(revenue.bruto)}
+              </p>
+              <p className="text-xs text-muted-foreground">dinheiro + pontos convertidos</p>
+            </Card>
+          </div>
+
+          <p className="text-xs text-muted-foreground">
+            Conta: valor bruto {formatCurrency(revenue.bruto)} − desconto em pontos{" "}
+            {formatCurrency(revenue.descontoReais)} = recebido em dinheiro{" "}
+            {formatCurrency(revenue.recebido)}.
+          </p>
         </div>
       )}
 
