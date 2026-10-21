@@ -168,17 +168,26 @@ export const resolveAdminAccess = async (): Promise<boolean> => {
 export type AppUserRole = "admin" | "motoboy" | "user";
 
 // Resolve o papel do usuário logado (admin, motoboy ou user comum).
+// Usa claim_motoboy_access, que também reconcilia: se o e-mail estiver na lista
+// de motoboys autorizados e a conta ainda for comum, libera o acesso na hora.
 export const resolveUserRole = async (): Promise<AppUserRole> => {
   try {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return "user";
-    const { data, error } = await supabase
+
+    const { data, error } = await supabase.rpc("claim_motoboy_access");
+    if (!error && typeof data === "string") {
+      if (data === "admin" || data === "motoboy") return data;
+      return "user";
+    }
+
+    // Fallback: leitura direta do papel
+    const { data: roleRow } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", userData.user.id)
       .maybeSingle();
-    if (error || !data) return "user";
-    const role = (data as { role?: string }).role;
+    const role = (roleRow as { role?: string } | null)?.role;
     if (role === "admin" || role === "motoboy") return role;
     return "user";
   } catch {
