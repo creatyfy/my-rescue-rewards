@@ -1285,6 +1285,16 @@ export type MotoboyInvite = {
 export const inviteMotoboy = async (email: string): Promise<"invited" | "promoted"> => {
   const { data, error } = await supabase.rpc("invite_motoboy", { p_email: email });
   if (error) throw new Error(error.message);
+
+  // Envia o e-mail de convite para o entregador (não bloqueia a autorização).
+  try {
+    await supabase.functions.invoke("notify-motoboy-invite", {
+      body: { email: email.trim().toLowerCase() },
+    });
+  } catch (e) {
+    console.warn("Falha ao enviar e-mail de convite do motoboy:", e);
+  }
+
   return (data as "invited" | "promoted") ?? "invited";
 };
 
