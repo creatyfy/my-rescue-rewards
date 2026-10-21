@@ -19,6 +19,7 @@ import ProfileSecurity from "./pages/ProfileSecurity";
 import ProfilePayments from "./pages/ProfilePayments";
 import History from "./pages/History";
 import MyOrders from "./pages/MyOrders";
+import MotoboyDeliveries from "./pages/MotoboyDeliveries";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import Help from "./pages/Help";
@@ -136,6 +137,14 @@ const App = () => (
             element={
               <AuthGuard>
                 <MyOrders />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/entregas"
+            element={
+              <AuthGuard>
+                <MotoboyDeliveries />
               </AuthGuard>
             }
           />

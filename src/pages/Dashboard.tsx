@@ -6,7 +6,7 @@ import { PointsCard } from "@/components/points/PointsCard";
 import { QuickActions } from "@/components/points/QuickActions";
 import { TransactionItem } from "@/components/transactions/TransactionItem";
 import { Card } from "@/components/ui/card";
-import { resolveAdminAccess } from "@/integrations/supabase/admin";
+import { resolveAdminAccess, resolveUserRole } from "@/integrations/supabase/admin";
 import {
   fetchCurrentUserBalance,
   fetchCurrentUserId,
@@ -15,7 +15,7 @@ import {
   fetchUserLedger,
 } from "@/integrations/supabase/store";
 import { ChevronRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 type TransactionStatus =
   | "approved"
@@ -36,8 +36,22 @@ type Transaction = {
 };
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminLoading, setAdminLoading] = useState(true);
+
+  // Motoboy entra direto na tela de entregas.
+  useEffect(() => {
+    let mounted = true;
+    resolveUserRole()
+      .then((role) => {
+        if (mounted && role === "motoboy") navigate("/entregas", { replace: true });
+      })
+      .catch(() => undefined);
+    return () => {
+      mounted = false;
+    };
+  }, [navigate]);
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string | null>(null);
   const [balance, setBalance] = useState(0);

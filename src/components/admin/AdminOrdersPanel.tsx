@@ -9,6 +9,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
 import { formatCurrency } from "@/lib/points-config";
 import {
@@ -16,11 +23,14 @@ import {
   AdminOrderStatus,
   AdminProfile,
   AdminUser,
+  Motoboy,
+  assignOrderMotoboy,
   cancelAdminOrder,
   confirmOrderPayment,
   fetchAdminOrders,
   fetchAdminProfiles,
   fetchAdminUsers,
+  fetchMotoboys,
   markOrderDelivered,
   markOrderShipped,
 } from "@/integrations/supabase/admin";
@@ -30,6 +40,7 @@ export function AdminOrdersPanel() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [profiles, setProfiles] = useState<AdminProfile[]>([]);
+  const [motoboys, setMotoboys] = useState<Motoboy[]>([]);
   const [loading, setLoading] = useState(true);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [activeStatus, setActiveStatus] = useState<AdminOrderStatus>("pending_payment");
@@ -44,14 +55,16 @@ export function AdminOrdersPanel() {
     const loadOrders = async () => {
       try {
         setLoading(true);
-        const [orderData, userData, profileData] = await Promise.all([
+        const [orderData, userData, profileData, motoboyData] = await Promise.all([
           fetchAdminOrders(),
           fetchAdminUsers(),
           fetchAdminProfiles(),
+          fetchMotoboys().catch(() => []),
         ]);
         setOrders(orderData);
         setUsers(userData);
         setProfiles(profileData);
+        setMotoboys(motoboyData);
       } catch (error) {
         console.error("Erro ao carregar pedidos:", error);
         toast.error("Não foi possível carregar os pedidos.");
@@ -162,6 +175,28 @@ export function AdminOrdersPanel() {
       setUpdatingOrderId(null);
     }
   };
+
+  const handleAssignMotoboy = async (orderId: string, motoboyId: string) => {
+    try {
+      setUpdatingOrderId(orderId);
+      await assignOrderMotoboy(orderId, motoboyId);
+      setOrders((prev) =>
+        prev.map((o) =>
+          o.id === orderId ? { ...o, status: "shipped", motoboy_id: motoboyId } : o,
+        ),
+      );
+      toast.success("Entrega atribuída ao motoboy. Cliente avisado.");
+    } catch (error) {
+      console.error("Erro ao atribuir motoboy:", error);
+      const message = (error as { message?: string }).message ?? "Não foi possível atribuir a entrega.";
+      toast.error(message);
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
+  const motoboyName = (id: string | null) =>
+    id ? motoboys.find((m) => m.user_id === id)?.full_name ?? motoboys.find((m) => m.user_id === id)?.email ?? "Motoboy" : null;
 
   const getStatusBadge = (status: AdminOrderStatus) => {
     switch (status) {
@@ -482,23 +517,49 @@ export function AdminOrdersPanel() {
                               </Button>
                             </div>
                           ) : order.status === "paid" ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => handleMarkShipped(order.id)}
-                              disabled={isUpdating}
-                            >
-                              {isUpdating ? "Atualizando..." : "Marcar enviado"}
-                            </Button>
+                            motoboys.length > 0 ? (
+                              <Select
+                                disabled={isUpdating}
+                                onValueChange={(value) => handleAssignMotoboy(order.id, value)}
+                              >
+                                <SelectTrigger className="w-44">
+                                  <SelectValue placeholder="Atribuir motoboy" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover border-border">
+                                  {motoboys.map((m) => (
+                                    <SelectItem key={m.user_id} value={m.user_id}>
+                                      {m.full_name ?? m.email ?? "Motoboy"}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => handleMarkShipped(order.id)}
+                                disabled={isUpdating}
+                              >
+                                {isUpdating ? "Atualizando..." : "Marcar enviado"}
+                              </Button>
+                            )
                           ) : order.status === "shipped" ? (
-                            <Button
-                              type="button"
-                              size="sm"
-                              onClick={() => handleMarkDelivered(order.id)}
-                              disabled={isUpdating}
-                            >
-                              {isUpdating ? "Atualizando..." : "Marcar entregue"}
-                            </Button>
+                            <div className="flex flex-col gap-1">
+                              {order.motoboy_id && (
+                                <span className="text-xs text-muted-foreground">
+                                  Motoboy: {motoboyName(order.motoboy_id)}
+                                </span>
+                              )}
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleMarkDelivered(order.id)}
+                                disabled={isUpdating}
+                              >
+                                {isUpdating ? "Atualizando..." : "Marcar entregue"}
+                              </Button>
+                            </div>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
                           )}

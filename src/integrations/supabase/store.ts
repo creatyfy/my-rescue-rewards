@@ -250,6 +250,7 @@ export type Order = {
   amountReais: number;
   status: OrderStatus;
   createdAt: string;
+  deliveryToken: string | null;
 };
 
 export const fetchMyOrders = async (): Promise<Order[]> => {
@@ -259,7 +260,7 @@ export const fetchMyOrders = async (): Promise<Order[]> => {
     const { data, error } = await (supabase as any)
       .from("orders")
       .select(
-        "id, product_name, price_reais, points_applied, discount_reais, delivery_fee_reais, amount_reais, status, created_at",
+        "id, product_name, price_reais, points_applied, discount_reais, delivery_fee_reais, amount_reais, status, created_at, delivery_token",
       )
       .eq("user_id", userData.user.id)
       .order("created_at", { ascending: false });
@@ -274,6 +275,7 @@ export const fetchMyOrders = async (): Promise<Order[]> => {
       amountReais: Number(o.amount_reais),
       status: o.status as OrderStatus,
       createdAt: o.created_at as string,
+      deliveryToken: (o.delivery_token as string) ?? null,
     }));
   } catch {
     return [];

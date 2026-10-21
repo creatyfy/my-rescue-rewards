@@ -121,6 +121,18 @@ export default function MyOrders() {
                     Aguardando confirmação do pagamento. Assim que confirmarmos, você recebe um aviso.
                   </p>
                 )}
+
+                {(order.status === "paid" || order.status === "shipped") && order.deliveryToken && (
+                  <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-center">
+                    <p className="text-xs text-muted-foreground">Código de entrega</p>
+                    <p className="font-mono text-2xl font-bold tracking-widest text-primary">
+                      {order.deliveryToken}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Informe este código ao entregador para confirmar o recebimento.
+                    </p>
+                  </div>
+                )}
               </Card>
             ))}
           </div>

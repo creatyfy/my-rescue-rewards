@@ -165,6 +165,27 @@ export const resolveAdminAccess = async (): Promise<boolean> => {
 // REMOVIDO: bootstrapFirstAdmin - auto-promoção desabilitada por segurança
 // A promoção de admin só pode ser feita por outro admin via promote_user_to_admin
 
+export type AppUserRole = "admin" | "motoboy" | "user";
+
+// Resolve o papel do usuário logado (admin, motoboy ou user comum).
+export const resolveUserRole = async (): Promise<AppUserRole> => {
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return "user";
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userData.user.id)
+      .maybeSingle();
+    if (error || !data) return "user";
+    const role = (data as { role?: string }).role;
+    if (role === "admin" || role === "motoboy") return role;
+    return "user";
+  } catch {
+    return "user";
+  }
+};
+
 export type AdminUser = {
   user_id: string;
   email: string;
@@ -1003,6 +1024,7 @@ export type AdminOrder = {
   status: AdminOrderStatus;
   payment_provider: string | null;
   payment_id: string | null;
+  motoboy_id: string | null;
   created_at: string;
   paid_at: string | null;
   delivery_cep: string | null;
@@ -1019,7 +1041,7 @@ export const fetchAdminOrders = async (): Promise<AdminOrder[]> => {
       .from("orders")
       .select(
         `id, user_id, product_name, price_reais, points_applied, discount_reais,
-         delivery_fee_reais, amount_reais, status, payment_provider, payment_id,
+         delivery_fee_reais, amount_reais, status, payment_provider, payment_id, motoboy_id,
          created_at, paid_at, delivery_cep, delivery_address, delivery_number,
          delivery_neighborhood, delivery_city, delivery_state`,
       )
@@ -1042,6 +1064,7 @@ export const fetchAdminOrders = async (): Promise<AdminOrder[]> => {
       status: o.status as AdminOrderStatus,
       payment_provider: (o.payment_provider as string) ?? null,
       payment_id: (o.payment_id as string) ?? null,
+      motoboy_id: (o.motoboy_id as string) ?? null,
       created_at: o.created_at as string,
       paid_at: (o.paid_at as string) ?? null,
       delivery_cep: (o.delivery_cep as string) ?? null,
@@ -1148,4 +1171,91 @@ export const fetchAdminPendingCounts = async (): Promise<AdminPendingCounts> => 
   if (!ordersRes.error) counts.orders = ordersRes.count ?? 0;
 
   return counts;
+};
+
+// ---------------------------------------------------------------------------
+// Motoboys (entregas)
+// ---------------------------------------------------------------------------
+
+export type Motoboy = {
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+};
+
+// Admin: torna um usuário motoboy (ou remove o papel, voltando a 'user').
+export const setMotoboyRole = async (userId: string, enable: boolean) => {
+  const { error } = await supabase.rpc("set_motoboy_role", {
+    p_target_user_id: userId,
+    p_enable: enable,
+  });
+  if (error) throw new Error(error.message);
+  return true;
+};
+
+// Admin: lista os motoboys cadastrados.
+export const fetchMotoboys = async (): Promise<Motoboy[]> => {
+  const { data, error } = await supabase.rpc("list_users_for_admin");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as Array<{ user_id: string; email: string | null; full_name: string | null; role: string }>)
+    .filter((u) => u.role === "motoboy")
+    .map((u) => ({ user_id: u.user_id, full_name: u.full_name, email: u.email }));
+};
+
+// Admin: atribui uma entrega (pedido pago) a um motoboy -> marca como enviado.
+export const assignOrderMotoboy = async (orderId: string, motoboyId: string) => {
+  const { error } = await supabase.rpc("assign_order_motoboy" as never, {
+    p_order_id: orderId,
+    p_motoboy_id: motoboyId,
+  } as never);
+  if (error) throw new Error(error.message);
+  return true;
+};
+
+// ---- Lado do motoboy ----
+
+export type MotoboyDelivery = {
+  id: string;
+  product_name: string | null;
+  amount_reais: number;
+  status: AdminOrderStatus;
+  created_at: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  delivery_cep: string | null;
+  delivery_address: string | null;
+  delivery_number: string | null;
+  delivery_neighborhood: string | null;
+  delivery_city: string | null;
+  delivery_state: string | null;
+};
+
+export const fetchMotoboyDeliveries = async (): Promise<MotoboyDelivery[]> => {
+  const { data, error } = await supabase.rpc("list_motoboy_deliveries");
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as Record<string, unknown>[]).map((d) => ({
+    id: d.id as string,
+    product_name: (d.product_name as string) ?? null,
+    amount_reais: Number(d.amount_reais ?? 0),
+    status: d.status as AdminOrderStatus,
+    created_at: d.created_at as string,
+    customer_name: (d.customer_name as string) ?? null,
+    customer_phone: (d.customer_phone as string) ?? null,
+    delivery_cep: (d.delivery_cep as string) ?? null,
+    delivery_address: (d.delivery_address as string) ?? null,
+    delivery_number: (d.delivery_number as string) ?? null,
+    delivery_neighborhood: (d.delivery_neighborhood as string) ?? null,
+    delivery_city: (d.delivery_city as string) ?? null,
+    delivery_state: (d.delivery_state as string) ?? null,
+  }));
+};
+
+// Motoboy: conclui a entrega digitando o código que o cliente recebeu.
+export const completeOrderDelivery = async (orderId: string, token: string) => {
+  const { error } = await supabase.rpc("complete_order_delivery" as never, {
+    p_order_id: orderId,
+    p_token: token,
+  } as never);
+  if (error) throw new Error(error.message);
+  return true;
 };

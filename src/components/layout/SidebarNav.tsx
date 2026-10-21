@@ -1,47 +1,42 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
-import { resolveAdminAccess } from "@/integrations/supabase/admin";
+import { resolveUserRole, type AppUserRole } from "@/integrations/supabase/admin";
 import { logoutCurrentUser } from "@/integrations/supabase/profile";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminSidebar } from "./AdminSidebar";
+import { MotoboySidebar } from "./MotoboySidebar";
 import { SidebarSkeleton } from "./SidebarSkeleton";
 import { UserSidebar } from "./UserSidebar";
 
 export function SidebarNav() {
   const navigate = useNavigate();
   const { theme, setTheme } = useTheme();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<AppUserRole>("user");
   const [authLoading, setAuthLoading] = useState(true);
   const isDarkMode = theme === "dark";
 
   useEffect(() => {
     let mounted = true;
 
-    const loadAdminStatus = async () => {
+    const loadRole = async () => {
       try {
         const { data } = await supabase.auth.getSession();
         if (!data.session) {
-          if (mounted) {
-            setIsAdmin(false);
-          }
+          if (mounted) setRole("user");
           return;
         }
 
-        const status = await resolveAdminAccess().catch(() => false);
-        if (mounted) {
-          setIsAdmin(status);
-        }
+        const resolved = await resolveUserRole().catch<AppUserRole>(() => "user");
+        if (mounted) setRole(resolved);
       } catch (error) {
-        console.error("Erro ao carregar status de admin:", error);
+        console.error("Erro ao carregar papel do usuário:", error);
       } finally {
-        if (mounted) {
-          setAuthLoading(false);
-        }
+        if (mounted) setAuthLoading(false);
       }
     };
 
-    loadAdminStatus();
+    loadRole();
     return () => {
       mounted = false;
     };
@@ -60,17 +55,25 @@ export function SidebarNav() {
     return <SidebarSkeleton />;
   }
 
-  return isAdmin ? (
-    <AdminSidebar
-      isDarkMode={isDarkMode}
-      onThemeChange={(checked) => setTheme(checked ? "dark" : "light")}
-      onLogout={handleLogout}
-    />
-  ) : (
-    <UserSidebar
-      isDarkMode={isDarkMode}
-      onThemeChange={(checked) => setTheme(checked ? "dark" : "light")}
-      onLogout={handleLogout}
-    />
+  const onThemeChange = (checked: boolean) => setTheme(checked ? "dark" : "light");
+
+  if (role === "admin") {
+    return (
+      <AdminSidebar isDarkMode={isDarkMode} onThemeChange={onThemeChange} onLogout={handleLogout} />
+    );
+  }
+
+  if (role === "motoboy") {
+    return (
+      <MotoboySidebar
+        isDarkMode={isDarkMode}
+        onThemeChange={onThemeChange}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  return (
+    <UserSidebar isDarkMode={isDarkMode} onThemeChange={onThemeChange} onLogout={handleLogout} />
   );
 }

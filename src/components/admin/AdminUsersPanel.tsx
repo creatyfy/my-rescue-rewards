@@ -27,10 +27,11 @@ import {
   promoteUserToAdmin,
   demoteAdminToUser,
   adminDeleteUser,
+  setMotoboyRole,
   type AdminUser,
 } from "@/integrations/supabase/admin";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ShieldCheck, ShieldOff, User, Loader2, Trash2 } from "lucide-react";
+import { Search, ShieldCheck, ShieldOff, User, Loader2, Trash2, Bike } from "lucide-react";
 import { format } from "date-fns";
 import { UserProfileModal } from "./UserProfileModal";
 
@@ -42,7 +43,9 @@ export function AdminUsersPanel() {
 
   // Confirmation dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogAction, setDialogAction] = useState<"promote" | "demote" | "delete" | null>(null);
+  const [dialogAction, setDialogAction] = useState<
+    "promote" | "demote" | "delete" | "motoboy_on" | "motoboy_off" | null
+  >(null);
   const [targetUser, setTargetUser] = useState<AdminUser | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -93,6 +96,12 @@ export function AdminUsersPanel() {
     setDialogOpen(true);
   };
 
+  const handleOpenMotoboy = (user: AdminUser, enable: boolean) => {
+    setTargetUser(user);
+    setDialogAction(enable ? "motoboy_on" : "motoboy_off");
+    setDialogOpen(true);
+  };
+
   const handleConfirmAction = async () => {
     if (!targetUser || !dialogAction) return;
 
@@ -115,6 +124,12 @@ export function AdminUsersPanel() {
       } else if (dialogAction === "delete") {
         await adminDeleteUser(targetUser.user_id);
         toast.success(`Conta de ${targetUser.full_name || targetUser.email} foi excluída.`);
+      } else if (dialogAction === "motoboy_on") {
+        await setMotoboyRole(targetUser.user_id, true);
+        toast.success(`${targetUser.full_name || targetUser.email} agora é motoboy.`);
+      } else if (dialogAction === "motoboy_off") {
+        await setMotoboyRole(targetUser.user_id, false);
+        toast.success(`${targetUser.full_name || targetUser.email} deixou de ser motoboy.`);
       }
 
       await loadUsers();
@@ -190,6 +205,7 @@ export function AdminUsersPanel() {
               {filteredUsers.map((user) => {
                 const isCurrentUser = user.user_id === currentUserId;
                 const isAdmin = user.role === "admin";
+                const isMotoboy = user.role === "motoboy";
 
                 return (
                   <TableRow key={user.user_id}>
@@ -202,6 +218,8 @@ export function AdminUsersPanel() {
                       >
                         {isAdmin ? (
                           <ShieldCheck className="h-4 w-4 text-primary flex-shrink-0" />
+                        ) : isMotoboy ? (
+                          <Bike className="h-4 w-4 text-primary flex-shrink-0" />
                         ) : (
                           <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                         )}
@@ -217,8 +235,8 @@ export function AdminUsersPanel() {
                       {user.email}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={isAdmin ? "default" : "secondary"}>
-                        {isAdmin ? "Admin" : "Usuário"}
+                      <Badge variant={isAdmin || isMotoboy ? "default" : "secondary"}>
+                        {isAdmin ? "Admin" : isMotoboy ? "Motoboy" : "Usuário"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm hidden md:table-cell">
@@ -246,6 +264,18 @@ export function AdminUsersPanel() {
                             >
                               <ShieldCheck className="h-4 w-4 sm:mr-1" />
                               <span className="hidden sm:inline">Promover</span>
+                            </Button>
+                          )}
+                          {!isAdmin && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleOpenMotoboy(user, !isMotoboy)}
+                            >
+                              <Bike className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">
+                                {isMotoboy ? "Remover motoboy" : "Tornar motoboy"}
+                              </span>
                             </Button>
                           )}
                           <Button
@@ -276,10 +306,27 @@ export function AdminUsersPanel() {
                 ? "Promover a Administrador"
                 : dialogAction === "demote"
                 ? "Rebaixar a Usuário"
+                : dialogAction === "motoboy_on"
+                ? "Tornar motoboy"
+                : dialogAction === "motoboy_off"
+                ? "Remover motoboy"
                 : "Deletar conta permanentemente?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {dialogAction === "promote" ? (
+              {dialogAction === "motoboy_on" ? (
+                <>
+                  Tornar{" "}
+                  <strong>{targetUser?.full_name || targetUser?.email}</strong> um motoboy?
+                  Ele passa a ver apenas as entregas atribuídas a ele e conclui cada uma com o
+                  código do cliente.
+                </>
+              ) : dialogAction === "motoboy_off" ? (
+                <>
+                  Remover o papel de motoboy de{" "}
+                  <strong>{targetUser?.full_name || targetUser?.email}</strong>? Ele volta a ser
+                  usuário comum.
+                </>
+              ) : dialogAction === "promote" ? (
                 <>
                   Tem certeza que deseja promover{" "}
                   <strong>{targetUser?.full_name || targetUser?.email}</strong> a
