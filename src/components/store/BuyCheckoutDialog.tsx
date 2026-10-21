@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { useCepLookup } from "@/hooks/useCepLookup";
 import {
+  createAsaasPayment,
   createOrder,
   fetchLastDeliveryAddress,
   type DeliveryData,
@@ -62,6 +63,9 @@ export function BuyCheckoutDialog({
   const [step, setStep] = useState<"form" | "payment">("form");
   const [amountDue, setAmountDue] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [pixQr, setPixQr] = useState<string | null>(null);
+  const [pixCopiaCola, setPixCopiaCola] = useState<string | null>(null);
+  const [paidByPoints, setPaidByPoints] = useState(false);
   const { loading: cepLoading, error: cepError, lookup: lookupCep, reset: resetCep } = useCepLookup();
 
   const deliveryFee = settings?.deliveryFeeReais ?? 0;
@@ -74,6 +78,9 @@ export function BuyCheckoutDialog({
       setStep("form");
       setAmountDue(0);
       setCopied(false);
+      setPixQr(null);
+      setPixCopiaCola(null);
+      setPaidByPoints(false);
       resetCep();
       // pré-preenche com o último endereço usado, se houver
       let active = true;
@@ -158,10 +165,38 @@ export function BuyCheckoutDialog({
     }
     try {
       setPlacing(true);
-      await createOrder(product.id, pointsToUse, t);
-      setAmountDue(amount);
-      setStep("payment");
+      const orderId = await createOrder(product.id, pointsToUse, t);
       onOrderCreated?.();
+      setAmountDue(amount);
+
+      if (!orderId) {
+        // pedido criado, mas sem id de retorno: cai no Pix manual (settings)
+        setStep("payment");
+        return;
+      }
+
+      // Gera a cobrança Pix automática no Asaas
+      try {
+        const pix = await createAsaasPayment(orderId);
+        if (pix.paid) {
+          setPaidByPoints(true);
+        } else {
+          setPixQr(pix.qrCode);
+          setPixCopiaCola(pix.copiaCola);
+        }
+      } catch (payErr) {
+        // Pedido já foi criado; se a cobrança falhar, mostramos a tela de
+        // pagamento assim mesmo (admin pode confirmar manual / cliente tenta depois)
+        console.error("Falha ao gerar Pix Asaas:", payErr);
+        const pm = payErr instanceof Error ? payErr.message : "";
+        if (pm.includes("cpf")) {
+          toast.error("Complete seu CPF no perfil para gerar o Pix.");
+        } else {
+          toast.error("Pedido criado, mas não foi possível gerar o Pix agora. Fale com a loja.");
+        }
+      }
+
+      setStep("payment");
     } catch (error) {
       const msg = error instanceof Error ? error.message : "";
       if (msg.includes("insufficient points")) toast.error("Você não tem pontos suficientes.");
@@ -174,12 +209,12 @@ export function BuyCheckoutDialog({
   };
 
   const copyPix = async () => {
-    const key = settings?.pixKey;
+    const key = pixCopiaCola ?? settings?.pixKey;
     if (!key) return;
     try {
       await navigator.clipboard.writeText(key);
       setCopied(true);
-      toast.success("Chave Pix copiada!");
+      toast.success("Código Pix copiado!");
       setTimeout(() => setCopied(false), 2000);
     } catch {
       toast.error("Não foi possível copiar. Copie manualmente.");
@@ -340,41 +375,77 @@ export function BuyCheckoutDialog({
         ) : (
           <>
             <DialogHeader>
-              <DialogTitle>Pedido registrado! 🎉</DialogTitle>
+              <DialogTitle>
+                {paidByPoints ? "Pedido confirmado! 🎉" : "Pedido registrado! 🎉"}
+              </DialogTitle>
               <DialogDescription>
-                Agora é só pagar e enviar o comprovante. A confirmação é feita pela equipe.
+                {paidByPoints
+                  ? "Seus pontos cobriram o valor total. Já estamos preparando seu pedido."
+                  : "Pague o Pix abaixo. A confirmação é automática assim que o pagamento cair."}
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4">
-              <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-center">
-                <p className="text-xs text-muted-foreground">Valor a pagar</p>
-                <p className="text-2xl font-bold text-foreground">{formatCurrency(amountDue)}</p>
-              </div>
-
-              {settings?.pixKey ? (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Pague via Pix
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Input readOnly value={settings.pixKey} className="text-sm" />
-                    <Button variant="outline" size="icon" onClick={copyPix} aria-label="Copiar chave Pix">
-                      {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  {settings.pixOwnerName && (
-                    <p className="text-xs text-muted-foreground">Favorecido: {settings.pixOwnerName}</p>
-                  )}
+              {paidByPoints ? (
+                <div className="rounded-lg border border-success/30 bg-success/10 p-4 text-center">
+                  <p className="text-sm font-medium text-success">Pagamento concluído com pontos.</p>
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">
-                  Entre em contato para combinar o pagamento.
-                </p>
-              )}
+                <>
+                  <div className="rounded-lg border border-border/60 bg-muted/30 p-4 text-center">
+                    <p className="text-xs text-muted-foreground">Valor a pagar</p>
+                    <p className="text-2xl font-bold text-foreground">{formatCurrency(amountDue)}</p>
+                  </div>
 
-              {settings?.paymentInstructions && (
-                <p className="text-sm text-foreground whitespace-pre-line">{settings.paymentInstructions}</p>
+                  {pixCopiaCola ? (
+                    <div className="space-y-3">
+                      {pixQr && (
+                        <div className="flex justify-center">
+                          <img
+                            src={`data:image/png;base64,${pixQr}`}
+                            alt="QR Code Pix"
+                            className="h-48 w-48 rounded-lg border border-border/60 bg-white p-2"
+                          />
+                        </div>
+                      )}
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Pix copia e cola
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Input readOnly value={pixCopiaCola} className="text-xs" />
+                        <Button variant="outline" size="icon" onClick={copyPix} aria-label="Copiar código Pix">
+                          {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Escaneie o QR Code ou copie o código no app do seu banco. A confirmação é automática.
+                      </p>
+                    </div>
+                  ) : settings?.pixKey ? (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Pague via Pix
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Input readOnly value={settings.pixKey} className="text-sm" />
+                        <Button variant="outline" size="icon" onClick={copyPix} aria-label="Copiar chave Pix">
+                          {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                      {settings.pixOwnerName && (
+                        <p className="text-xs text-muted-foreground">Favorecido: {settings.pixOwnerName}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Não foi possível gerar o Pix agora. Fale com a loja para concluir o pagamento.
+                    </p>
+                  )}
+
+                  {settings?.paymentInstructions && (
+                    <p className="text-sm text-foreground whitespace-pre-line">{settings.paymentInstructions}</p>
+                  )}
+                </>
               )}
             </div>
 

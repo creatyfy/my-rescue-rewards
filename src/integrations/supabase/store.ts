@@ -203,6 +203,35 @@ export const createOrder = async (
   return (data as string) ?? null;
 };
 
+export type AsaasPixResult = {
+  qrCode: string | null; // imagem base64 do QR Code (encodedImage)
+  copiaCola: string | null; // payload Pix copia-e-cola
+  value: number;
+  paid?: boolean; // true quando os pontos cobriram tudo (sem Pix)
+  paymentId?: string;
+};
+
+// Gera a cobrança Pix no Asaas para um pedido já criado.
+export const createAsaasPayment = async (
+  orderId: string,
+): Promise<AsaasPixResult> => {
+  const { data, error } = await supabase.functions.invoke("create-asaas-payment", {
+    body: { order_id: orderId },
+  });
+  if (error) {
+    let msg = error.message;
+    try {
+      const ctx = (error as { context?: { json?: () => Promise<Record<string, unknown>> } }).context;
+      const b = ctx?.json ? await ctx.json() : null;
+      if (b && (b.message || b.error)) msg = String(b.message ?? b.error);
+    } catch {
+      /* mantém a mensagem padrão */
+    }
+    throw new Error(msg);
+  }
+  return data as AsaasPixResult;
+};
+
 export type OrderStatus =
   | "pending_payment"
   | "paid"
