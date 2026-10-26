@@ -106,10 +106,26 @@ export const TurnstileWidget = ({
           "expired-callback": () => {
             onVerifyRef.current("");
             onExpireRef.current?.();
+            // Renova o token automaticamente para não travar o botão por expiração
+            try {
+              if (widgetIdRef.current && window.turnstile) {
+                window.turnstile.reset(widgetIdRef.current);
+              }
+            } catch {
+              // ignore
+            }
           },
           "error-callback": () => {
             onVerifyRef.current("");
             onErrorRef.current?.();
+            // Tenta refazer o desafio em caso de erro transitório
+            try {
+              if (widgetIdRef.current && window.turnstile) {
+                window.turnstile.reset(widgetIdRef.current);
+              }
+            } catch {
+              // ignore
+            }
           },
         });
 
