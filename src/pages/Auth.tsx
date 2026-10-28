@@ -634,6 +634,25 @@ export default function Auth() {
         fieldValidation.email.status === "invalid" ||
         fieldValidation.phone.status === "invalid"));
 
+  // Diagnóstico: por que o botão está desabilitado (mostrado só no cadastro).
+  const disableReasons: string[] = [];
+  if (isRegister) {
+    if (!formData.name.trim()) disableReasons.push("nome");
+    if (!cpfDigits) disableReasons.push("cpf vazio");
+    else if (fieldValidation.cpf.status === "loading") disableReasons.push("cpf verificando");
+    else if (fieldValidation.cpf.status === "invalid") disableReasons.push("cpf inválido/já usado");
+    if (!phoneDigits) disableReasons.push("telefone vazio");
+    else if (fieldValidation.phone.status === "loading") disableReasons.push("telefone verificando");
+    else if (fieldValidation.phone.status === "invalid") disableReasons.push("telefone inválido/já usado");
+    if (!shouldValidateField("email", formData.email)) disableReasons.push("email inválido");
+    else if (fieldValidation.email.status === "loading") disableReasons.push("email verificando");
+    else if (fieldValidation.email.status === "invalid") disableReasons.push("email já usado");
+    if (!formData.password) disableReasons.push("senha vazia");
+    if (!formData.confirmPassword) disableReasons.push("confirmação vazia");
+    if (hasPasswordMismatch) disableReasons.push("senhas diferentes");
+  }
+  if (!!turnstileSiteKey && !turnstileToken) disableReasons.push("captcha pendente");
+
 
   const resendConfirmationEmail = async () => {
     const normalizedEmail = pendingConfirmationEmail.trim().toLowerCase();
@@ -1015,6 +1034,12 @@ export default function Auth() {
               "Criar conta"
             )}
           </Button>
+
+          {mode === "register" && shouldDisableSubmit && disableReasons.length > 0 && (
+            <p className="text-xs text-center text-muted-foreground">
+              Para habilitar o cadastro, falta: {disableReasons.join(", ")}
+            </p>
+          )}
 
 
           {mode === "login" && pendingConfirmationEmail && (
