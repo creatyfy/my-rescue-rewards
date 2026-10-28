@@ -24,20 +24,24 @@ import {
 import { toast } from "@/components/ui/sonner";
 import {
   fetchAdminUsers,
+  fetchAdminProfiles,
   promoteUserToAdmin,
   demoteAdminToUser,
   adminDeleteUser,
   setMotoboyRole,
   type AdminUser,
+  type AdminProfile,
 } from "@/integrations/supabase/admin";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, ShieldCheck, ShieldOff, User, Loader2, Trash2, Bike } from "lucide-react";
+import { Search, ShieldCheck, ShieldOff, User, Loader2, Trash2, Bike, Download } from "lucide-react";
 import { format } from "date-fns";
 import { UserProfileModal } from "./UserProfileModal";
 
 export function AdminUsersPanel() {
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [profiles, setProfiles] = useState<AdminProfile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [search, setSearch] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
@@ -56,13 +60,60 @@ export function AdminUsersPanel() {
   const loadUsers = async () => {
     setLoading(true);
     try {
-      const data = await fetchAdminUsers();
+      const [data, profilesData] = await Promise.all([
+        fetchAdminUsers(),
+        fetchAdminProfiles(),
+      ]);
       setUsers(data);
+      setProfiles(profilesData);
     } catch (err) {
       console.error("Erro ao carregar usuários:", err);
       toast.error("Não foi possível carregar a lista de usuários.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExport = () => {
+    setExporting(true);
+    try {
+      const phoneByUser = new Map(profiles.map((p) => [p.user_id, p.phone ?? ""]));
+
+      const escapeCell = (value: string) => {
+        const v = value ?? "";
+        // Prefixa aspas/; para o Excel abrir certinho em pt-BR (separador ;)
+        if (/[";\n]/.test(v)) {
+          return `"${v.replace(/"/g, '""')}"`;
+        }
+        return v;
+      };
+
+      const header = ["Nome", "E-mail", "Telefone"];
+      const rows = users.map((u) => [
+        escapeCell(u.full_name ?? ""),
+        escapeCell(u.email ?? ""),
+        escapeCell(phoneByUser.get(u.user_id) ?? ""),
+      ]);
+
+      const csv = [header.join(";"), ...rows.map((r) => r.join(";"))].join("\r\n");
+      // BOM para acentuação correta no Excel
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      const today = format(new Date(), "yyyy-MM-dd");
+      link.href = url;
+      link.download = `usuarios-meu-resgate-${today}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Lista exportada: ${users.length} usuário(s).`);
+    } catch (err) {
+      console.error("Erro ao exportar usuários:", err);
+      toast.error("Não foi possível exportar a lista.");
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -170,14 +221,30 @@ export function AdminUsersPanel() {
           </p>
         </div>
 
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome ou email..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={loading || exporting || users.length === 0}
+            className="shrink-0"
+          >
+            {exporting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4 mr-2" />
+            )}
+            Exportar Excel
+          </Button>
+
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome ou email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+          </div>
         </div>
       </div>
 
