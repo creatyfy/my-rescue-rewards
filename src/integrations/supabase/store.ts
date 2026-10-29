@@ -232,6 +232,58 @@ export const createAsaasPayment = async (
   return data as AsaasPixResult;
 };
 
+export type MercadoPagoCheckoutResult = {
+  url: string | null; // link do checkout do Mercado Pago (init_point)
+  value: number;
+  paid?: boolean; // true quando os pontos cobriram tudo (sem pagamento externo)
+  preferenceId?: string;
+};
+
+// Cria a preferência de pagamento (Checkout Pro) do Mercado Pago para um
+// pedido já criado e devolve o link para o cliente pagar no navegador.
+export const createMercadoPagoCheckout = async (
+  orderId: string,
+): Promise<MercadoPagoCheckoutResult> => {
+  const { data, error } = await supabase.functions.invoke("create-mercadopago-preference", {
+    body: { order_id: orderId },
+  });
+  if (error) {
+    let msg = error.message;
+    try {
+      const ctx = (error as { context?: { json?: () => Promise<Record<string, unknown>> } }).context;
+      const b = ctx?.json ? await ctx.json() : null;
+      if (b && (b.message || b.error)) msg = String(b.message ?? b.error);
+    } catch {
+      /* mantém a mensagem padrão */
+    }
+    throw new Error(msg);
+  }
+  return data as MercadoPagoCheckoutResult;
+};
+
+// Abre uma URL no navegador externo. No app nativo usa o navegador do sistema
+// (plugin @capacitor/browser, se instalado); caso contrário abre em nova aba.
+// Isso garante que o pagamento acontece fora do app, evitando as regras de
+// compra dentro do aplicativo das lojas (Apple/Google).
+export async function openExternalUrl(url: string): Promise<void> {
+  try {
+    const cap = (window as unknown as {
+      Capacitor?: {
+        isNativePlatform?: () => boolean;
+        Plugins?: { Browser?: { open?: (opts: { url: string }) => Promise<void> } };
+      };
+    }).Capacitor;
+    const browser = cap?.Plugins?.Browser;
+    if (cap?.isNativePlatform?.() && browser?.open) {
+      await browser.open({ url });
+      return;
+    }
+  } catch {
+    /* cai no window.open */
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 export type OrderStatus =
   | "pending_payment"
   | "paid"

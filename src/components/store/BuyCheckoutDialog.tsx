@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Copy, Check } from "lucide-react";
+import { Loader2, Copy, Check, ExternalLink } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -13,9 +13,10 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { useCepLookup } from "@/hooks/useCepLookup";
 import {
-  createAsaasPayment,
+  createMercadoPagoCheckout,
   createOrder,
   fetchLastDeliveryAddress,
+  openExternalUrl,
   type DeliveryData,
   type StoreSettings,
   type UserContact,
@@ -63,8 +64,7 @@ export function BuyCheckoutDialog({
   const [step, setStep] = useState<"form" | "payment">("form");
   const [amountDue, setAmountDue] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [pixQr, setPixQr] = useState<string | null>(null);
-  const [pixCopiaCola, setPixCopiaCola] = useState<string | null>(null);
+  const [checkoutUrl, setCheckoutUrl] = useState<string | null>(null);
   const [paidByPoints, setPaidByPoints] = useState(false);
   const { loading: cepLoading, error: cepError, lookup: lookupCep, reset: resetCep } = useCepLookup();
 
@@ -78,8 +78,7 @@ export function BuyCheckoutDialog({
       setStep("form");
       setAmountDue(0);
       setCopied(false);
-      setPixQr(null);
-      setPixCopiaCola(null);
+      setCheckoutUrl(null);
       setPaidByPoints(false);
       resetCep();
       // pré-preenche com o último endereço usado, se houver
@@ -175,25 +174,21 @@ export function BuyCheckoutDialog({
         return;
       }
 
-      // Gera a cobrança Pix automática no Asaas
+      // Gera o link de pagamento (Checkout Pro do Mercado Pago)
       try {
-        const pix = await createAsaasPayment(orderId);
-        if (pix.paid) {
+        const checkout = await createMercadoPagoCheckout(orderId);
+        if (checkout.paid) {
           setPaidByPoints(true);
-        } else {
-          setPixQr(pix.qrCode);
-          setPixCopiaCola(pix.copiaCola);
+        } else if (checkout.url) {
+          setCheckoutUrl(checkout.url);
+          // Abre o pagamento já no navegador (fora do app)
+          void openExternalUrl(checkout.url);
         }
       } catch (payErr) {
         // Pedido já foi criado; se a cobrança falhar, mostramos a tela de
         // pagamento assim mesmo (admin pode confirmar manual / cliente tenta depois)
-        console.error("Falha ao gerar Pix Asaas:", payErr);
-        const pm = payErr instanceof Error ? payErr.message : "";
-        if (pm.includes("cpf")) {
-          toast.error("Complete seu CPF no perfil para gerar o Pix.");
-        } else {
-          toast.error("Pedido criado, mas não foi possível gerar o Pix agora. Fale com a loja.");
-        }
+        console.error("Falha ao gerar link do Mercado Pago:", payErr);
+        toast.error("Pedido criado, mas não foi possível gerar o link de pagamento agora. Fale com a loja.");
       }
 
       setStep("payment");
@@ -209,7 +204,7 @@ export function BuyCheckoutDialog({
   };
 
   const copyPix = async () => {
-    const key = pixCopiaCola ?? settings?.pixKey;
+    const key = settings?.pixKey;
     if (!key) return;
     try {
       await navigator.clipboard.writeText(key);
@@ -381,7 +376,7 @@ export function BuyCheckoutDialog({
               <DialogDescription>
                 {paidByPoints
                   ? "Seus pontos cobriram o valor total. Já estamos preparando seu pedido."
-                  : "Pague o Pix abaixo. A confirmação é automática assim que o pagamento cair."}
+                  : "Conclua o pagamento no Mercado Pago. A confirmação é automática assim que o pagamento cair."}
               </DialogDescription>
             </DialogHeader>
 
@@ -397,28 +392,30 @@ export function BuyCheckoutDialog({
                     <p className="text-2xl font-bold text-foreground">{formatCurrency(amountDue)}</p>
                   </div>
 
-                  {pixCopiaCola ? (
+                  {checkoutUrl ? (
                     <div className="space-y-3">
-                      {pixQr && (
-                        <div className="flex justify-center">
-                          <img
-                            src={`data:image/png;base64,${pixQr}`}
-                            alt="QR Code Pix"
-                            className="h-48 w-48 rounded-lg border border-border/60 bg-white p-2"
-                          />
-                        </div>
-                      )}
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Pix copia e cola
+                      <Button
+                        onClick={() => openExternalUrl(checkoutUrl)}
+                        className="w-full"
+                        size="lg"
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Pagar no Mercado Pago
+                      </Button>
+                      <p className="text-xs text-muted-foreground text-center">
+                        Você será levado ao ambiente seguro do Mercado Pago para pagar com Pix,
+                        cartão ou boleto. A confirmação é automática assim que o pagamento cair.
                       </p>
-                      <div className="flex items-center gap-2">
-                        <Input readOnly value={pixCopiaCola} className="text-xs" />
-                        <Button variant="outline" size="icon" onClick={copyPix} aria-label="Copiar código Pix">
-                          {copied ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Escaneie o QR Code ou copie o código no app do seu banco. A confirmação é automática.
+                      <p className="text-xs text-muted-foreground text-center">
+                        Se a página não abrir,{" "}
+                        <button
+                          type="button"
+                          onClick={() => openExternalUrl(checkoutUrl)}
+                          className="text-primary underline underline-offset-2"
+                        >
+                          toque aqui
+                        </button>
+                        .
                       </p>
                     </div>
                   ) : settings?.pixKey ? (
