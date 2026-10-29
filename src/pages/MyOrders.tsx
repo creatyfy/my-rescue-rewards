@@ -1,8 +1,12 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Capacitor } from "@capacitor/core";
+import { App as CapApp } from "@capacitor/app";
+import { Browser } from "@capacitor/browser";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { toast } from "@/components/ui/sonner";
 import { fetchMyOrders, type Order, type OrderStatus } from "@/integrations/supabase/store";
 import { formatCurrency } from "@/lib/points-config";
 
@@ -38,20 +42,74 @@ export default function MyOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const data = await fetchMyOrders();
-        setOrders(data);
-      } catch (error) {
-        console.error("Erro ao carregar pedidos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+  const load = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setLoading(true);
+    try {
+      const data = await fetchMyOrders();
+      setOrders(data);
+    } catch (error) {
+      console.error("Erro ao carregar pedidos:", error);
+    } finally {
+      if (showSpinner) setLoading(false);
+    }
   }, []);
+
+  // Carga inicial
+  useEffect(() => {
+    load(true);
+  }, [load]);
+
+  // Mostra o resultado do pagamento (vindo do retorno do Mercado Pago)
+  useEffect(() => {
+    const pg = new URLSearchParams(window.location.search).get("pagamento");
+    if (pg === "sucesso") {
+      toast.success("Pagamento recebido! Em instantes seu pedido aparece como Pago.");
+    } else if (pg === "falha") {
+      toast.error("O pagamento não foi concluído. Você pode tentar novamente.");
+    } else if (pg === "pendente") {
+      toast.info("Pagamento pendente. Avisaremos assim que for confirmado.");
+    }
+  }, []);
+
+  // Atualiza a lista automaticamente quando o cliente volta pro app/aba
+  // (ex.: depois de pagar no navegador do Mercado Pago).
+  useEffect(() => {
+    const refresh = () => {
+      void load();
+    };
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    const handles: Array<{ remove: () => void }> = [];
+    (async () => {
+      try {
+        if (Capacitor.isNativePlatform()) {
+          const appH = await CapApp.addListener("appStateChange", ({ isActive }) => {
+            if (isActive) refresh();
+          });
+          handles.push(appH);
+          const brH = await Browser.addListener("browserFinished", () => refresh());
+          handles.push(brH);
+        }
+      } catch {
+        /* sem listeners nativos: o visibilitychange ainda cobre */
+      }
+    })();
+
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      handles.forEach((h) => {
+        try {
+          h.remove();
+        } catch {
+          /* ignore */
+        }
+      });
+    };
+  }, [load]);
 
   return (
     <AppLayout title="Meus Pedidos" showBack>
